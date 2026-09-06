@@ -57,6 +57,8 @@ A = P({G,R,B})
 
 Theory はこの順序で有限代数を `K8` まで完結させ、その後に連続・立体表示へ進む。音響へは分岐しない。図は文章だけでは関係を把握しにくい場合に限り、色相辺差分表は小さなカードへ埋め込まず Tone Zigzag と同じ節の全幅表として置く。
 
+面の演算については、カラーキューブの四点XOR、テトラの三点からの頂点復元、Hammingの三検査面、八面体と既存の混色・Fanoの対応を各節の本文に置く。テトラの多数決と重心による双対対応は、説明・面選択図・GRB表を常時表示する。八通りの混色表を再掲せず、既存のカラーダイス表示へつなぐ。14アフィン平面と拡張Hamming符号の詳細は[多面体の面と3ビット演算](./polyhedral-face-algebra.md)に記録する。
+
 ## Curated Prior-Art Map
 
 | Layer | Keep | Known part | CHROMALUM synthesis candidate |

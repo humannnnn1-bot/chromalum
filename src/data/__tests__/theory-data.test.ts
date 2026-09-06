@@ -7,6 +7,8 @@ import {
   FANO_LINES,
   GRAY_PATH,
   GRAY_TOGGLES,
+  K8_EXPLORER_POINTS,
+  K8_EXPLORER_VERTICES_3D,
   OCTA_COMPLEMENT_AXES,
   OCTA_EDGES,
   OCTA_FACES,
@@ -343,6 +345,132 @@ describe("theory-data invariants", () => {
       [2, 5],
       [3, 4],
     ]);
+  });
+
+  it("preserves a regular cube and its two regular tetrahedra in the Explorer's 3D coordinates", () => {
+    for (const [edges, squaredLength] of [
+      [CUBE_EDGES, 1],
+      [STELLA_EDGES, 2],
+      [COMPLEMENT_EDGES, 3],
+    ] as const) {
+      for (const [a, b] of edges) {
+        const from = K8_EXPLORER_VERTICES_3D[a];
+        const to = K8_EXPLORER_VERTICES_3D[b];
+        const distanceSquared = from.reduce((sum, coordinate, axis) => sum + (to[axis] - coordinate) ** 2, 0);
+        expect(distanceSquared).toBeCloseTo(squaredLength, 12);
+      }
+    }
+  });
+
+  it("projects the regular solids with a uniform scale and shared center", () => {
+    const origin = K8_EXPLORER_POINTS[0];
+    const origin3D = K8_EXPLORER_VERTICES_3D[0];
+    const scale = (K8_EXPLORER_POINTS[1].x - origin.x) / (K8_EXPLORER_VERTICES_3D[1][0] - origin3D[0]);
+    expect(scale).toBeGreaterThan(0);
+
+    K8_EXPLORER_VERTICES_3D.forEach(([x, y], lv) => {
+      const projected = K8_EXPLORER_POINTS[lv];
+      expect(projected.x - origin.x).toBeCloseTo(scale * (x - origin3D[0]), 12);
+      expect(projected.y - origin.y).toBeCloseTo(scale * (y - origin3D[1]), 12);
+      expect((projected.x + K8_EXPLORER_POINTS[lv ^ 7].x) / 2).toBeCloseTo(90, 12);
+      expect((projected.y + K8_EXPLORER_POINTS[lv ^ 7].y) / 2).toBeCloseTo(63, 12);
+    });
+  });
+
+  it("recovers every missing cube-face vertex by XOR and keeps face meets and joins inside the face", () => {
+    for (const channel of [0, 1, 2]) {
+      for (const bit of [0, 1]) {
+        const face = THEORY_LEVELS.filter((level) => level.bits[channel] === bit).map((level) => level.lv);
+        expect(face).toHaveLength(4);
+        expect(face.reduce((result, level) => result ^ level, 0)).toBe(0);
+        for (const missing of face) {
+          expect(face.filter((level) => level !== missing).reduce((result, level) => result ^ level, 0)).toBe(missing);
+        }
+        for (const a of face) {
+          for (const b of face) {
+            expect(face).toContain(a & b);
+            expect(face).toContain(a | b);
+          }
+        }
+      }
+    }
+  });
+
+  it("matches XOR recovery and Boolean majority to all eight tetrahedral faces and their geometric dual vertices", () => {
+    const even = new Set<number>(TETRA_T0);
+    const tetrahedra = [[...even], THEORY_LEVELS.filter((level) => !even.has(level.lv)).map((level) => level.lv)];
+    let faceCount = 0;
+    for (const tetrahedron of tetrahedra) {
+      for (const [a, b, c] of combinations(tetrahedron, 3)) {
+        const missing = tetrahedron.find((level) => ![a, b, c].includes(level))!;
+        const majority = (a & b) | (b & c) | (c & a);
+        expect(a ^ b ^ c).toBe(missing);
+        expect(majority).toBe(missing ^ 7);
+        expect(a | b | c).toBe(7);
+        expect(a & b & c).toBe(0);
+        for (const axis of [0, 1, 2]) {
+          const centroid = [a, b, c].reduce((sum, level) => sum + K8_EXPLORER_VERTICES_3D[level][axis], 0) / 3;
+          expect(3 * centroid).toBeCloseTo(K8_EXPLORER_VERTICES_3D[majority][axis], 12);
+        }
+        faceCount++;
+      }
+    }
+    expect(faceCount).toBe(8);
+  });
+
+  it("reads every octahedral face as a mixing relation and splits its XOR into four Fano lines and their complements", () => {
+    const fanoKeys = new Set(FANO_LINES.map((line) => [...line].sort().join("-")));
+    let fanoFaceCount = 0;
+    for (const { verts, color } of OCTA_FACES) {
+      const primaryCount = verts.filter((level) => hammingDist(0, level) === 1).length;
+      const mixingResult =
+        primaryCount >= 2
+          ? verts.reduce<number>((result, level) => result | level, 0)
+          : verts.reduce<number>((result, level) => result & level, 7);
+      expect(mixingResult).toBe(color);
+      const xor = verts.reduce<number>((result, level) => result ^ level, 0);
+      const isFano = fanoKeys.has([...verts].sort().join("-"));
+      expect(xor).toBe(hammingDist(0, color) % 2 === 0 ? 0 : 7);
+      expect(isFano).toBe(xor === 0);
+      if (isFano) fanoFaceCount++;
+      const opposite = OCTA_FACES.find((face) => face.color === (color ^ 7))!;
+      expect([...opposite.verts].sort()).toEqual(verts.map((level) => level ^ 7).sort());
+    }
+    expect(fanoFaceCount).toBe(4);
+  });
+
+  it("identifies the fourteen zero-XOR quadruples with affine planes and the extended Hamming code", () => {
+    const levels = THEORY_LEVELS.map((level) => level.lv);
+    const planes = combinations(levels, 4).filter((vertices) => vertices.reduce((xor, level) => xor ^ level, 0) === 0);
+    expect(planes).toHaveLength(14);
+    const planeKeys = new Set(planes.map((vertices) => vertices.join("-")));
+    const planesByNormalWeight = [0, 0, 0, 0];
+    for (const normal of levels.slice(1)) {
+      for (const parity of [0, 1]) {
+        const plane = levels.filter((level) => hammingDist(0, normal & level) % 2 === parity);
+        expect(planeKeys.has(plane.join("-"))).toBe(true);
+        planesByNormalWeight[hammingDist(0, normal)]++;
+      }
+    }
+    expect(planesByNormalWeight).toEqual([0, 6, 6, 2]);
+    for (const triple of combinations(levels, 3)) {
+      expect(planes.filter((plane) => triple.every((level) => plane.includes(level)))).toHaveLength(1);
+    }
+    const words = new Set([0, 255, ...planes.map((plane) => plane.reduce((word, level) => word | (1 << level), 0))]);
+    expect(words.size).toBe(16);
+    const distances = combinations([...words], 2).map(([a, b]) => {
+      const difference = a ^ b;
+      expect(words.has(difference)).toBe(true);
+      return levels.reduce((weight, level) => weight + ((difference >> level) & 1), 0);
+    });
+    expect(Math.min(...distances)).toBe(4);
+    const punctured = new Set([...words].map((word) => word >> 1));
+    const hammingKernel = new Set(
+      Array.from({ length: 128 }, (_, word) => word).filter(
+        (word) => levels.slice(1).reduce((syndrome, level) => syndrome ^ (((word >> (level - 1)) & 1) === 1 ? level : 0), 0) === 0,
+      ),
+    );
+    expect(punctured).toEqual(hammingKernel);
   });
 
   it("models the Color Diamond as the Color Cube dual with chromatic XOR edges", () => {

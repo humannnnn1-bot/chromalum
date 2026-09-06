@@ -118,8 +118,17 @@ describe("TheoryPanel", () => {
     expect(structureParagraphs.some((node) => node.textContent?.includes("Hxᵀ=h_i⊕h_j⊕h_k"))).toBe(true);
   });
 
-  it("keeps the complete toggle table folded and outside a card surface", () => {
+  it("shows face duality inline and keeps the complete toggle table folded", () => {
     renderWithLanguage();
+
+    const faceHeading = screen.getByRole("heading", { name: "Face Majority and Duality", level: 4 });
+    const faceSection = faceHeading.closest("section")!;
+    expect(faceSection.id).toBe("theory-k8");
+    expect(faceSection.querySelector("details")).toBeNull();
+    expect(faceSection.textContent).toContain("maj(a,b,c)=¬d");
+    expect(faceSection.textContent).toContain("g_F=(p_a+p_b+p_c)/3=p_¬d/3");
+    expect(faceSection.querySelector('[data-testid="tetra-face-duality"]')).not.toBeNull();
+    expect(screen.getByRole("combobox", { name: "Select a face" })).toBeTruthy();
 
     const summary = screen.getByText("Complete Toggle-Action Table");
     const details = summary.closest("details");
@@ -183,29 +192,23 @@ describe("TheoryPanel", () => {
 
     const section = screen.getByText("Color Tetrahedra and Color Star").closest("section");
     expect(section).toBeTruthy();
-    const t0Button = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "T0");
-    const t1Button = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "T1");
-    const surfaceButton = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "Surface");
-    const k8Button = Array.from(section!.querySelectorAll("button")).find((button) => button.textContent === "K₈");
-    expect(t0Button).toBeTruthy();
-    expect(t1Button).toBeTruthy();
-    expect(surfaceButton).toBeTruthy();
-    expect(k8Button).toBeTruthy();
-
-    fireEvent.click(t0Button!);
-    expect(section!.textContent).toContain("T0=ker π={K,M,C,Y}≅V₄");
-    expect(t0Button!.getAttribute("aria-pressed")).toBe("true");
-
-    fireEvent.click(t1Button!);
-    expect(section!.textContent).toContain("T1=B⊕T0={B,R,G,W}");
-    expect(t1Button!.getAttribute("aria-pressed")).toBe("true");
-
-    fireEvent.click(k8Button!);
+    const buttons = Array.from(section!.querySelectorAll("button"));
+    expect(buttons.map((button) => button.textContent)).toEqual([
+      "Nodes only",
+      "Distance 1 · 12 edges",
+      "Distance 2 · 12 edges",
+      "Distance 3 · 4 edges",
+      "All · 28 edges",
+    ]);
+    const k8Button = buttons.find((button) => button.textContent === "All · 28 edges")!;
+    fireEvent.click(k8Button);
     expect(section!.textContent).toContain("Q₃(12)");
-    expect(k8Button!.getAttribute("aria-pressed")).toBe("true");
+    expect(k8Button.getAttribute("aria-pressed")).toBe("true");
 
-    fireEvent.click(surfaceButton!);
-    expect(section!.textContent).toContain("24 surface faces");
-    expect(surfaceButton!.getAttribute("aria-pressed")).toBe("true");
+    const distanceTwo = buttons.find((button) => button.textContent === "Distance 2 · 12 edges")!;
+    fireEvent.click(distanceTwo);
+    expect(distanceTwo.getAttribute("aria-pressed")).toBe("true");
+    expect(section!.querySelectorAll('[data-k8-distance="2"]')).toHaveLength(12);
+    expect(section!.querySelectorAll("polygon, path")).toHaveLength(0);
   });
 });

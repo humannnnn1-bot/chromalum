@@ -1,9 +1,11 @@
 // @vitest-environment jsdom
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { LanguageProvider } from "../../../i18n";
 import { OCTA_COMPLEMENT_AXES, OCTA_EDGES, OCTA_FACES } from "../../../data/theory-data";
 import { OctahedronDual } from "../OctahedronDual";
+import { PinResetContext } from "../pin-reset";
 
 function renderDual(hlLevel: number | null = null) {
   localStorage.setItem("chromalum_lang", "en");
@@ -104,5 +106,65 @@ describe("OctahedronDual", () => {
     expect(relations.querySelector('[data-dual-relation="edges-to-edges"]')).not.toBeNull();
     expect(relations.querySelector('[data-dual-relation="opposites-to-axes"]')).not.toBeNull();
     expect(relations.querySelector('[data-dual-relation="face-adjacency-q3"]')).not.toBeNull();
+  });
+
+  it("shows the mixing relation and Fano parity for every selected face", async () => {
+    const { container } = renderDual();
+    const status = screen.getByTestId("octahedron-face-operation");
+    expect(status.textContent).toContain("Select one of the eight triangles");
+    for (const [lv, relation, xor] of [
+      [7, "R ∨ G ∨ B = W", "010 ⊕ 100 ⊕ 001 = 111"],
+      [6, "R ∨ G = Y", "010 ⊕ 100 ⊕ 110 = 000"],
+      [3, "R ∨ B = M", "010 ⊕ 011 ⊕ 001 = 000"],
+      [2, "M ∧ Y = R", "010 ⊕ 011 ⊕ 110 = 111"],
+      [5, "G ∨ B = C", "101 ⊕ 100 ⊕ 001 = 000"],
+      [4, "C ∧ Y = G", "101 ⊕ 100 ⊕ 110 = 111"],
+      [1, "C ∧ M = B", "101 ⊕ 011 ⊕ 001 = 111"],
+      [0, "C ∧ M ∧ Y = K", "101 ⊕ 011 ⊕ 110 = 000"],
+    ] as const) {
+      fireEvent.keyDown(container.querySelector(`[data-octa-face="${lv}"]`)!, { key: "Enter" });
+      await waitFor(() => expect(status.textContent).toContain(relation));
+      expect(status.textContent).toContain(xor);
+      expect(status.textContent).toContain(xor.endsWith("000") ? "so they form a Fano line" : "The complementary opposite face");
+    }
+  });
+
+  it("distinguishes face previews from node selection, preserves pinned faces, and resets them with the page", async () => {
+    localStorage.setItem("chromalum_lang", "en");
+    function ControlledDual({ reset }: { reset: number }) {
+      const [hlLevel, onHover] = useState<number | null>(null);
+      return (
+        <LanguageProvider>
+          <PinResetContext.Provider value={reset}>
+            <OctahedronDual hlLevel={hlLevel} onHover={onHover} />
+          </PinResetContext.Provider>
+        </LanguageProvider>
+      );
+    }
+    const { container, rerender } = render(<ControlledDual reset={0} />);
+    const status = screen.getByTestId("octahedron-face-operation");
+    const node = container.querySelector('[data-octa-vertex="6"]')!;
+    const face = container.querySelector('[data-octa-face="6"]')!;
+    const opposite = container.querySelector('[data-octa-face="1"]')!;
+    fireEvent.mouseEnter(node);
+    expect(status.textContent).toContain("Select one of the eight triangles");
+    fireEvent.mouseLeave(node);
+    fireEvent.focus(face);
+    expect(status.textContent).toContain("R ∨ G = Y");
+    fireEvent.blur(face);
+    expect(status.textContent).toContain("Select one of the eight triangles");
+    fireEvent.click(face);
+    await waitFor(() => expect(status.textContent).toContain("R ∨ G = Y"));
+    fireEvent.mouseEnter(opposite);
+    expect(status.textContent).toContain("C ∧ M = B");
+    fireEvent.mouseLeave(opposite);
+    expect(status.textContent).toContain("R ∨ G = Y");
+    fireEvent.click(node);
+    await waitFor(() => expect(status.textContent).toContain("Select one of the eight triangles"));
+    // The same numeric color on a node and on a face is a different selection.
+    fireEvent.click(face);
+    await waitFor(() => expect(status.textContent).toContain("R ∨ G = Y"));
+    rerender(<ControlledDual reset={1} />);
+    expect(status.textContent).toContain("Select one of the eight triangles");
   });
 });

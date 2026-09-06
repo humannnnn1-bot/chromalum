@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect } from "react";
 import ReactDOM from "react-dom/client";
 import type { Root } from "react-dom/client";
 import "./styles/global.css";
@@ -23,6 +23,39 @@ const S_DEV_HEADER: React.CSSProperties = {
 };
 
 function TheoryDevelopmentApp() {
+  useLayoutEffect(() => {
+    const storageKey = `chromalum_theory_dev_scroll:${window.location.pathname}${window.location.hash}`;
+    const previousRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    // Restore after React has mounted the full page, before its first paint.
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      const y = saved === null ? null : Number(saved);
+      if (y !== null && Number.isFinite(y) && y >= 0) window.scrollTo(0, y);
+    } catch {
+      // The development page should still work when storage is blocked.
+    }
+
+    const savePosition = () => {
+      try {
+        sessionStorage.setItem(storageKey, String(window.scrollY));
+      } catch {
+        // Scroll persistence is best-effort.
+      }
+    };
+
+    window.addEventListener("scroll", savePosition, { passive: true });
+    window.addEventListener("pagehide", savePosition);
+    return () => {
+      // Also retain the current position when Vite refreshes this component.
+      savePosition();
+      window.removeEventListener("scroll", savePosition);
+      window.removeEventListener("pagehide", savePosition);
+      window.history.scrollRestoration = previousRestoration;
+    };
+  }, []);
+
   return (
     <main>
       <header style={S_DEV_HEADER}>

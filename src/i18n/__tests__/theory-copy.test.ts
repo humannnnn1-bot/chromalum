@@ -186,7 +186,7 @@ describe("Theory copy", () => {
     expect(en.theory_k8_desc).toContain("Klein four-group V₄");
     expect(en.theory_k8_desc).toContain("T1=B⊕T0={B,R,G,W}");
     expect(en.theory_k8_desc).toContain("unique nontrivial coset");
-    expect(en.theory_stella_annotation).toContain("Tet(T0) ∪ Tet(T1)");
+    expect(en.theory_stella_desc).toContain("Compounding them yields the Color Star (Stella Octangula)");
     expect(en.theory_octa_dual_desc).toContain("K₂,₂,₂");
     expect(en.theory_octa_dual_desc).toContain("2³=8");
     expect(en.theory_octa_dual_desc).toContain("face-adjacency graph of the octahedron is Q₃");
@@ -198,7 +198,7 @@ describe("Theory copy", () => {
     expect(ja.theory_k8_desc).toContain("クライン四群V₄");
     expect(ja.theory_k8_desc).toContain("T1=B⊕T0={B,R,G,W}");
     expect(ja.theory_k8_desc).toContain("剰余類");
-    expect(ja.theory_stella_annotation).toContain("Tet(T0) ∪ Tet(T1)");
+    expect(ja.theory_stella_desc).toContain("二つを複合すると、カラースター（星形八面体）が得られます");
     expect(ja.theory_octa_dual_desc).toContain("K₂,₂,₂");
     expect(ja.theory_octa_dual_desc).toContain("2³=8");
     expect(ja.theory_octa_dual_desc).toContain("面隣接グラフはQ₃");

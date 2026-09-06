@@ -251,17 +251,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
       return (i === 0 ? "M" : "L") + p.x.toFixed(1) + "," + p.y.toFixed(1);
     }).join(" ") + "Z";
 
-  const highlightedEdgeDetails =
-    hl === null
-      ? []
-      : hlEdges.map((edgeIndex) => {
-          const [a, b] = CUBE_EDGES[edgeIndex];
-          const other = a === hl ? b : a;
-          const mask = hl ^ other;
-          const channel = edgeChannel(hl, other);
-          return { other, mask, channel };
-        });
-
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
       <svg
@@ -378,7 +367,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           const ch = edgeChannel(e[0], e[1]);
           const chColor = CHANNEL_COLORS[ch];
           const isEqEdge = isEquator(e[0]) && isEquator(e[1]);
-          const edgeOpacity = mixActive ? 0.12 : dim ? 0.15 : active ? 0.9 : isEqEdge && equatorMode ? 0.6 : animT > 0.5 ? 0.55 : 0.4;
+          const edgeOpacity = mixActive ? 0.12 : dim ? 0.15 : active ? 0.9 : isEqEdge && equatorMode ? 0.6 : 0.55;
           return (
             <g key={"ce" + ei}>
               <line
@@ -386,7 +375,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 y1={p0.y}
                 x2={p1.x}
                 y2={p1.y}
-                stroke={active || animT > 0.5 ? chColor : C.textDimmer}
+                stroke={chColor}
                 strokeWidth={active ? 2 : 1}
                 strokeDasharray={back && !active && animT < 0.5 ? "3,3" : undefined}
                 opacity={edgeOpacity}
@@ -651,54 +640,39 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 y={p.y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={FS.md}
+                fontSize={FS.sm}
                 fontWeight={900}
                 fontFamily="var(--font-mono)"
                 fill={lv >= 4 ? "#000" : "#fff"}
-                opacity={labelOpacity * (1 - animT)}
+                opacity={labelOpacity}
               >
-                {lv}
+                {info.bits.join("")}
               </text>
-              {animT > 0 && (
-                <text
-                  x={p.x}
-                  y={p.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={FS.sm}
-                  fontWeight={900}
-                  fontFamily="var(--font-mono)"
-                  fill={lv >= 4 ? "#000" : "#fff"}
-                  opacity={labelOpacity * animT}
-                >
-                  {THEORY_LEVELS[lv].bits.join("")}
-                </text>
-              )}
             </g>
           );
         })}
       </svg>
 
-      <div
-        role={mixActive ? "status" : hl !== null ? "group" : undefined}
-        aria-label={mixActive ? t("theory_cube_mix_status_aria") : hl !== null ? t("theory_cube_xor_edge_aria") : undefined}
-        aria-live={mixActive ? "polite" : undefined}
-        data-testid={mixActive ? "cube-mix-status" : undefined}
-        style={{
-          minHeight: mixActive ? 38 : 28,
-          display: "flex",
-          flexDirection: mixActive ? "column" : "row",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: mixActive ? SP.xs : SP.lg,
-          flexWrap: "wrap",
-          fontFamily: FONT.mono,
-          fontSize: FS.xs,
-          textAlign: "center",
-        }}
-      >
-        {mixActive ? (
-          mixFormula !== null && mixBitFormula !== null ? (
+      {mixActive && (
+        <div
+          role="status"
+          aria-label={t("theory_cube_mix_status_aria")}
+          aria-live="polite"
+          data-testid="cube-mix-status"
+          style={{
+            minHeight: 38,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: SP.xs,
+            flexWrap: "wrap",
+            fontFamily: FONT.mono,
+            fontSize: FS.xs,
+            textAlign: "center",
+          }}
+        >
+          {mixFormula !== null && mixBitFormula !== null ? (
             <>
               <span style={{ color: C.textPrimary }}>
                 <span style={{ color: C.textMuted }}>
@@ -715,26 +689,9 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
             <span style={{ color: C.textDimmer }}>{t("theory_cube_mix_cmy_hint", rankedLabel(mixOperands[0]))}</span>
           ) : (
             <span style={{ color: C.textDimmer }}>{t("theory_cube_mix_hint")}</span>
-          )
-        ) : hl === null ? (
-          <span style={{ color: C.textDimmer }}>{t("theory_cube_xor_edge_hint")}</span>
-        ) : (
-          highlightedEdgeDetails.map(({ other, mask, channel }) => (
-            <span
-              key={other}
-              data-edge-mask={mask}
-              style={{
-                color: CHANNEL_COLORS[channel],
-                border: `1px solid ${CHANNEL_COLORS[channel]}`,
-                borderRadius: 3,
-                padding: "2px 4px",
-              }}
-            >
-              {THEORY_LEVELS[hl].bits.join("")}⊕{THEORY_LEVELS[other].bits.join("")}={THEORY_LEVELS[mask].bits.join("")} · {channel}
-            </span>
-          ))
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       <div
         style={{

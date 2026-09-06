@@ -1,21 +1,10 @@
 import React from "react";
 import { C, FS, FW } from "../../styles/tokens";
 import { useTranslation } from "../../i18n";
-import { COMPLEMENT_EDGES, CUBE_EDGES, STELLA_EDGES, TETRA_T0_EDGES } from "../../data/theory-data";
+import { COMPLEMENT_EDGES, CUBE_EDGES, K8_EXPLORER_POINTS, STELLA_EDGES, TETRA_T0_EDGES } from "../../data/theory-data";
 
 const COLOR_T0 = "#ffd36e";
 const COLOR_T1 = "#90c8ff";
-
-const VERTS: Record<number, [number, number]> = {
-  0: [74, 116],
-  1: [42, 95],
-  2: [138, 95],
-  3: [106, 74],
-  4: [74, 52],
-  5: [42, 30],
-  6: [138, 30],
-  7: [106, 10],
-};
 
 const LV_COLORS = ["#000", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00", "#fff"];
 
@@ -73,10 +62,10 @@ export const K8LayerGraph = React.memo(function K8LayerGraph({ layer, activeEdge
         return (
           <line
             key={`${a}-${b}-${i}`}
-            x1={VERTS[a][0]}
-            y1={VERTS[a][1]}
-            x2={VERTS[b][0]}
-            y2={VERTS[b][1]}
+            x1={K8_EXPLORER_POINTS[a].x}
+            y1={K8_EXPLORER_POINTS[a].y}
+            x2={K8_EXPLORER_POINTS[b].x}
+            y2={K8_EXPLORER_POINTS[b].y}
             stroke={edgeColor}
             strokeWidth={active ? 2.5 : 1.2}
             opacity={active ? 1 : 0.4}
@@ -87,7 +76,7 @@ export const K8LayerGraph = React.memo(function K8LayerGraph({ layer, activeEdge
       })}
 
       {[0, 1, 2, 3, 4, 5, 6, 7].map((lv) => {
-        const [x, y] = VERTS[lv];
+        const { x, y } = K8_EXPLORER_POINTS[lv];
         const active = activeEdgeIndex >= 0 && layerInfo?.edges[activeEdgeIndex]?.includes(lv);
         return (
           <g key={lv} filter={active ? "url(#k8-glow)" : undefined}>

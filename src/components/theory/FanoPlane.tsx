@@ -426,13 +426,13 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
                 y={p.y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={FS.lg}
+                fontSize={FS.md}
                 fontWeight={900}
                 fontFamily="var(--font-mono)"
                 fill={lv >= 4 ? "#000" : "#fff"}
                 opacity={dim ? 0.3 : 1}
               >
-                {lv}
+                {info.bits.join("")}
               </text>
               {completionRole && (
                 <text
@@ -450,28 +450,6 @@ export const FanoPlane = React.memo(function FanoPlane({ hlLevel, onHover }: Pro
             </g>
           );
         })}
-
-        {/* Bit labels under CMY points during animation */}
-        {isCmyAnimating &&
-          animT > 0.3 &&
-          [3, 5, 6].map((lv) => {
-            const p = getPos(lv);
-            const info = THEORY_LEVELS[lv];
-            return (
-              <text
-                key={"bl" + lv}
-                x={p.x}
-                y={Math.min(p.y + DOT_R + 14, 244)}
-                textAnchor="middle"
-                fontSize={FS.xs}
-                fontFamily="var(--font-mono)"
-                fill={info.color}
-                opacity={Math.min(1, (animT - 0.3) * 3)}
-              >
-                {info.bits.join("")}
-              </text>
-            );
-          })}
       </svg>
 
       {completionMode && (

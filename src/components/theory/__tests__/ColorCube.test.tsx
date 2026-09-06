@@ -25,7 +25,7 @@ describe("ColorCube", () => {
     const svg = screen.getByRole("img", { name: "Color Cube" });
     expect([...svg.querySelectorAll("text")].some((el) => ["R", "G", "B"].includes(el.textContent ?? ""))).toBe(false);
 
-    fireEvent.mouseEnter(screen.getByText("0").parentElement!);
+    fireEvent.mouseEnter(svg.querySelector('[data-level="0"]')!);
 
     expect([...svg.querySelectorAll("text")].some((el) => ["R", "G", "B"].includes(el.textContent ?? ""))).toBe(false);
 
@@ -45,15 +45,15 @@ describe("ColorCube", () => {
     expect(container.querySelector('[data-testid="cube-complement-0-7"]')).not.toBeNull();
   });
 
-  it("uses XOR difference masks to label the three primary-colored edges at a highlighted vertex", () => {
-    renderWithLanguage(1);
+  it("emphasizes the three primary-colored edges at a highlighted vertex without equation chips", () => {
+    const { container } = renderWithLanguage(1);
 
-    const edgeGroup = screen.getByRole("group", {
-      name: "XOR difference masks on the three edges incident to the highlighted cube vertex",
-    });
-    expect(edgeGroup.textContent).toContain("001⊕000=001 · B");
-    expect(edgeGroup.textContent).toContain("001⊕011=010 · R");
-    expect(edgeGroup.textContent).toContain("001⊕101=100 · G");
+    const svg = screen.getByRole("img", { name: "Color Cube" });
+    const highlightedEdges = [...svg.querySelectorAll('line[stroke-width="2"]')];
+    expect(highlightedEdges).toHaveLength(3);
+    expect(highlightedEdges.map((edge) => edge.getAttribute("stroke")).sort()).toEqual(["#0000ff", "#00ff00", "#ff0000"]);
+    expect(container.textContent).not.toContain("⊕");
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
   it("keeps the projection independently toggleable during mixing and locks the input family after the first selection", async () => {

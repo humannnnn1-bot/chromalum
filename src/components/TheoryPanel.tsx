@@ -17,6 +17,7 @@ import { PrimaryGeneration } from "./theory/PrimaryGeneration";
 import { ToggleActionTable } from "./theory/ToggleActionTable";
 import { TogglePatternBridge } from "./theory/TogglePatternBridge";
 import { StellaOctangula } from "./theory/StellaOctangula";
+import { TetraFaceDuality } from "./theory/TetraFaceDuality";
 import { ToneZigzag } from "./theory/ToneZigzag";
 import { OctahedronDual } from "./theory/OctahedronDual";
 import { ConnectionsSummary, ScopeSummary } from "./theory/ConnectionsSummary";
@@ -102,7 +103,7 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
   const [pinReset, setPinReset] = useState(0);
 
   const onBgClick = useCallback((event: React.MouseEvent) => {
-    if ((event.target as HTMLElement).closest("svg, button")) return;
+    if ((event.target as HTMLElement).closest("svg, button, select, label")) return;
     setHlLevel(null);
     setPinReset((count) => count + 1);
   }, []);
@@ -155,7 +156,10 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
           {/* Chapter 4 — toggle action, Hamming cube, and chromatic six-cycle */}
           <Section id="theory-cube-cycle" title={t("theory_action_title")} desc={t("theory_action_desc")}>
             <PrimaryGeneration mode="toggle" hlLevel={hlLevel} onHover={onHover} />
-            <Subsection title={t("theory_cube_title")} desc={[t("theory_cube_desc"), t("theory_cube_desc2"), t("theory_cube_mix_desc")]}>
+            <Subsection
+              title={t("theory_cube_title")}
+              desc={[t("theory_cube_desc"), t("theory_cube_faces_desc"), t("theory_cube_desc2"), t("theory_cube_mix_desc")]}
+            >
               <ColorCube hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
             <Subsection title={t("theory_gray_title")} desc={t("theory_gray_desc")}>
@@ -175,7 +179,7 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
             </Subsection>
             <Subsection
               title={t("theory_hamming_title")}
-              desc={[t("theory_hamming_bridge"), t("theory_hamming_desc"), t("theory_hamming_desc2")]}
+              desc={[t("theory_hamming_bridge"), t("theory_hamming_desc"), t("theory_hamming_desc2"), t("theory_hamming_faces_desc")]}
             >
               <HammingDiagram hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
@@ -185,8 +189,11 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           {/* Chapter 6 — K8 partitioned by Hamming distance */}
           <Section id="theory-k8" title={t("theory_k8_title")} desc={t("theory_k8_desc")}>
-            <Subsection title={t("theory_stella_title")} desc={t("theory_stella_desc")}>
+            <Subsection title={t("theory_stella_title")} desc={[t("theory_stella_desc"), t("theory_stella_faces_desc")]}>
               <StellaOctangula hlLevel={hlLevel} onHover={onHover} />
+            </Subsection>
+            <Subsection title={t("theory_stella_duality_title")} desc={t("theory_stella_duality_desc")}>
+              <TetraFaceDuality />
             </Subsection>
           </Section>
 
@@ -203,7 +210,10 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
             <Subsection title={t("theory_dice_title")} desc={[t("theory_dice_desc"), t("theory_dice_desc2"), t("theory_dice_views_desc")]}>
               <ColorDice hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
-            <Subsection title={t("theory_octa_dual_title")} desc={t("theory_octa_dual_desc")}>
+            <Subsection
+              title={t("theory_octa_dual_title")}
+              desc={[...splitParagraphs(t("theory_octa_dual_desc")), t("theory_octa_faces_desc")]}
+            >
               <OctahedronDual hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
           </Section>

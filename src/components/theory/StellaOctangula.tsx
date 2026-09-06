@@ -3,33 +3,28 @@ import {
   THEORY_LEVELS,
   CUBE_EDGES,
   STELLA_EDGES,
-  STELLA_FACES,
+  K8_EXPLORER_POINTS,
   COMPLEMENT_EDGES,
-  TETRA_T0,
-  TETRA_T1,
+  TETRA_T0_EDGES,
   hammingDist,
-  stellaEdgeChannels,
-  vertexRadius,
-  vertexDepth,
 } from "../../data/theory-data";
 import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
-import { VIEW_FRONT, type ViewData } from "./stella-geometry";
 
 const VW = 320; // single-view width
-const VR = 7;
+const VR = 6.3;
 const HIT_R = 14;
-
-const CH_COLORS: Record<string, string> = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
 
 /* ── K₈ edge color coding ── */
 const K8_Q3_COLOR = "#60aaff";
 const K8_STELLA_COLOR = "#ffaa60";
 const K8_M4_COLOR = "#ff6080";
+const STELLA_T0_COLOR = "#ffd36e";
+const STELLA_T1_COLOR = "#90c8ff";
 
-type ViewMode = "compound" | "t0" | "t1" | "k8";
+type ViewMode = "nodes" | "cube" | "stella" | "complement" | "k8";
 type ComparisonPair = [] | [number] | [number, number];
 
 interface Props {
@@ -40,14 +35,13 @@ interface Props {
 export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
   const [pinned, setPinned] = useState<number | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("compound");
-  const [showSurface, setShowSurface] = useState(false);
-  const [hlFace, setHlFace] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("stella");
   const [comparisonPair, setComparisonPair] = useState<ComparisonPair>([]);
+  const nodesOnly = viewMode === "nodes";
+  const distanceMode = nodesOnly ? "none" : viewMode === "cube" ? 1 : viewMode === "complement" ? 3 : viewMode === "k8" ? "all" : 2;
 
   const resetSelection = useCallback((_value: null) => {
     setPinned(null);
-    setHlFace(null);
     setComparisonPair([]);
   }, []);
   usePinReset(resetSelection);
@@ -62,27 +56,12 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
   const externalHl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : null;
   const hl = comparisonActive ? comparisonA : (externalHl ?? pinned);
 
-  const hlStellaEdgeSet = new Set<number>();
-  const hlFaceSet = new Set<number>();
-  let complementLv: number | null = null;
-
-  if (hl !== null) {
-    STELLA_EDGES.forEach(([a, b], ei) => {
-      if (a === hl || b === hl) hlStellaEdgeSet.add(ei);
-    });
-    STELLA_FACES.forEach((f, fi) => {
-      if (f.verts.includes(hl as number)) hlFaceSet.add(fi);
-    });
-    complementLv = hl ^ 7;
-  }
-
   const onEnter = useCallback((lv: number) => onHover(lv), [onHover]);
   const onLeave = useCallback(() => onHover(null), [onHover]);
   const onTap = useCallback(
     (lv: number) => {
       if (viewMode === "k8") {
         setPinned(null);
-        setHlFace(null);
         setComparisonPair((current) => {
           if (current.length === 0) return [lv];
           if (current.length === 1) return current[0] === lv ? [] : [current[0], lv];
@@ -104,7 +83,6 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
 
   const clearSelection = useCallback(() => {
     setPinned(null);
-    setHlFace(null);
     setComparisonPair([]);
     onHover(null);
   }, [onHover]);
@@ -113,27 +91,9 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     (nextMode: ViewMode) => {
       if (viewMode !== nextMode) clearSelection();
       setViewMode(nextMode);
-      setShowSurface(false);
     },
     [clearSelection, viewMode],
   );
-
-  const anyHl = hl !== null || hlFace !== null;
-
-  const hlFaceVertexSet = new Set<number>();
-  const hlFaceBoundaryEdgeSet = new Set<number>();
-  let hlFaceOppositeLv: number | null = null;
-  if (hlFace !== null) {
-    const activeFace = STELLA_FACES.find((f) => f.color === hlFace);
-    if (activeFace) {
-      for (const lv of activeFace.verts) hlFaceVertexSet.add(lv);
-      hlFaceVertexSet.add(activeFace.color);
-      hlFaceOppositeLv = activeFace.color;
-      STELLA_EDGES.forEach(([a, b], ei) => {
-        if (activeFace.verts.includes(a) && activeFace.verts.includes(b)) hlFaceBoundaryEdgeSet.add(ei);
-      });
-    }
-  }
 
   const hlQ3 = new Set<number>();
   const hlStella = new Set<number>();
@@ -150,27 +110,19 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     });
   }
 
-  /* ── Render helpers parameterized by view data ── */
+  const isDistanceTwo = distanceMode === 2;
 
-  const renderVertices = (
-    v: ViewData,
-    viewId: string,
-    levels: readonly number[] = THEORY_LEVELS.map(({ lv }) => lv),
-    isolatedTetrahedron = false,
-  ) =>
-    levels.map((lv) => {
-      const p = v.pts[lv];
-      const info = THEORY_LEVELS[lv];
-      const faceRelated = hlFaceVertexSet.has(lv);
+  const renderVertices = () =>
+    THEORY_LEVELS.map((info) => {
+      const lv = info.lv;
+      const p = K8_EXPLORER_POINTS[lv];
       const comparisonRole = comparisonActive && comparisonA === lv ? "a" : comparisonComplete && comparisonB === lv ? "b" : null;
-      const active = comparisonActive ? comparisonRole !== null : hl === lv || complementLv === lv || faceRelated;
-      const dim = comparisonActive ? !active : anyHl && !active;
-      const isComplement = !comparisonActive && complementLv === lv;
-      const isFaceOpposite = hlFaceOppositeLv === lv;
-      const t0 = TETRA_T0 as readonly number[];
-      const t1 = TETRA_T1 as readonly number[];
-      const sameTetra = !comparisonActive && hl !== null && ((t0.includes(hl) && t0.includes(lv)) || (t1.includes(hl) && t1.includes(lv)));
-      const neighbour = sameTetra && lv !== hl;
+      const neighbour =
+        !comparisonActive && hl !== null && lv !== hl && !nodesOnly && (distanceMode === "all" || hammingDist(hl, lv) === distanceMode);
+      const active = comparisonActive ? comparisonRole !== null : hl === lv || neighbour;
+      const dim = comparisonActive ? !active : hl !== null && !active;
+      const isComplement =
+        !comparisonActive && !nodesOnly && (distanceMode === 3 || distanceMode === "all") && hl !== null && (hl ^ 7) === lv;
       const vertexAriaLabel =
         comparisonRole === "a"
           ? t("theory_stella_compare_input_a_aria", info.short, lv, info.bits.join(""))
@@ -178,14 +130,11 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             ? t("theory_stella_compare_input_b_aria", info.short, lv, info.bits.join(""))
             : `${info.short} · ${lv} · ${info.bits.join("")}`;
 
-      const r = isolatedTetrahedron ? VR + 1 : vertexRadius(lv, VR);
-      const hitR = isolatedTetrahedron ? HIT_R : vertexRadius(lv, HIT_R);
-      const vDepth = vertexDepth(lv) / 3; // 0..1
-      const vOpacity = isolatedTetrahedron ? 0.88 : 0.25 + vDepth * 0.6; // [0.25, 0.85] in the compound
+      const r = VR;
 
       return (
         <g
-          key={`${viewId}-v-${lv}`}
+          key={`v-${lv}`}
           data-stella-vertex={lv}
           data-stella-dimmed={dim}
           data-stella-comparison-role={comparisonRole ?? undefined}
@@ -207,7 +156,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           style={S_CURSOR_POINTER}
         >
           <title>{`${info.short} · L${lv} · ${info.bits.join("")}`}</title>
-          <circle cx={p.x} cy={p.y} r={hitR} fill="transparent" />
+          <circle cx={p.x} cy={p.y} r={HIT_R} fill="transparent" />
           {neighbour && <circle cx={p.x} cy={p.y} r={r + 4} fill="none" stroke="#fff" strokeWidth={0.8} strokeOpacity={0.3} />}
           {comparisonRole && (
             <circle
@@ -225,24 +174,24 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             cy={p.y}
             r={r}
             fill={lv === 0 ? C.bgRoot : info.color}
-            fillOpacity={active ? 0.85 : dim ? 0.15 : vOpacity}
+            fillOpacity={dim ? 0.2 : 1}
             stroke={isComplement ? "#fff" : active ? "#fff" : lv === 0 ? "#666" : info.color}
             strokeWidth={active ? 2 : 1}
-            strokeOpacity={dim ? 0.2 : isolatedTetrahedron ? 0.9 : 0.3 + vDepth * 0.5}
-            strokeDasharray={isComplement || isFaceOpposite ? "3 2" : "none"}
+            strokeOpacity={dim ? 0.2 : 0.9}
+            strokeDasharray={isComplement ? "3 2" : "none"}
           />
           <text
             x={p.x}
             y={p.y}
             textAnchor="middle"
             dominantBaseline="central"
-            fontSize={FS.xs}
+            fontSize={5.4}
             fontFamily="var(--font-mono)"
             fontWeight={FW.bold}
-            fill={lv === 6 || lv === 7 ? "#000" : "#fff"}
-            opacity={dim ? 0.2 : isolatedTetrahedron ? 1 : 0.4 + vDepth * 0.5}
+            fill={dim ? C.textPrimary : lv >= 3 ? "#000" : "#fff"}
+            opacity={dim ? 0.3 : 1}
           >
-            {lv}
+            {info.bits.join("")}
           </text>
           {comparisonRole && (
             <text
@@ -261,366 +210,83 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       );
     });
 
-  const renderCompound = (v: ViewData, viewId: string, tetraFilter: 0 | 1 | null = null) => {
-    const visibleLevels = tetraFilter === 0 ? TETRA_T0 : tetraFilter === 1 ? TETRA_T1 : THEORY_LEVELS.map(({ lv }) => lv);
-    const visibleLevelSet = new Set<number>(visibleLevels);
-    const visibleFaces = tetraFilter === null ? v.sortedFaces : v.sortedFaces.filter((face) => face.tetra === tetraFilter);
-    const visibleEdges = STELLA_EDGES.map((edge, origIdx) => ({ edge, origIdx })).filter(
-      ({ edge: [a, b] }) => visibleLevelSet.has(a) && visibleLevelSet.has(b),
-    );
-
-    return (
-      <>
-        {/* Depth-gradient defs for faces */}
-        <defs>
-          {visibleFaces.map((sf) => {
-            const depths = sf.verts.map((vi) => ({ v: vi, d: vertexDepth(vi), p: v.pts[vi] }));
-            const minD = depths.reduce((a, b) => (a.d < b.d ? a : b));
-            const maxD = depths.reduce((a, b) => (a.d > b.d ? a : b));
-            if (minD.d === maxD.d) return null;
-            const info = THEORY_LEVELS[sf.color];
-            const color = sf.color === 0 ? "#333" : info.color;
-            const tetraScale = tetraFilter === null && sf.tetra === 1 ? 0.5 : 1;
-            const opMin = (0.03 + (minD.d / 3) * 0.22) * tetraScale;
-            const opMax = (0.03 + (maxD.d / 3) * 0.22) * tetraScale;
-            return (
-              <linearGradient
-                key={`${viewId}-fg-${sf.origIdx}`}
-                id={`${viewId}-fg-${sf.origIdx}`}
-                gradientUnits="userSpaceOnUse"
-                x1={minD.p.x}
-                y1={minD.p.y}
-                x2={maxD.p.x}
-                y2={maxD.p.y}
-              >
-                <stop offset="0%" stopColor={color} stopOpacity={opMin} />
-                <stop offset="100%" stopColor={color} stopOpacity={opMax} />
-              </linearGradient>
-            );
-          })}
-        </defs>
-        {visibleFaces.map((sf) => {
-          const lighting = v.faceLighting[sf.origIdx];
-          const faceActive = hlFace === sf.color || hlFaceSet.has(sf.origIdx);
-          const faceDim = anyHl && !faceActive;
-          const info = THEORY_LEVELS[sf.color];
-          const pts = sf.verts.map((vi) => `${v.pts[vi].x},${v.pts[vi].y}`).join(" ");
-          const p0 = v.pts[sf.verts[0]],
-            p1 = v.pts[sf.verts[1]],
-            p2 = v.pts[sf.verts[2]];
-          const ctr = { x: (p0.x + p1.x + p2.x) / 3, y: (p0.y + p1.y + p2.y) / 3 };
-          const depths = sf.verts.map((vi) => vertexDepth(vi));
-          const hasDepthDiff = Math.max(...depths) !== Math.min(...depths);
-          const tetraScale = tetraFilter === null && sf.tetra === 1 ? 0.5 : 1;
-          const baseOpacity = (0.04 + lighting.diffuse * 0.16) * tetraScale;
-          const baseStrokeOpacity = (0.1 + lighting.diffuse * 0.3) * tetraScale;
-          return (
-            <g
-              key={`${viewId}-f-${sf.origIdx}`}
-              data-stella-face={sf.color}
-              data-stella-tetra={sf.tetra === 0 ? "t0" : "t1"}
-              onMouseEnter={() => setHlFace(sf.color)}
-              onMouseLeave={() => setHlFace(null)}
-              style={{ cursor: "default" }}
-            >
-              <polygon points={pts} fill="transparent" />
-              <polygon
-                points={pts}
-                fill={faceActive || faceDim || !hasDepthDiff ? (sf.color === 0 ? "#333" : info.color) : `url(#${viewId}-fg-${sf.origIdx})`}
-                fillOpacity={faceActive ? 0.4 : faceDim ? 0.03 : hasDepthDiff ? 1 : baseOpacity}
-                stroke={sf.color === 0 ? "#666" : info.color}
-                strokeWidth={faceActive ? 1.5 : 0.5}
-                strokeOpacity={faceActive ? 0.8 : faceDim ? 0.06 : baseStrokeOpacity}
-                strokeLinejoin="round"
-              />
-              {/* Cross-body occlusion overlays */}
-              {tetraFilter === null &&
-                !faceActive &&
-                !faceDim &&
-                v.faceOcclusions[sf.origIdx].map((occ, oi) => (
-                  <polygon key={`occ-${oi}`} points={occ.clipPoints} fill="#000" fillOpacity={occ.dimAmount} stroke="none" />
-                ))}
-              {hlFace === sf.color && (
-                <text
-                  x={ctr.x}
-                  y={ctr.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fontSize={FS.xxs}
-                  fontFamily="var(--font-mono)"
-                  fontWeight={FW.bold}
-                  fill={sf.color === 0 || sf.color === 1 ? "#fff" : info.color}
-                  opacity={0.9}
-                >
-                  {sf.tetra === 0 ? "T0" : "T1"}: {info.lv}
-                </text>
-              )}
-            </g>
-          );
-        })}
-
-        {/* Stella edges — segment-based with cross-body occlusion */}
-        {visibleEdges.map(({ edge: [a, b], origIdx: ei }) => {
-          const active = hlStellaEdgeSet.has(ei) || hlFaceBoundaryEdgeSet.has(ei);
-          const dim = anyHl && !active;
-          const da = vertexDepth(a) / 3;
-          const db = vertexDepth(b) / 3;
-          const pa = v.pts[a],
-            pb = v.pts[b];
-          const edgeDx = pb.x - pa.x,
-            edgeDy = pb.y - pa.y;
-          const edgeLen = Math.sqrt(edgeDx * edgeDx + edgeDy * edgeDy) || 1;
-          const nx = -edgeDy / edgeLen,
-            ny = edgeDx / edgeLen;
-          const mx = (pa.x + pb.x) / 2,
-            my = (pa.y + pb.y) / 2;
-          const segments = tetraFilter === null ? v.edgeSegments[ei] : [{ t0: 0, t1: 1, hidden: false }];
-
-          return (
-            <g key={`${viewId}-e-${ei}`} data-stella-edge={`${a}-${b}`}>
-              {segments.map((seg, si) => {
-                const sx = pa.x + seg.t0 * edgeDx;
-                const sy = pa.y + seg.t0 * edgeDy;
-                const ex = pa.x + seg.t1 * edgeDx;
-                const ey = pa.y + seg.t1 * edgeDy;
-                const segDa = da + seg.t0 * (db - da);
-                const segDb = da + seg.t1 * (db - da);
-                const segAvgDepth = (segDa + segDb) / 2;
-
-                if (active) {
-                  return (
-                    <line
-                      key={si}
-                      x1={sx}
-                      y1={sy}
-                      x2={ex}
-                      y2={ey}
-                      stroke="#fff"
-                      strokeWidth={1.8}
-                      strokeDasharray={seg.hidden ? "2,3" : undefined}
-                      opacity={seg.hidden ? 0.3 : 0.85}
-                    />
-                  );
-                }
-
-                if (seg.hidden) {
-                  return (
-                    <line
-                      key={si}
-                      x1={sx}
-                      y1={sy}
-                      x2={ex}
-                      y2={ey}
-                      stroke={C.textDimmer}
-                      strokeWidth={0.4 + segAvgDepth * 0.6}
-                      strokeDasharray="4,4"
-                      opacity={dim ? 0.05 : 0.12}
-                    />
-                  );
-                }
-
-                // Visible segment with taper
-                const hwS = 0.2 + segDa * 0.7;
-                const hwE = 0.2 + segDb * 0.7;
-                const opS = 0.05 + segDa * 0.4;
-                const opE = 0.05 + segDb * 0.4;
-                const opAvg = (opS + opE) / 2;
-
-                if (Math.abs(segDa - segDb) > 0.01) {
-                  return (
-                    <polygon
-                      key={si}
-                      points={`${sx + nx * hwS},${sy + ny * hwS} ${ex + nx * hwE},${ey + ny * hwE} ${ex - nx * hwE},${ey - ny * hwE} ${sx - nx * hwS},${sy - ny * hwS}`}
-                      fill={C.textDimmer}
-                      fillOpacity={dim ? 0.05 : opAvg}
-                    />
-                  );
-                }
-                return (
-                  <line
-                    key={si}
-                    x1={sx}
-                    y1={sy}
-                    x2={ex}
-                    y2={ey}
-                    stroke={C.textDimmer}
-                    strokeWidth={0.4 + segAvgDepth * 1.4}
-                    opacity={dim ? 0.05 : opAvg}
-                  />
-                );
-              })}
-              {active &&
-                hl !== null &&
-                (() => {
-                  const chs = stellaEdgeChannels(a, b);
-                  const ox = nx * 10,
-                    oy = ny * 10;
-                  return (
-                    <text
-                      x={mx + ox}
-                      y={my + oy}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fontSize={FS.xxs}
-                      fontFamily="var(--font-mono)"
-                      fontWeight={FW.bold}
-                      opacity={0.85}
-                    >
-                      <tspan fill={CH_COLORS[chs[0]]}>{chs[0]}</tspan>
-                      <tspan fill="rgba(255,255,255,0.5)">+</tspan>
-                      <tspan fill={CH_COLORS[chs[1]]}>{chs[1]}</tspan>
-                    </text>
-                  );
-                })()}
-            </g>
-          );
-        })}
-
-        {/* Surface overlay (24 spike faces) */}
-        {tetraFilter === null &&
-          showSurface &&
-          v.surfaceFaces.map((sf, si) => {
-            if (!sf.isFront) return null;
-            const info = THEORY_LEVELS[sf.color];
-            const pts = sf.verts2D.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
-            const depthNorm = sf.depth / 3;
-            const tetraScale = sf.tetra === 1 ? 0.5 : 1;
-            const fillOp = (0.08 + depthNorm * 0.22) * tetraScale;
-            const strokeOp = (0.15 + depthNorm * 0.35) * tetraScale;
-            const tipActive = hl === sf.tipVertex;
-            const dim = anyHl && !tipActive;
-            return (
-              <polygon
-                key={`${viewId}-sf-${si}`}
-                points={pts}
-                fill={sf.color === 0 ? "#333" : info.color}
-                fillOpacity={dim ? 0.02 : tipActive ? 0.35 : fillOp}
-                stroke={sf.color === 0 ? "#666" : info.color}
-                strokeWidth={tipActive ? 1.2 : 0.6}
-                strokeOpacity={dim ? 0.05 : tipActive ? 0.7 : strokeOp}
-                strokeLinejoin="round"
-              />
-            );
-          })}
-
-        {tetraFilter === null &&
-          showSurface &&
-          v.surfaceRidgeEdges.map((edge, i) => {
-            const depthNorm = edge.depth / 3;
-            return (
-              <line
-                key={`${viewId}-ridge-${i}`}
-                x1={edge.from.x}
-                y1={edge.from.y}
-                x2={edge.to.x}
-                y2={edge.to.y}
-                stroke="rgba(255,255,255,0.75)"
-                strokeWidth={0.45 + depthNorm * 0.9}
-                opacity={edge.isFront ? 0.42 + depthNorm * 0.22 : 0.16}
-              />
-            );
-          })}
-
-        {tetraFilter === null &&
-          showSurface &&
-          v.silhouetteEdges.map((edge, i) => (
-            <line
-              key={`${viewId}-sil-${i}`}
-              x1={edge.from.x}
-              y1={edge.from.y}
-              x2={edge.to.x}
-              y2={edge.to.y}
-              stroke="rgba(255,255,255,0.7)"
-              strokeWidth={1}
-              opacity={0.3}
-            />
-          ))}
-
-        {renderVertices(v, viewId, visibleLevels, tetraFilter !== null)}
-      </>
-    );
-  };
-
   const isComparedEdge = (a: number, b: number) =>
     comparisonComplete &&
     comparisonA !== null &&
     comparisonB !== null &&
     ((a === comparisonA && b === comparisonB) || (a === comparisonB && b === comparisonA));
 
-  const renderK8 = (v: ViewData, viewId: string) => (
+  const renderGraph = () => (
     <>
-      {CUBE_EDGES.map(([a, b], i) => {
-        const compared = isComparedEdge(a, b);
-        const active = comparisonComplete ? compared : hlQ3.has(i);
-        const dim = comparisonComplete ? !compared : hl !== null && !active;
-        return (
-          <line
-            key={`${viewId}-q3-${i}`}
-            data-k8-edge={`${a}-${b}`}
-            data-k8-distance="1"
-            data-k8-edge-active={active}
-            x1={v.pts[a].x}
-            y1={v.pts[a].y}
-            x2={v.pts[b].x}
-            y2={v.pts[b].y}
-            stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_Q3_COLOR}
-            strokeWidth={compared ? 3.5 : active ? 2 : 1}
-            opacity={dim ? 0.1 : active ? 0.9 : 0.4}
-          />
-        );
-      })}
-      {STELLA_EDGES.map(([a, b], i) => {
-        const compared = isComparedEdge(a, b);
-        const active = comparisonComplete ? compared : hlStella.has(i);
-        const dim = comparisonComplete ? !compared : hl !== null && !active;
-        return (
-          <line
-            key={`${viewId}-st-${i}`}
-            data-k8-edge={`${a}-${b}`}
-            data-k8-distance="2"
-            data-k8-edge-active={active}
-            x1={v.pts[a].x}
-            y1={v.pts[a].y}
-            x2={v.pts[b].x}
-            y2={v.pts[b].y}
-            stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_STELLA_COLOR}
-            strokeWidth={compared ? 3.5 : active ? 2.2 : 1.2}
-            strokeDasharray="5,3"
-            opacity={dim ? 0.1 : active ? 0.9 : 0.35}
-          />
-        );
-      })}
-      {COMPLEMENT_EDGES.map(([a, b], i) => {
-        const compared = isComparedEdge(a, b);
-        const active = comparisonComplete ? compared : hlM4.has(i);
-        const dim = comparisonComplete ? !compared : hl !== null && !active;
-        return (
-          <line
-            key={`${viewId}-m4-${i}`}
-            data-k8-edge={`${a}-${b}`}
-            data-k8-distance="3"
-            data-k8-edge-active={active}
-            x1={v.pts[a].x}
-            y1={v.pts[a].y}
-            x2={v.pts[b].x}
-            y2={v.pts[b].y}
-            stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_M4_COLOR}
-            strokeWidth={compared ? 3.5 : active ? 2.5 : 1.5}
-            strokeDasharray="2,4"
-            opacity={dim ? 0.1 : active ? 0.9 : 0.3}
-          />
-        );
-      })}
-      {renderVertices(v, viewId)}
+      {(distanceMode === "all" || distanceMode === 1) &&
+        CUBE_EDGES.map(([a, b], i) => {
+          const compared = isComparedEdge(a, b);
+          const active = comparisonComplete ? compared : hlQ3.has(i);
+          const dim = comparisonComplete ? !compared : hl !== null && !active;
+          return (
+            <line
+              key={`q3-${i}`}
+              data-k8-edge={`${a}-${b}`}
+              data-k8-distance="1"
+              data-k8-edge-active={active}
+              x1={K8_EXPLORER_POINTS[a].x}
+              y1={K8_EXPLORER_POINTS[a].y}
+              x2={K8_EXPLORER_POINTS[b].x}
+              y2={K8_EXPLORER_POINTS[b].y}
+              stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_Q3_COLOR}
+              strokeWidth={compared ? 3.5 : active ? 2 : distanceMode === 1 ? 1.5 : 1}
+              opacity={dim ? 0.1 : active ? 0.9 : distanceMode === 1 ? 0.75 : 0.4}
+            />
+          );
+        })}
+      {(distanceMode === "all" || distanceMode === 2) &&
+        STELLA_EDGES.map(([a, b], i) => {
+          const compared = isComparedEdge(a, b);
+          const active = comparisonComplete ? compared : hlStella.has(i);
+          const dim = comparisonComplete ? !compared : hl !== null && !active;
+          const edgeColor = isDistanceTwo ? (i < TETRA_T0_EDGES.length ? STELLA_T0_COLOR : STELLA_T1_COLOR) : K8_STELLA_COLOR;
+          return (
+            <line
+              key={`st-${i}`}
+              data-k8-edge={`${a}-${b}`}
+              data-k8-distance="2"
+              data-k8-edge-active={active}
+              x1={K8_EXPLORER_POINTS[a].x}
+              y1={K8_EXPLORER_POINTS[a].y}
+              x2={K8_EXPLORER_POINTS[b].x}
+              y2={K8_EXPLORER_POINTS[b].y}
+              stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : edgeColor}
+              strokeWidth={compared ? 3.5 : active ? 2.2 : isDistanceTwo ? 1.5 : 1.2}
+              strokeDasharray={isDistanceTwo ? undefined : "5,3"}
+              opacity={dim ? 0.1 : active ? 0.9 : isDistanceTwo ? 0.75 : 0.35}
+            />
+          );
+        })}
+      {(distanceMode === "all" || distanceMode === 3) &&
+        COMPLEMENT_EDGES.map(([a, b], i) => {
+          const compared = isComparedEdge(a, b);
+          const active = comparisonComplete ? compared : hlM4.has(i);
+          const dim = comparisonComplete ? !compared : hl !== null && !active;
+          return (
+            <line
+              key={`m4-${i}`}
+              data-k8-edge={`${a}-${b}`}
+              data-k8-distance="3"
+              data-k8-edge-active={active}
+              x1={K8_EXPLORER_POINTS[a].x}
+              y1={K8_EXPLORER_POINTS[a].y}
+              x2={K8_EXPLORER_POINTS[b].x}
+              y2={K8_EXPLORER_POINTS[b].y}
+              stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_M4_COLOR}
+              strokeWidth={compared ? 3.5 : active ? 2.5 : 1.5}
+              strokeDasharray={distanceMode === 3 ? undefined : "2,4"}
+              opacity={dim ? 0.1 : active ? 0.9 : distanceMode === 3 ? 0.8 : 0.3}
+            />
+          );
+        })}
+      {renderVertices()}
     </>
   );
-
-  const renderSelectedView = (v: ViewData, viewId: string) => {
-    if (viewMode === "k8") return renderK8(v, viewId);
-    if (viewMode === "t0") return renderCompound(v, viewId, 0);
-    if (viewMode === "t1") return renderCompound(v, viewId, 1);
-    return renderCompound(v, viewId);
-  };
 
   const comparisonParityA = comparisonA !== null ? hammingDist(0, comparisonA) % 2 : null;
   const comparisonParityB = comparisonB !== null ? hammingDist(0, comparisonB) % 2 : null;
@@ -640,26 +306,23 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
         if (event.key === "Escape" && comparisonPair.length > 0) clearSelection();
       }}
     >
-      <div style={{ display: "flex", justifyContent: "center" }}>
+      <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
         <svg
           id="theory-stella-view"
           data-stella-mode={viewMode}
-          viewBox="40 45 220 180"
+          data-stella-distance={distanceMode}
+          viewBox="12 -12 156 148"
           style={{ width: "100%", maxWidth: VW }}
           role="group"
           aria-label={t("theory_stella_title")}
         >
-          {renderSelectedView(VIEW_FRONT, "f")}
+          {renderGraph()}
         </svg>
       </div>
 
       {/* Annotation below SVG — fixed height to prevent layout shift on mode toggle */}
       <div style={{ minHeight: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {viewMode === "compound" ? (
-          <p style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}>
-            {showSurface ? t("theory_stella_surface_annotation") : t("theory_stella_annotation")}
-          </p>
-        ) : viewMode === "k8" ? (
+        {viewMode === "k8" ? (
           <div style={{ textAlign: "center" }}>
             <p style={{ fontSize: FS.xxs, fontFamily: FONT.mono, margin: 0 }}>
               <span style={{ color: K8_Q3_COLOR }}>Q&#x2083;(12)</span>
@@ -671,11 +334,54 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             </p>
             <p style={{ fontSize: FS.xxs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0 }}>{t("theory_stella_k8_degree")}</p>
           </div>
+        ) : nodesOnly ? (
+          <p style={{ fontSize: FS.lg, fontFamily: FONT.mono, color: C.textMuted, margin: 0, textAlign: "center" }}>
+            {t("theory_stella_nodes_annotation")}
+          </p>
         ) : (
-          <p style={{ fontSize: FS.xs, fontFamily: FONT.mono, color: C.textDimmer, margin: 0, textAlign: "center" }}>
-            {t(viewMode === "t0" ? "theory_stella_t0_annotation" : "theory_stella_t1_annotation")}
+          <p style={{ fontSize: FS.lg, fontFamily: FONT.mono, color: C.textMuted, margin: 0, textAlign: "center" }}>
+            {t(
+              viewMode === "cube"
+                ? "theory_stella_distance_1_annotation"
+                : viewMode === "stella"
+                  ? "theory_stella_distance_2_annotation"
+                  : "theory_stella_distance_3_annotation",
+            )}
           </p>
         )}
+      </div>
+
+      <div
+        role="group"
+        aria-label={t("theory_stella_distance_modes")}
+        style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: SP.md }}
+      >
+        {(
+          [
+            { mode: "nodes", label: "theory_stella_nodes", color: C.accentBright },
+            { mode: "cube", label: "theory_stella_distance_1", color: K8_Q3_COLOR },
+            { mode: "stella", label: "theory_stella_distance_2", color: K8_STELLA_COLOR },
+            { mode: "complement", label: "theory_stella_distance_3", color: K8_M4_COLOR },
+            { mode: "k8", label: "theory_stella_distance_all", color: C.accentBright },
+          ] as const
+        ).map(({ mode, label, color }) => (
+          <button
+            key={mode}
+            className="theory-annotation theory-diagram-button"
+            type="button"
+            aria-controls="theory-stella-view"
+            aria-pressed={viewMode === mode}
+            onClick={() => selectViewMode(mode)}
+            style={{
+              ...S_BTN,
+              whiteSpace: "nowrap",
+              borderColor: viewMode === mode ? color : C.border,
+              color: viewMode === mode ? color : C.textMuted,
+            }}
+          >
+            {t(label)}
+          </button>
+        ))}
       </div>
 
       {viewMode === "k8" && (
@@ -709,93 +415,6 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           )}
         </div>
       )}
-
-      {/* Toggle buttons */}
-      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: SP.md }}>
-        <button
-          className="theory-annotation theory-diagram-button"
-          style={{
-            ...S_BTN,
-            borderColor: viewMode === "compound" && !showSurface ? C.accentBright : C.border,
-            color: viewMode === "compound" && !showSurface ? C.accentBright : C.textMuted,
-          }}
-          type="button"
-          aria-controls="theory-stella-view"
-          aria-pressed={viewMode === "compound" && !showSurface}
-          onClick={() => {
-            if (viewMode !== "compound") clearSelection();
-            setViewMode("compound");
-            setShowSurface(false);
-          }}
-        >
-          {t("theory_stella_compound")}
-        </button>
-        <button
-          className="theory-annotation theory-diagram-button"
-          style={{
-            ...S_BTN,
-            borderColor: viewMode === "t0" ? C.accentBright : C.border,
-            color: viewMode === "t0" ? C.accentBright : C.textMuted,
-          }}
-          type="button"
-          aria-controls="theory-stella-view"
-          aria-pressed={viewMode === "t0"}
-          onClick={() => selectViewMode("t0")}
-        >
-          {t("theory_stella_t0")}
-        </button>
-        <button
-          className="theory-annotation theory-diagram-button"
-          style={{
-            ...S_BTN,
-            borderColor: viewMode === "t1" ? C.accentBright : C.border,
-            color: viewMode === "t1" ? C.accentBright : C.textMuted,
-          }}
-          type="button"
-          aria-controls="theory-stella-view"
-          aria-pressed={viewMode === "t1"}
-          onClick={() => selectViewMode("t1")}
-        >
-          {t("theory_stella_t1")}
-        </button>
-        <button
-          className="theory-annotation theory-diagram-button"
-          style={{
-            ...S_BTN,
-            borderColor: showSurface && viewMode === "compound" ? C.accentBright : C.border,
-            color: showSurface && viewMode === "compound" ? C.accentBright : C.textMuted,
-            opacity: viewMode === "compound" ? 1 : 0.4,
-          }}
-          type="button"
-          aria-controls="theory-stella-view"
-          aria-pressed={viewMode === "compound" && showSurface}
-          onClick={() => {
-            setViewMode("compound");
-            if (viewMode !== "compound") {
-              clearSelection();
-              setShowSurface(true);
-            } else {
-              setShowSurface((v) => !v);
-            }
-          }}
-        >
-          {t("theory_stella_surface")}
-        </button>
-        <button
-          className="theory-annotation theory-diagram-button"
-          style={{
-            ...S_BTN,
-            borderColor: viewMode === "k8" ? C.accentBright : C.border,
-            color: viewMode === "k8" ? C.accentBright : C.textMuted,
-          }}
-          type="button"
-          aria-controls="theory-stella-view"
-          aria-pressed={viewMode === "k8"}
-          onClick={() => selectViewMode("k8")}
-        >
-          {t("theory_stella_k8")}
-        </button>
-      </div>
     </div>
   );
 });

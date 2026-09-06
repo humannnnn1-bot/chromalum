@@ -546,6 +546,8 @@ N_d = 8*C(3,d)/2
 
 であり、`N_1=12`, `N_2=12`, `N_3=4`、したがって `12+12+4=28=C(8,2)` を得る。
 
+立方体の面とテトラの頂点集合に共通する四点XOR、多数決によるテトラの面–頂点双対、八面体の混色・Fano対応、およびHamming検査面の導出は、[多面体の面と3ビット演算](./polyhedral-face-algebra.md)にまとめる。同ノート後半の14アフィン平面と拡張Hamming符号は研究上の発展として扱う。
+
 ## Historical and Continuous Representation Layer
 
 ### Historical 3-Bit Palette Code Prior Art

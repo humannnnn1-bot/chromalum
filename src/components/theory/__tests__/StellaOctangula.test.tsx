@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../../../i18n";
+import { K8_EXPLORER_POINTS } from "../../../data/theory-data";
 import { StellaOctangula } from "../StellaOctangula";
 
 function renderStella() {
@@ -47,89 +48,116 @@ function visibleLevels(container: HTMLElement): number[] {
   );
 }
 
-function visibleEdges(container: HTMLElement): string[] {
-  return [...container.querySelectorAll<SVGGElement>("[data-stella-edge]")].map((edge) => edge.getAttribute("data-stella-edge") ?? "");
-}
-
 describe("StellaOctangula", () => {
-  it("adds isolated T0 and T1 modes without changing the compound, surface, or K8 controls", () => {
+  it("switches between the three disjoint distance layers and all 28 pairs", () => {
     const { container } = renderStella();
     const diagram = screen.getByRole("group", { name: "Color Tetrahedra and Color Star" });
-
-    expect(diagram.getAttribute("data-stella-mode")).toBe("compound");
+    const partition = new Set<string>();
+    const vertexPositions = () =>
+      [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map((circle) => [
+        circle.getAttribute("cx"),
+        circle.getAttribute("cy"),
+      ]);
+    const originalPositions = vertexPositions();
+    expect(originalPositions).toEqual(Object.values(K8_EXPLORER_POINTS).map(({ x, y }) => [String(x), String(y)]));
+    fireEvent.click(screen.getByRole("button", { name: "Nodes only" }));
+    expect(diagram.getAttribute("data-stella-mode")).toBe("nodes");
     expect(visibleLevels(container)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-    expect(visibleEdges(container)).toHaveLength(12);
-    expect(container.querySelectorAll("[data-stella-face]")).toHaveLength(8);
+    expect(vertexPositions()).toEqual(originalPositions);
+    expect(diagram.querySelectorAll("line, polygon, path")).toHaveLength(0);
 
-    fireEvent.click(screen.getByRole("button", { name: /T0/i }));
-    expect(diagram.getAttribute("data-stella-mode")).toBe("t0");
-    expect(visibleLevels(container)).toEqual([0, 3, 5, 6]);
-    expect(visibleEdges(container)).toEqual(["0-3", "0-5", "0-6", "3-5", "3-6", "5-6"]);
-    expect(container.querySelectorAll('[data-stella-face][data-stella-tetra="t0"]')).toHaveLength(4);
-    expect(container.querySelectorAll('[data-stella-face][data-stella-tetra="t1"]')).toHaveLength(0);
+    for (const [distance, count] of [
+      [1, 12],
+      [2, 12],
+      [3, 4],
+    ]) {
+      const button = screen.getByRole("button", { name: new RegExp(`Distance ${distance}`) });
+      fireEvent.click(button);
+      expect(button.getAttribute("aria-pressed")).toBe("true");
+      expect(diagram.getAttribute("data-stella-distance")).toBe(String(distance));
+      expect(visibleLevels(container)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+      expect(vertexPositions()).toEqual(originalPositions);
 
-    fireEvent.click(screen.getByRole("button", { name: /T1/i }));
-    expect(diagram.getAttribute("data-stella-mode")).toBe("t1");
-    expect(visibleLevels(container)).toEqual([1, 2, 4, 7]);
-    expect(visibleEdges(container)).toEqual(["1-2", "1-4", "1-7", "2-4", "2-7", "4-7"]);
-    expect(container.querySelectorAll('[data-stella-face][data-stella-tetra="t0"]')).toHaveLength(0);
-    expect(container.querySelectorAll('[data-stella-face][data-stella-tetra="t1"]')).toHaveLength(4);
-
-    fireEvent.click(screen.getByRole("button", { name: "Surface" }));
-    expect(diagram.getAttribute("data-stella-mode")).toBe("compound");
-    expect(screen.getByRole("button", { name: "Surface" }).getAttribute("aria-pressed")).toBe("true");
-
-    fireEvent.click(screen.getByRole("button", { name: "K₈" }));
-    expect(diagram.getAttribute("data-stella-mode")).toBe("k8");
-    expect(visibleLevels(container)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-
-    fireEvent.click(screen.getByRole("button", { name: "Compound" }));
-    expect(diagram.getAttribute("data-stella-mode")).toBe("compound");
-    expect(visibleEdges(container)).toHaveLength(12);
-  });
-
-  it("keeps isolated tetrahedron vertices hoverable, pinnable, and keyboard operable", async () => {
-    const { onHover } = renderStella();
-
-    fireEvent.click(screen.getByRole("button", { name: /T0/i }));
-    const black = screen.getByRole("button", { name: "K · 0 · 000" });
-
-    fireEvent.mouseEnter(black);
-    expect(onHover).toHaveBeenLastCalledWith(0);
-    fireEvent.mouseLeave(black);
-    expect(onHover).toHaveBeenLastCalledWith(null);
-
-    fireEvent.focus(black);
-    expect(onHover).toHaveBeenLastCalledWith(0);
-    fireEvent.blur(black);
-    expect(onHover).toHaveBeenLastCalledWith(null);
-
-    fireEvent.click(black);
-    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(0));
-    expect(black.getAttribute("aria-pressed")).toBe("true");
-
-    fireEvent.keyDown(black, { key: " " });
-    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(null));
-    expect(black.getAttribute("aria-pressed")).toBe("false");
-  });
-
-  it("clears a pinned and shared highlight before switching to the other tetrahedron", async () => {
-    const { container, onHover } = renderControlledStella();
-
-    fireEvent.click(screen.getByRole("button", { name: /T0/i }));
-    fireEvent.click(screen.getByRole("button", { name: "K · 0 · 000" }));
-    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(0));
-    expect(screen.getByRole("button", { name: "K · 0 · 000" }).getAttribute("aria-pressed")).toBe("true");
-
-    fireEvent.click(screen.getByRole("button", { name: /T1/i }));
-    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(null));
-    expect(visibleLevels(container)).toEqual([1, 2, 4, 7]);
-    for (const vertex of container.querySelectorAll("[data-stella-vertex]")) {
-      expect(vertex.getAttribute("data-stella-dimmed")).toBe("false");
+      const edges = [...container.querySelectorAll("[data-k8-edge], [data-stella-edge]")];
+      expect(edges).toHaveLength(count);
+      for (const edge of edges) {
+        const pair = edge.getAttribute("data-k8-edge") ?? edge.getAttribute("data-stella-edge")!;
+        const [a, b] = pair.split("-").map(Number);
+        expect((a ^ b).toString(2).replace(/0/g, "")).toHaveLength(distance);
+        expect(partition.has(pair)).toBe(false);
+        partition.add(pair);
+      }
+      expect(container.querySelectorAll("[data-stella-face], polygon")).toHaveLength(0);
     }
 
-    fireEvent.click(screen.getByRole("button", { name: /T0/i }));
-    expect(screen.getByRole("button", { name: "K · 0 · 000" }).getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(screen.getByRole("button", { name: /All.*28 edges/ }));
+    expect(diagram.getAttribute("data-stella-distance")).toBe("all");
+    expect(vertexPositions()).toEqual(originalPositions);
+    const allPairs = [...container.querySelectorAll("[data-k8-edge]")].map((edge) => edge.getAttribute("data-k8-edge"));
+    expect(allPairs).toHaveLength(28);
+    expect(new Set(allPairs)).toEqual(partition);
+    fireEvent.click(screen.getByRole("button", { name: "Nodes only" }));
+    expect(diagram.querySelectorAll("line, polygon, path")).toHaveLength(0);
+    expect(vertexPositions()).toEqual(originalPositions);
+  });
+
+  it("clears comparisons and pinned highlights when the distance mode changes", async () => {
+    const { container, onHover } = renderControlledStella();
+    fireEvent.click(screen.getByRole("button", { name: /All.*28 edges/ }));
+    fireEvent.click(screen.getByRole("button", { name: "K · 0 · 000" }));
+    fireEvent.click(screen.getByRole("button", { name: "W · 7 · 111" }));
+    expect(container.querySelectorAll("[data-stella-comparison-role]")).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole("button", { name: /Distance 1/ }));
+    expect(container.querySelector("[data-stella-comparison-role]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "K · 0 · 000" }));
+    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(0));
+    expect(container.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(3);
+    expect(container.querySelector('[data-stella-vertex="7"]')?.getAttribute("data-stella-dimmed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: /Distance 2/ }));
+    fireEvent.click(screen.getByRole("button", { name: "K · 0 · 000" }));
+    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(0));
+    expect(container.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(3);
+    expect(container.querySelector('[data-stella-vertex="7"]')?.getAttribute("data-stella-dimmed")).toBe("true");
+
+    fireEvent.click(screen.getByRole("button", { name: /Distance 3/ }));
+    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(null));
+    expect(container.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-stella-dimmed="true"]')).toHaveLength(0);
+    fireEvent.keyDown(screen.getByRole("button", { name: "K · 0 · 000" }), { key: "Enter" });
+    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(0));
+    expect(container.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(1);
+    expect(container.querySelector('[data-stella-vertex="7"]')?.getAttribute("data-stella-dimmed")).toBe("false");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nodes only" }));
+    expect(container.querySelectorAll('[data-stella-dimmed="true"]')).toHaveLength(0);
+    fireEvent.keyDown(screen.getByRole("button", { name: "K · 0 · 000" }), { key: "Enter" });
+    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(0));
+    expect(container.querySelectorAll('[data-stella-dimmed="false"]')).toHaveLength(1);
+    expect(container.querySelectorAll("line, polygon, path")).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: /All.*28 edges/ }));
+    expect(screen.getByTestId("stella-comparison-status").textContent).toBe("Select an anchor vertex in K₈");
+  });
+
+  it("combines the two tetrahedra as colored edges in the default distance-2 mode", () => {
+    const { container } = renderStella();
+    const diagram = screen.getByRole("group", { name: "Color Tetrahedra and Color Star" });
+    const controls = screen.getByRole("group", { name: "Select the graph display" });
+    expect([...controls.querySelectorAll("button")].map((button) => button.textContent)).toEqual([
+      "Nodes only",
+      "Distance 1 · 12 edges",
+      "Distance 2 · 12 edges",
+      "Distance 3 · 4 edges",
+      "All · 28 edges",
+    ]);
+    expect(diagram.getAttribute("data-stella-mode")).toBe("stella");
+    expect(screen.getByRole("button", { name: "Distance 2 · 12 edges" }).getAttribute("aria-pressed")).toBe("true");
+    expect(visibleLevels(container)).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    expect(diagram.querySelectorAll("polygon, path")).toHaveLength(0);
+    expect(diagram.querySelectorAll('[data-k8-distance="2"][stroke="#ffd36e"]')).toHaveLength(6);
+    expect(diagram.querySelectorAll('[data-k8-distance="2"][stroke="#90c8ff"]')).toHaveLength(6);
   });
 
   it.each([
@@ -138,7 +166,7 @@ describe("StellaOctangula", () => {
     { a: "R · 2 · 010", b: "C · 5 · 101", edge: "2-5", maskBits: "111", distance: "3", label: "distance 3" },
   ])("compares a directly selected K8 pair at $label", ({ a, b, edge, maskBits, distance, label }) => {
     const { container } = renderStella();
-    fireEvent.click(screen.getByRole("button", { name: "K₈" }));
+    fireEvent.click(screen.getByRole("button", { name: /All.*28 edges/ }));
 
     fireEvent.click(screen.getByRole("button", { name: a }));
     fireEvent.click(screen.getByRole("button", { name: b }));
@@ -153,7 +181,7 @@ describe("StellaOctangula", () => {
 
   it("keeps the K8 anchor while replacing the target and clears the comparison on Escape", () => {
     const { container } = renderStella();
-    fireEvent.click(screen.getByRole("button", { name: "K₈" }));
+    fireEvent.click(screen.getByRole("button", { name: /All.*28 edges/ }));
     fireEvent.click(screen.getByRole("button", { name: "R · 2 · 010" }));
     fireEvent.click(screen.getByRole("button", { name: "C · 5 · 101" }));
 

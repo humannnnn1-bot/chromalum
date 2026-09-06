@@ -10,6 +10,11 @@ interface Props {
   onHover: (lv: number | null) => void;
 }
 
+interface Selection {
+  readonly lv: number;
+  readonly isFace: boolean;
+}
+
 interface Point2D {
   readonly x: number;
   readonly y: number;
@@ -107,36 +112,56 @@ function handleKeyDown(event: React.KeyboardEvent<SVGGElement>, lv: number, onTa
 
 export const OctahedronDual = React.memo(function OctahedronDual({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
-  const [pinned, setPinned] = useState<number | null>(null);
-  usePinReset(setPinned);
+  const [pinned, setPinned] = useState<Selection | null>(null);
+  const [hoveredFace, setHoveredFace] = useState<number | null>(null);
+  const resetSelection = useCallback((_value: null) => {
+    setPinned(null);
+    setHoveredFace(null);
+  }, []);
+  usePinReset(resetSelection);
 
-  const hl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : pinned;
+  const hl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : (pinned?.lv ?? null);
   const complement = hl !== null && hl >= 1 && hl <= 6 ? hl ^ 7 : null;
+  const faceLevel = hoveredFace ?? (pinned?.isFace ? pinned.lv : null);
+  const selectedFace = faceLevel !== null && faceLevel === hl ? OCTA_FACES.find((face) => face.color === faceLevel) : undefined;
+  const primaryInputs = selectedFace?.verts.filter((lv) => lv === 1 || lv === 2 || lv === 4) ?? [];
+  const isJoin = primaryInputs.length >= 2;
+  const mixingInputs = isJoin ? primaryInputs : (selectedFace?.verts.filter((lv) => lv === 3 || lv === 5 || lv === 6) ?? []);
+  const faceXor = selectedFace ? selectedFace.verts[0] ^ selectedFace.verts[1] ^ selectedFace.verts[2] : null;
 
-  const enter = useCallback((lv: number) => onHover(lv), [onHover]);
-  const leave = useCallback(() => onHover(null), [onHover]);
+  const enter = useCallback(
+    (lv: number, isFace: boolean) => {
+      setHoveredFace(isFace ? lv : null);
+      onHover(lv);
+    },
+    [onHover],
+  );
+  const leave = useCallback(() => {
+    setHoveredFace(null);
+    onHover(null);
+  }, [onHover]);
   const tap = useCallback(
-    (lv: number) => {
+    (lv: number, isFace: boolean) => {
       setPinned((previous) => {
-        const next = previous === lv ? null : lv;
-        queueMicrotask(() => onHover(next));
+        const next = previous?.lv === lv && previous.isFace === isFace ? null : { lv, isFace };
+        queueMicrotask(() => onHover(next?.lv ?? null));
         return next;
       });
     },
     [onHover],
   );
 
-  const interactionProps = (lv: number, ariaLabel: string) => ({
+  const interactionProps = (lv: number, ariaLabel: string, isFace = false) => ({
     role: "button" as const,
     tabIndex: 0,
     "aria-label": ariaLabel,
     "aria-pressed": hl === lv,
-    onMouseEnter: () => enter(lv),
+    onMouseEnter: () => enter(lv, isFace),
     onMouseLeave: leave,
-    onFocus: () => enter(lv),
+    onFocus: () => enter(lv, isFace),
     onBlur: leave,
-    onClick: () => tap(lv),
-    onKeyDown: (event: React.KeyboardEvent<SVGGElement>) => handleKeyDown(event, lv, tap),
+    onClick: () => tap(lv, isFace),
+    onKeyDown: (event: React.KeyboardEvent<SVGGElement>) => handleKeyDown(event, lv, (level) => tap(level, isFace)),
     style: S_CURSOR_POINTER,
   });
 
@@ -433,7 +458,7 @@ export const OctahedronDual = React.memo(function OctahedronDual({ hlLevel, onHo
               <g
                 key={`octa-face-control-${face.color}`}
                 transform={`translate(${x} ${y})`}
-                {...interactionProps(face.color, t("theory_octa_dual_octa_face_aria", info.name, info.lv, bitsOf(info.lv)))}
+                {...interactionProps(face.color, t("theory_octa_dual_octa_face_aria", info.name, info.lv, bitsOf(info.lv)), true)}
                 data-octa-face={face.color}
                 data-face-verts={face.verts.join("-")}
                 data-dual-die-vertex={face.color}
@@ -483,6 +508,43 @@ export const OctahedronDual = React.memo(function OctahedronDual({ hlLevel, onHo
           })}
         </g>
       </svg>
+
+      <div
+        data-testid="octahedron-face-operation"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{
+          width: "100%",
+          maxWidth: 620,
+          minHeight: 64,
+          fontFamily: FONT.mono,
+          fontSize: FS.lg,
+          color: C.textMuted,
+          textAlign: "center",
+          lineHeight: 1.6,
+        }}
+      >
+        {selectedFace ? (
+          <>
+            <div style={{ color: C.textPrimary }}>
+              {t(
+                "theory_octa_face_operation",
+                `{${selectedFace.verts.map((lv) => THEORY_LEVELS[lv].short).join(", ")}}`,
+                `${mixingInputs.map((lv) => THEORY_LEVELS[lv].short).join(isJoin ? " ∨ " : " ∧ ")} = ${THEORY_LEVELS[selectedFace.color].short}`,
+              )}
+            </div>
+            <div>{`XOR: ${selectedFace.verts.map(bitsOf).join(" ⊕ ")} = ${bitsOf(faceXor!)}`}</div>
+            <div>
+              {faceXor === 0
+                ? t("theory_octa_face_fano")
+                : t("theory_octa_face_opposite_fano", `{${selectedFace.verts.map((lv) => THEORY_LEVELS[lv ^ 7].short).join(", ")}}`)}
+            </div>
+          </>
+        ) : (
+          t("theory_octa_face_operation_prompt")
+        )}
+      </div>
 
       <div
         data-testid="octahedron-dual-relations"

@@ -306,9 +306,9 @@ export const en = {
   theory_fano_completion_result_aria: "{0}, level {1}, bits {2}, calculated third point",
   theory_cube_title: "Color Cube",
   theory_cube_desc:
-    "The eight algebraic levels occupy the vertices of the RGB cube, and each edge toggles one channel. For an edge with endpoints a and b, the difference mask a⊕b is always 100, 010, or 001; the interface therefore colors that edge Green, Red, or Blue. Hovering a vertex reveals its three incident primary-bit differences. The six chromatic vertices form a six-cycle around the K-W body diagonal, and complement c↦c⊕7 flips all three bits. XOR matters here as the language of state difference and channel transition.",
-  theory_cube_xor_edge_hint: "Hover a vertex: a⊕b identifies the G, R, or B bit that colors each incident edge",
-  theory_cube_xor_edge_aria: "XOR difference masks on the three edges incident to the highlighted cube vertex",
+    "The eight algebraic levels occupy the vertices of the RGB cube, and each edge toggles one channel. Each edge's color identifies the channel of the single bit that differs between its endpoints. The six chromatic vertices form a six-cycle around the K-W body diagonal, and complement c↦c⊕7 flips all three bits. XOR matters here as the language of state difference and channel transition.",
+  theory_cube_faces_desc:
+    "Each face fixes one bit and contains all four combinations of the other two. Every bit is 1 an even number of times, so its vertices a,b,c,d satisfy a⊕b⊕c⊕d=000: three vertices recover the fourth as d=a⊕b⊕c. For example, G, C, and Y give W through 100⊕101⊕110=111. AND and OR of colors on the same face also stay on that face. Each square is therefore a small Boolean lattice on two free channels.",
   theory_cube_desc2:
     "The Hasse toggle redraws the same Q₃ graph as a rank-layer diagram. K is placed at the bottom and W at the top, while Boolean-lattice rank rk_B(S)=|S| divides the vertices into four layers of 1, 3, 3, and 1. This 0..3 Boolean rank is distinct from the 0..7 brightness-order rank rank_s used by Binary Tone. The twelve edges split into three perfect matchings for G, R, and B; moving upward adds a set element and moving downward removes one. Complement reverses the order and pairs the RGB atoms with the CMY coatoms. The same Q₃ therefore reveals both the 1-3-3-1 rank structure and complement symmetry.",
   theory_cube_mix_desc:
@@ -340,6 +340,8 @@ export const en = {
     "A Hamming [7,4,3] code adds three parity bits to four data bits, producing a seven-bit codeword. The bracketed parameters are length 7, dimension 4, and minimum Hamming distance 3; the rate is 4/7. This minimum distance lets the code locate and correct one bit error introduced during transmission. Order the codeword coordinates as (P1,P2,D1,P4,D2,D3,D4), and choose P1, P2, and P4 so that each of the three checks has even parity. A valid codeword passes all checks and has syndrome 000. Toggling a single coordinate j makes exactly the checks covering that position fail, so the seven nonzero syndromes correspond one-to-one with the seven possible single-error positions. B=1, R=2, and G=4 are both the power-of-two parity positions and the three check labels.",
   theory_hamming_desc2:
     "The B check covers positions {1,3,5,7}, R covers {2,3,6,7}, and G covers {4,5,6,7}. If s=[s_G,s_R,s_B] is the set of failed checks for one corrupted coordinate, then its position is j=4s_G+2s_R+s_B. Thus the same GRB 4:2:1 reading that numbers the color states also turns the syndrome directly into the error position; for example 110=Y=6. The three-circle diagram below is the standard parity-set view: each position lies in exactly the checks named by its three-bit label. Change the four data bits or inject one or more channel errors to follow the entire calculation.",
+  theory_hamming_faces_desc:
+    "On the cube, the B check's {B,M,C,W}, the R check's {R,M,Y,W}, and the G check's {G,C,Y,W} are the faces where the B, R, and G bits, respectively, are fixed to 1. The three faces meet at W; membership in them gives each position its three-bit label. The actual check XORs the codeword bits placed at the four positions on a face, not the color labels themselves, and tests whether that result is 0.",
   theory_hamming_syndrome_position: " = {0} = position {1}",
   theory_hamming_parity: "Parity",
   theory_hamming_checks: "Checks",
@@ -468,21 +470,38 @@ export const en = {
 
   theory_k8_title: "K₈ Partitioned by Hamming Distance",
   theory_k8_desc:
-    "The 28 unordered pairs of distinct states split without overlap by d_H(a,b)=wt(a⊕b). A vertex has C(3,d) vertices at distance d, one for every choice of d bits to toggle, so the number of undirected edges is 8·C(3,d)/2. Thus there are twelve d=1 cube edges, twelve d=2 pairs, and four d=3 complement pairs; 12+12+4=28 exhausts the edges of K₈.\n\nBit parity π:(A,⊕)→𝔽₂, π(g,r,b)=g⊕r⊕b is a group homomorphism. Its kernel T0=ker π={K,M,C,Y} is isomorphic under XOR to the Klein four-group V₄. The odd-parity set T1=B⊕T0={B,R,G,W} is its unique nontrivial coset. Distinct three-bit states of equal parity differ in exactly two bits, so the d=2 edges join all six pairs inside T0 and all six pairs inside T1. These are two copies of K₄, hence two tetrahedra.\n\nDistance three toggles all bits and gives four complement pairs. The diagram can isolate T0 and T1 before compounding them, while K₈ mode shows that the distance-1, distance-2, and distance-3 layers exhaust all 28 edges.",
+    "The 28 unordered pairs of distinct states split without overlap by d_H(a,b)=wt(a⊕b). A vertex has C(3,d) vertices at distance d, one for every choice of d bits to toggle, so the number of undirected edges is 8·C(3,d)/2. Thus there are twelve d=1 cube edges, twelve d=2 pairs, and four d=3 complement pairs; 12+12+4=28 exhausts the edges of K₈.\n\nBit parity π:(A,⊕)→𝔽₂, π(g,r,b)=g⊕r⊕b is a group homomorphism. Its kernel T0=ker π={K,M,C,Y} is isomorphic under XOR to the Klein four-group V₄. The odd-parity set T1=B⊕T0={B,R,G,W} is its unique nontrivial coset. Distinct three-bit states of equal parity differ in exactly two bits, so the d=2 edges join all six pairs inside T0 and all six pairs inside T1. These are two copies of K₄, hence two tetrahedra.\n\nDistance three toggles all bits and gives four complement pairs. The diagram switches between distances 1, 2, and 3 to show each layer separately. All overlays the three layers, showing all 28 edges of K₈, the complete graph connecting every pair of the eight vertices.",
   theory_stella_desc:
-    "T0 and T1 are Color Tetrahedra, each with four vertices, six edges, and four faces. Compounding them yields the Color Star (Stella Octangula). The Color Cube's 12 distance-1 edges have one-primary difference masks, whereas the two tetrahedra's 12 distance-2 edges have the two-primary masks 011, 101, and 110, named M, C, and Y. Compound, T0, T1, and Surface modes present the same distance-2 structure at different resolutions; K₈ mode also overlays the distance-1 cube edges and four distance-3 complement pairs.",
+    "T0 and T1 are regular tetrahedra (Color Tetrahedra), each with four vertices, six edges, and four faces. Compounding them yields the Color Star (Stella Octangula). The Color Cube's 12 distance-1 edges have one-primary difference masks, whereas the two tetrahedra's 12 distance-2 edges have the two-primary masks 011, 101, and 110, named M, C, and Y. The diagram shows these relationships using nodes and edges. Nodes only shows the eight vertices; distances 1, 2, and 3 show their corresponding edges. Distance 2 distinguishes the six T0 edges in yellow and the six T1 edges in blue. All overlays the three layers as K₈.",
+
+  theory_stella_faces_desc:
+    "In both T0 and T1, each bit is 1 at exactly two of the four vertices, so the four-vertex XOR is 000. For a triangular face a,b,c and the vertex d outside that face, the same equation d=a⊕b⊕c used on a cube face recovers the remaining vertex. For example, the R, G, W face gives 010⊕100⊕111=001, recovering B in the same tetrahedron. One XOR relation thus recovers the missing corner of a square or the vertex opposite a tetrahedral face.",
+  theory_stella_duality_title: "Face Majority and Duality",
+  theory_stella_duality_desc:
+    "Define bitwise majority by maj(a,b,c)=(a∧b)∨(b∧c)∨(c∧a). This operation is derived from AND and OR: each output bit is 1 when at least two inputs have that bit set. Each bit occurs twice in a tetrahedron, so removing vertex d leaves 2−dᵢ ones on its opposite face. Hence maj(a,b,c)=¬d. For example, the majority of R, G, and W is Y=110, the complement of their XOR result B=001.\n\nWrite p_a for a three-dimensional vertex position with the cube center as origin. Each tetrahedron satisfies p_a+p_b+p_c+p_d=0, and complement gives p_¬d=−p_d. The face centroid is therefore g_F=(p_a+p_b+p_c)/3=p_¬d/3. Tripling the vector from the center to that centroid reaches the complementary vertex of the other tetrahedron. XOR returns the remaining vertex d in the same tetrahedron; majority returns its dual counterpart ¬d. The centroid explains the geometry and does not add a new color state to the eight-state set A.",
+
+  theory_tetra_face_select: "Select a face",
+  theory_tetra_face_aria:
+    "Tetrahedral face {0}. XOR is {1}; majority is {2}. A straight line passes from the center through the face centroid to the majority vertex",
+  theory_tetra_face_input: "Input {0}",
+  theory_tetra_face_ones: "Number of ones",
+  theory_tetra_face_majority: "Majority",
+  theory_tetra_face_centroid: "O: center; g_F: face centroid. O→g_F is 1/3 of O→{0}. The label maj marks the majority result.",
+  theory_tetra_face_table: "The selected face: three inputs and results (GRB)",
+  theory_tetra_face_row: "Input / result",
 
   // Stella Octangula
   theory_stella_title: "Color Tetrahedra and Color Star",
-  theory_stella_compound: "Compound",
-  theory_stella_t0: "T0",
-  theory_stella_t1: "T1",
-  theory_stella_k8: "K\u2088",
-  theory_stella_surface: "Surface",
-  theory_stella_t0_annotation: "T0=ker π={K,M,C,Y}≅V₄ — the even-parity tetrahedron",
-  theory_stella_t1_annotation: "T1=B⊕T0={B,R,G,W} — the odd-parity coset tetrahedron",
-  theory_stella_surface_annotation: "24 surface faces (3 per spike) with 12 ridge edges at octahedral intersections",
-  theory_stella_annotation: "Tet(T0) \u222a Tet(T1) = first stellation of the octahedron \u2014 each edge is a 2-channel flip",
+  theory_stella_distance_modes: "Select the graph display",
+  theory_stella_nodes: "Nodes only",
+  theory_stella_nodes_annotation: "Only the eight nodes are shown. Select a distance to reveal its edges.",
+  theory_stella_distance_1: "Distance 1 · 12 edges",
+  theory_stella_distance_2: "Distance 2 · 12 edges",
+  theory_stella_distance_3: "Distance 3 · 4 edges",
+  theory_stella_distance_all: "All · 28 edges",
+  theory_stella_distance_1_annotation: "The 12 edges that change exactly one channel form a cube.",
+  theory_stella_distance_2_annotation: "12 edges change two channels: 6 in T0 (yellow) + 6 in T1 (blue).",
+  theory_stella_distance_3_annotation: "The 4 edges that change all three channels connect complementary colors.",
   theory_stella_k8_degree: "Degrees: 3 + 3 + 1 = 7 = deg(K\u2088)",
   theory_stella_compare_select_first: "Select an anchor vertex in K\u2088",
   theory_stella_compare_select_second: "{0} is fixed as the anchor. Select a vertex to compare",
@@ -509,6 +528,8 @@ export const en = {
   theory_octa_dual_title: "The Color Die and Its Dual Octahedron",
   theory_octa_dual_desc:
     "Regard the Color Die as a cubic cell complex D and take its combinatorial dual D*. The six faces of D become the six vertices of D*, while the three pairs of opposite complementary faces become the three antipodal vertex axes of the octahedron. Each of the twelve die edges, where two faces meet, becomes the octahedral edge joining their dual vertices. Thus the graph on the six chromatic vertices joining exactly the noncomplementary pairs is K₂,₂,₂, the octahedral graph.\n\nAt each die vertex, three faces meet—one chosen from each complementary pair. The 2³=8 choices correspond to the eight triangular faces of the octahedron. Label each triangle by the state in A whose bits record which axes chose their primary endpoint. Adjacent triangles differ on exactly one axis, so the face-adjacency graph of the octahedron is Q₃.\n\nDeleting K and W from the standard RGB cube and taking the convex hull of the remaining six vertices also gives an affine octahedron of the same combinatorial type: after centering, its vertices are three opposite vector pairs. In the standard RGB metric it is not regular—its edges have lengths 1 and √2. The diagram uses a regular octahedral realization to make the face–vertex duality legible; it does not identify the two Euclidean embeddings.",
+  theory_octa_faces_desc:
+    "The eight triangular faces realize the eight mixing relations already shown on the Color Die as vertex triples. For example, {R,G,Y} expresses R∨G=Y and {C,M,B} expresses C∧M=B; the RGB and CMY faces express the three-input relations. On every face, OR of all three vertices gives its face color when at least two are primaries; AND does so when at least two are CMY colors. Meanwhile, {R,G,Y}, {G,B,C}, {B,R,M}, and {C,M,Y} are four Fano lines with three-vertex XOR 000. Their opposite faces have XOR 111 by complement. The same face thus carries both a mixing result and XOR parity.",
   theory_octa_dual_aria: "The faces and vertices of the Color Die paired with the vertices and triangular faces of its dual octahedron",
   theory_octa_dual_die: "Color Die D",
   theory_octa_dual_octa: "Dual Octahedron D*",
@@ -523,6 +544,10 @@ export const en = {
   theory_octa_dual_vertex_face: "8 die vertices ↔ 8 triangular faces",
   theory_octa_dual_axis: "opposite faces (complements) ↔ antipodal vertex axes",
   theory_octa_dual_q3: "octahedral face-adjacency graph ≅ Q₃",
+  theory_octa_face_operation_prompt: "Select one of the eight triangles to see its mixing relation and XOR.",
+  theory_octa_face_operation: "Face {0}: {1}",
+  theory_octa_face_fano: "The three vertices have XOR 000, so they form a Fano line.",
+  theory_octa_face_opposite_fano: "The complementary opposite face {0} is a Fano line with XOR 000.",
 
   theory_fano_cmy_collapse: "CMY line",
   theory_fano_cmy_eq: "τRB·τGB·τGR = id \u2192 collinear!",

@@ -162,6 +162,34 @@ function buildCubePoints(): Readonly<Record<number, Point2D>> {
 
 export const CUBE_POINTS = buildCubePoints();
 
+/* ── Regular cube / tetrahedra in the K₈ Explorer ── */
+
+// A single rigid rotation keeps the cube regular and its two inscribed
+// tetrahedra regular. This view also avoids edges passing through other nodes.
+const EXPLORER_YAW = (28 * Math.PI) / 180;
+const EXPLORER_PITCH = (12 * Math.PI) / 180;
+const EXPLORER_COS_YAW = Math.cos(EXPLORER_YAW);
+const EXPLORER_SIN_YAW = Math.sin(EXPLORER_YAW);
+const EXPLORER_COS_PITCH = Math.cos(EXPLORER_PITCH);
+const EXPLORER_SIN_PITCH = Math.sin(EXPLORER_PITCH);
+
+/** Centered unit-cube vertices in GRB order, after the shared rigid rotation. */
+export const K8_EXPLORER_VERTICES_3D: readonly (readonly [number, number, number])[] = THEORY_LEVELS.map(({ bits }) => {
+  const [g, r, b] = bits.map((bit) => bit - 0.5);
+  return [
+    EXPLORER_COS_YAW * r - EXPLORER_SIN_YAW * b,
+    -EXPLORER_COS_PITCH * g - EXPLORER_SIN_PITCH * (EXPLORER_SIN_YAW * r + EXPLORER_COS_YAW * b),
+    -EXPLORER_SIN_PITCH * g + EXPLORER_COS_PITCH * (EXPLORER_SIN_YAW * r + EXPLORER_COS_YAW * b),
+  ] as const;
+});
+
+const EXPLORER_SCALE = 108 / (EXPLORER_COS_YAW + EXPLORER_SIN_YAW);
+
+/** Orthographic projection with one uniform scale; no per-vertex adjustments. */
+export const K8_EXPLORER_POINTS: Readonly<Record<number, Point2D>> = Object.fromEntries(
+  K8_EXPLORER_VERTICES_3D.map(([x, y], lv) => [lv, { x: 90 + EXPLORER_SCALE * x, y: 63 + EXPLORER_SCALE * y }]),
+);
+
 /** Determine if an edge is a "back edge" (behind the cube) for dashed rendering */
 export function isBackEdge(a: number, b: number): boolean {
   // Back edges: those connecting to vertex 0 (Black, hidden corner)
@@ -212,8 +240,6 @@ export const OCTA_FACES: readonly { readonly verts: readonly [number, number, nu
 
 /** T0 = even-weight vectors = Klein four-group V₄ under XOR */
 export const TETRA_T0 = [0, 3, 5, 6] as const;
-/** T1 = odd-weight vectors = coset of V₄ */
-export const TETRA_T1 = [1, 2, 4, 7] as const;
 
 /** Edges of the T0 tetrahedron inscribed in the cube */
 export const TETRA_T0_EDGES: readonly (readonly [number, number])[] = [
@@ -254,66 +280,6 @@ export const COMPLEMENT_EDGES: readonly (readonly [number, number])[] = [
   [2, 5],
   [3, 4],
 ];
-
-/* ── Stella Octangula face & 3D geometry ──
-   Compound of T0 and T1 tetrahedra = first stellation of octahedron.
-   8 vertices (all cube), 12 edges (STELLA_EDGES), 8 triangular faces.  */
-
-interface StellaFace {
-  readonly verts: readonly [number, number, number];
-  readonly color: number; // XOR of 3 vertices = opposite vertex
-  readonly tetra: 0 | 1;
-}
-
-export const STELLA_FACES: readonly StellaFace[] = [
-  // T0 faces (even-weight tetrahedron)
-  { verts: [0, 3, 5], color: 6, tetra: 0 },
-  { verts: [0, 3, 6], color: 5, tetra: 0 },
-  { verts: [0, 5, 6], color: 3, tetra: 0 },
-  { verts: [3, 5, 6], color: 0, tetra: 0 },
-  // T1 faces (odd-weight tetrahedron)
-  { verts: [1, 2, 4], color: 7, tetra: 1 },
-  { verts: [1, 2, 7], color: 4, tetra: 1 },
-  { verts: [1, 4, 7], color: 2, tetra: 1 },
-  { verts: [2, 4, 7], color: 1, tetra: 1 },
-];
-
-/** 3D coordinates of cube vertices in unit cube [G, R, B] */
-type Point3D = readonly [number, number, number];
-
-function buildStella3D(): Readonly<Record<number, Point3D>> {
-  const points: Record<number, Point3D> = {};
-  for (let i = 0; i < 8; i++) {
-    points[i] = [(i >> 2) & 1, (i >> 1) & 1, i & 1];
-  }
-  return points;
-}
-
-export const STELLA_3D = buildStella3D();
-
-/** Depth along (1,1,1) body diagonal = popcount of level (0–3) */
-export function vertexDepth(lv: number): number {
-  return ((lv >> 2) & 1) + ((lv >> 1) & 1) + (lv & 1);
-}
-
-/** Scale a base radius by depth: nearer vertices (higher depth) are larger.
- *  factor = 1 + (depth − 1.5) × scale / 1.5
- *  With default scale 0.3: depth 0→0.7, 1→0.9, 2→1.1, 3→1.3 */
-export function vertexRadius(lv: number, baseR: number, scale = 0.3): number {
-  return baseR * (1 + ((vertexDepth(lv) - 1.5) * scale) / 1.5);
-}
-
-const CH_NAMES = ["B", "R", "G"] as const;
-
-/** Return the two channel names that flip for a Hamming-distance-2 edge */
-export function stellaEdgeChannels(a: number, b: number): [string, string] {
-  const d = a ^ b;
-  const chs: string[] = [];
-  for (let bit = 0; bit < 3; bit++) {
-    if ((d >> bit) & 1) chs.push(CH_NAMES[bit]);
-  }
-  return chs as [string, string];
-}
 
 /* ── Gray Code Hexagon geometry ──────────── */
 
