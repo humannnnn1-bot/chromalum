@@ -1,6 +1,8 @@
 import React from "react";
 import { useTranslation } from "../../i18n";
-import { C, FONT, FS, FW, R, SP } from "../../styles/tokens";
+import { C, FONT, FS, R, SP } from "../../styles/tokens";
+import { THEORY_LEVELS } from "../../data/theory-data";
+import { SubsetSumDerivation } from "./SubsetSumDerivation";
 
 const S_FORMULA: React.CSSProperties = {
   display: "block",
@@ -28,100 +30,47 @@ const S_THEOREM: React.CSSProperties = {
   boxSizing: "border-box",
 };
 
-function DerivationStep({ number, title, formula, body }: { number: string; title: string; formula: string; body: string }) {
-  return (
-    <li
-      style={{
-        display: "grid",
-        gridTemplateColumns: "28px minmax(0, 1fr)",
-        gap: SP.md,
-        alignItems: "start",
-      }}
-    >
-      <span
-        aria-hidden="true"
-        style={{
-          width: 24,
-          height: 24,
-          display: "grid",
-          placeItems: "center",
-          border: `1px solid ${C.accent}`,
-          borderRadius: "50%",
-          color: C.accentBright,
-          fontFamily: FONT.mono,
-          fontSize: FS.xs,
-          fontWeight: FW.bold,
-        }}
-      >
-        {number}
-      </span>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>{title}</div>
-        <code style={{ ...S_FORMULA, marginTop: SP.xs }}>{formula}</code>
-        <p style={{ ...S_NOTE, marginTop: SP.xs }}>{body}</p>
-      </div>
-    </li>
-  );
-}
-
 export const DerivationMap = React.memo(function DerivationMap() {
   const { t } = useTranslation();
 
   return (
-    <ol
-      aria-label={t("theory_derivation_aria")}
-      style={{
-        width: "100%",
-        maxWidth: 640,
-        display: "flex",
-        flexDirection: "column",
-        gap: SP.xl,
-        margin: 0,
-        padding: 0,
-        listStyle: "none",
-      }}
-    >
-      <DerivationStep
-        number="1"
-        title={t("theory_derivation_root")}
-        formula="A=𝒫(E), E={G,R,B}   ·   Γ(S)=∨_{c∈S}e_c   ·   (A,⊕)≅(𝔽₂³,+)"
-        body={t("theory_derivation_root_note")}
-      />
-      <DerivationStep
-        number="2"
-        title={t("theory_derivation_two_paths")}
-        formula="{1,2,4} (unnamed)   ∥   s(G)>s(M)=s(R)+s(B), s(R)>s(B)"
-        body={t("theory_derivation_two_paths_note")}
-      />
-      <DerivationStep
-        number="3"
-        title={t("theory_derivation_convergence")}
-        formula="L(g,r,b)=4g+2r+b   ·   T=L/7"
-        body={t("theory_derivation_convergence_note")}
-      />
-      <DerivationStep
-        number="4"
-        title={t("theory_derivation_consequences")}
-        formula="valuation · complement · Q₃/C₆ · Fano/Hamming · K₈"
-        body={t("theory_derivation_consequences_note")}
-      />
-    </ol>
+    <div className="theory-derivation" role="group" aria-label={t("theory_derivation_aria")}>
+      <div className="theory-derivation-paths">
+        <SubsetSumDerivation />
+        <EmpiricalResonance />
+      </div>
+      <div className="theory-derivation-conclusion">
+        <h4>{t("theory_derivation_convergence")}</h4>
+        <code>L(g,r,b)=4g+2r+b · T=L/7</code>
+        <p>{t("theory_derivation_convergence_note")}</p>
+      </div>
+    </div>
   );
 });
 
-export const EmpiricalResonance = React.memo(function EmpiricalResonance() {
+const EmpiricalResonance = React.memo(function EmpiricalResonance() {
   const { t } = useTranslation();
 
   return (
-    <div style={S_THEOREM}>
-      <div style={{ color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-        {t("theory_empirical_condition")}
-      </div>
-      <code style={{ ...S_FORMULA, marginTop: SP.md }}>w_B&gt;0 · w_R&gt;w_B · w_G&gt;w_R+w_B</code>
-      <code style={{ ...S_FORMULA, marginTop: SP.xs }}>K&lt;B&lt;R&lt;M&lt;G&lt;C&lt;Y&lt;W</code>
-      <code style={{ ...S_FORMULA, marginTop: SP.xs }}>rank(g,r,b)=4g+2r+b</code>
-      <p style={{ ...S_NOTE, marginTop: SP.md }}>{t("theory_empirical_note")}</p>
-    </div>
+    <figure className="theory-derivation-order" aria-labelledby="theory-order-title">
+      <figcaption>
+        <h4 id="theory-order-title">{t("theory_empirical_condition")}</h4>
+        <p>{t("theory_empirical_order_intro")}</p>
+      </figcaption>
+      <code>s(g,r,b)=w_Gg+w_Rr+w_Bb</code>
+      <code>w_G&gt;w_R+w_B · w_R&gt;w_B&gt;0</code>
+      <ol className="theory-derivation-order-colors" aria-label="K<B<R<M<G<C<Y<W">
+        {THEORY_LEVELS.map((info, level) => (
+          <li key={level}>
+            <span style={{ background: level === 0 ? C.bgRoot : info.color, color: level >= 4 ? "#000" : "#fff" }}>{info.short}</span>
+            <span>{level}</span>
+          </li>
+        ))}
+      </ol>
+      <code>rank_s(c)=#&#123;x∈A | s(x)&lt;s(c)&#125;</code>
+      <p>{t("theory_empirical_rank_note")}</p>
+      <strong>B=1 · R=2 · G=4</strong>
+    </figure>
   );
 });
 

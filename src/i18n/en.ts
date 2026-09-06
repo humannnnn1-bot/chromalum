@@ -222,11 +222,22 @@ export const en = {
   // Theory panel — scholarly content (label_theory + theory_* keys below) is
   // CC BY 4.0 (Doctor Chromaticus); see docs/LICENSE.md.
   label_theory: "ALGEBRAIC COLOR THEORY",
+  theory_empirical_order_intro: "For a positive additive score, assume G exceeds M and R exceeds B.",
+  theory_empirical_rank_note:
+    "Count states with a lower score to obtain ranks 0–7 above. This does not assign the measured scores themselves the values 1, 2, and 4.",
+  theory_hue_previous: "Previous edge",
+  theory_hue_next: "Next edge",
+  theory_hue_reverse: "Reverse direction",
+  theory_hue_play: "Play",
+  theory_hue_link_hint: "The six-cycle, zigzag, and table show the same edge. Select an edge in either diagram or a row in the table.",
+  theory_hue_select_edge: "Select edge {0}",
+  theory_hue_transition: "{0} → {1} · toggle {2} · ΔL={3}",
+  theory_hamming_data_input_hint: "Press D1–D4 to change the input bits",
+  theory_hamming_error_input_hint: "Press a received position to add or remove an error. Select a check to highlight its four positions.",
   theory_title: "Discrete Algebraic Color Theory",
   theory_intro:
-    "Let E={G,R,B}. Every binary RGB state is a subset S⊆E, and the set of all eight states is A=𝒫(E). Here S∨T=S∪T is channel union, S∧T=S∩T is overlap, ¬S=E∖S is complement, and S⊕T=S△T is symmetric difference, containing the channels present in exactly one state. Thus A is a Boolean algebra with join, meet, and complement.\n\nIf ∨, ∧, and ¬ are temporarily forgotten and only ⊕ is retained, the resulting reduct (A,⊕) is isomorphic to the additive group and vector space (𝔽₂³,+). Adding ∧ as multiplication gives the Boolean ring (A,⊕,∧)≅𝔽₂×𝔽₂×𝔽₂, not the field GF(8): for example, the nonzero elements G and R satisfy G∧R=K. The same eight states therefore carry different structures according to which operations are retained.\n\nThe central result joins two independent paths. Gapless subset sums determine the unnamed weights {1,2,4}; the binary-vertex brightness order names them B=1, R=2, and G=4. Their meeting gives L(g,r,b)=4g+2r+b. Valuation, complement, the Hamming cube and chromatic six-cycle, Fano/Hamming structure, and the K₈ distance partition then follow in sequence from A and L. Once the finite algebra is complete, affine interpolation of the chromatic six-cycle gives the Tone Zigzag, while the same signed rank differences lead to the hue-order net, the Color Die, and its dual octahedron.",
-  theory_derivation_aria:
-    "Four-step derivation from the eight-state Boolean algebra through two independent paths to binary rank and its finite consequences",
+    "Let E={G,R,B}. Every binary RGB state is a subset S⊆E, and the set of all eight states is A=𝒫(E). Here S∨T=S∪T is channel union, S∧T=S∩T is overlap, ¬S=E∖S is complement, and S⊕T=S△T is symmetric difference, containing the channels present in exactly one state. Thus A is a Boolean algebra with join, meet, and complement.\n\nIf ∨, ∧, and ¬ are temporarily forgotten and only ⊕ is retained, the resulting reduct (A,⊕) is isomorphic to the additive group and vector space (𝔽₂³,+). Adding ∧ as multiplication gives the Boolean ring (A,⊕,∧)≅𝔽₂×𝔽₂×𝔽₂, not the field GF(8): for example, the nonzero elements G and R satisfy G∧R=K. The same eight states therefore carry different structures according to which operations are retained.\n\nThe central result joins two independent paths. Gapless subset sums determine the unnamed weights {1,2,4}; the binary-vertex brightness order names them B=1, R=2, and G=4. Their meeting gives L(g,r,b)=4g+2r+b. Valuation, complement, the Hamming cube and chromatic six-cycle, Fano/Hamming structure, and the K₈ distance partition then follow in sequence from A and L. Once the finite algebra is complete, affine interpolation of the chromatic six-cycle gives the Tone Zigzag. We then choose the Color Die with complementary colors on opposite faces and show its hue-order net and dual octahedron.",
+  theory_derivation_aria: "Two paths from gapless subset sums and color order to binary rank",
   theory_derivation_root: "Primary-generation core",
   theory_derivation_root_note:
     "A subset S selects the primaries that are present. Union generates a state; symmetric difference later composes toggles on generated states.",
@@ -235,7 +246,7 @@ export const en = {
     "Mathematics fixes the unnamed gapless weights. Independently, s(G)>s(M)=s(R)+s(B) and s(R)>s(B) fix their color names.",
   theory_derivation_convergence: "Convergence at GRB binary rank",
   theory_derivation_convergence_note:
-    "Mathematics supplies the weights; color order assigns them to B, R, and G. The resulting rank is the three-bit binary value.",
+    "Subset sums determine the unnamed weights {1,2,4}; color order determines the named ranks B=1, R=2, G=4. The two independent characterizations agree on the same L.",
   theory_derivation_consequences: "Finite consequences",
   theory_derivation_consequences_note:
     "The same A and L yield the valuation identities, complement reversal, one-bit geometry, seven-point structures, and the complete distance partition.",
@@ -248,6 +259,10 @@ export const en = {
   theory_generation_select: "Select from the three primary generators",
   theory_generation_select_aria: "Primary generators G, R, and B",
   theory_generation_primary_aria: "Primary {0}, bits {1}, weight {2}",
+  theory_generation_result: "Generated state",
+  theory_generation_states_title: "Eight states by primary count",
+  theory_generation_states_hint: "Choose a state to select its primaries",
+  theory_generation_state_aria: "Select the primaries for state {0}, bits {1}",
   theory_generation_layers_aria: "All eight states grouped by the number of selected primaries",
   theory_generation_layer_0: "0 primaries",
   theory_generation_layer_1: "1 primary",
@@ -267,28 +282,17 @@ export const en = {
   theory_binary_color: "Color",
   theory_binary_tone_formula: "Tone (GRB 4:2:1): T = (4G + 2R + B) / 7 = level / 7",
   theory_binary_tone_complement: "Complement tone: T\u2096 + T\u2087\u208b\u2096 = 1",
-  theory_dice_net_title: "The 2–2–2 Hue-Order Net",
   theory_dice_net_desc:
-    "The preceding Tone Zigzag table fixes the oriented path R→Y→G→C→B→M→R, its signed differences ΔL=(+4,−2,+1,−4,+2,−1), the alternating inclusion chain R⊂Y⊃G⊂C⊃B⊂M⊃R, and the toggled-channel sequence G,R,B,G,R,B. The net now gives that same discrete data a planar face arrangement.\n\nTo realize the signed sequence in the plane, we adopt a sign-preserving square-lattice rule: positive and negative differences map to two mutually perpendicular unit-grid directions. Every geometric step has unit length; |ΔL| remains the identity of the toggled G, R, or B channel rather than becoming a Euclidean length. In axis-aligned coordinates the two directions may be taken as right and down. The figure below rotates this same lattice embedding by about 45 degrees, sending positive steps upper right and negative steps lower right so every transition reads from left to right. This is the same 2–2–2 net under planar rotation, not a different unfolding.\n\nCut the closing M–R edge of the chromatic six-cycle, and the five remaining signs are +,−,+,−,+. In the axis-aligned lattice the six squares step right, down, right, down, right and occupy two cells in each of three rows, giving the 2–2–2 staircase net. The signs do not determine planar directions by themselves; this form follows once the adopted orthogonal-lattice rule is included. It is not obtained by opening an already-completed die; it is the starting construction that transfers the order of C₆ into cube-face adjacency.\n\nFolding along the five shared edges produces a cube. The complementary colors three steps apart on the cycle—R/C, Y/B, and G/M—become opposite faces. The construction therefore runs from the chromatic six-cycle to the hue-order net and then to the folded Color Die.",
-  theory_dice_net_cut: "Hue path obtained by cutting the M–R edge of C₆: R₂ → Y₆ → G₄ → C₅ → B₁ → M₃",
-  theory_dice_net_aria: "The 2–2–2 cube net obtained by cutting the M–R edge of the chromatic six-cycle",
-  theory_dice_net_fold: "Fold along the five hue-order shared edges",
-  theory_dice_net_delta_definition: "ΔL = L(next color) − L(current color) (signed rank difference)",
-  theory_dice_net_cut_edge: "Cut edge: M₃ → R₂, ΔL=−1",
-  theory_dice_net_edge_aria: "{0} to {1}, signed rank difference {2}",
-  theory_dice_title: "Color Die",
+    "Represent the six chromatic colors by the six faces of a cube, placing the complement pairs R/C, Y/B, and G/M on opposite faces. This face arrangement is the Color Die. The cube is a chosen model for expressing hue order and complement through face connections.\n\nThe net below unfolds this Color Die while preserving the five connections in hue order R→Y→G→C→B→M. A single chain visits all six faces once and opens into the plane without overlapping squares. The closing M–R connection is cut and rejoins when the net is folded back.",
+  theory_dice_net_cut: "Hue order preserved in the net: R₂ → Y₆ → G₄ → C₅ → B₁ → M₃",
+  theory_dice_net_aria: "A 2–2–2 net of the Color Die preserving the five hue-order connections",
+  theory_dice_net_cut_edge: "The M₃–R₂ connection is cut and rejoins when folded back",
+  theory_dice_title: "Hue-Order Net and Color Die",
+  theory_dice_pairs_title: "Complements and opposite-face numbers",
   theory_dice_desc:
-    "The six faces of the folded cube are the chromatic states C=A∖{K,W}. No new quantity is introduced on a face c∈C: it carries the already-derived rank L(c)∈{1,…,6}. The color names in the hue-order net and the face numbers of the die are thereby joined on the same faces.",
+    "Each face c∈C=A∖{K,W} carries its established rank L(c)∈{1,…,6}. Color names, three-bit labels, and die numbers refer to the same six faces.",
   theory_dice_desc2:
-    "Since complement κ(c)=¬c satisfies L(κ(c))=7−L(c), the faces made opposite by folding are (R₂,C₅), (Y₆,B₁), and (G₄,M₃), numbered (2,5), (6,1), and (4,3). Every opposite pair sums to seven, so hue order, complement pairing, and the opposite-face rule of standard die numbering coincide in one folding.",
-  theory_dice_views_desc:
-    "A cube has eight vertices, and each vertex presents its three incident faces as one local view. The first two views in the diagram show the join of the three RGB atoms giving W and the meet of the three CMY coatoms giving K. The remaining six show the three distinct pairs of RGB primaries and their three complementary CMY pairs. Every arrow treats the two side faces as inputs and the top face as the result, while the column heading and bit equation state the premise under which the displayed operations coincide.",
-  theory_dice_rgb_col: "Disjoint RGB primaries: ∨=⊕",
-  theory_dice_cmy_col: "CMY pairs covering all bits: ∧=XNOR",
-  theory_dice_footer_ops: "bit order = [G,R,B] | ∨/∧ = Boolean join/meet | ⊕ = addition in GF(2)³ | XNOR(a,b) = (a ⊕ b)'",
-  theory_dice_footer_demorgan: "For the distinct RGB primaries shown, a ∧ b = 0, so a ∨ b = a ⊕ b.",
-  theory_dice_footer_subtractive:
-    "For the corresponding distinct CMY primaries, a ∨ b = W, so a ∧ b = XNOR(a,b) and L(a∧b)=L(a)+L(b)−7. These are restricted coincidences; the operations remain distinct.",
+    "When folded back, the opposite faces are the complement pairs (R₂,C₅), (Y₆,B₁), and (G₄,M₃). Complement κ(c)=¬c satisfies L(κ(c))=7−L(c), giving the numbered pairs (2,5), (6,1), and (4,3), each with sum 7. The net preserving five hue-order connections, the complement pairs, and the opposite-face condition of standard die numbering are linked in one face arrangement.",
   theory_fano_title: "Fano Plane",
   theory_fano_desc:
     "Use the seven nonzero toggle patterns as points. Composing any two distinct patterns gives a unique third nonzero pattern; composing all three returns to the starting state. Taking these closing triples as lines produces PG(2,2): 7 points, 7 lines, 3 points per line, and 3 lines per point.",
@@ -305,17 +309,31 @@ export const en = {
   theory_fano_completion_input_b_aria: "{0}, level {1}, bits {2}, selected as the second input",
   theory_fano_completion_result_aria: "{0}, level {1}, bits {2}, calculated third point",
   theory_cube_title: "Color Cube",
+  theory_mixing_title: "GRB and YCM Mixing",
+  theory_mixing_desc:
+    "In this three-bit model, GRB mixing uses join ∨ and YCM mixing uses meet ∧. The slash and “3” on each wire indicate a three-bit signal [G,R,B]; the gate applies the same OR or AND operation to each bit. Press the input nodes in each diagram to select two or three inputs; the result and the G, R, and B calculations update together. Unselected inputs appear as dashes in the table. Matching positions in the two diagrams hold the complement pairs G↔M, R↔C, and B↔Y. Selecting matching positions also gives complementary results by De Morgan’s law, ¬(a∨b)=¬a∧¬b; with all three inputs, the results are W and K.",
+  theory_mixing_operations_desc:
+    "The bit order is [G,R,B]. Join ∨ gives the least upper bound containing every input, while meet ∧ gives the greatest lower bound common to all inputs. These diagrams take GRB and YCM as their respective inputs; W=111 and K=000 appear as the results when all three inputs are selected. Each diagram shows three pair relations and one triple relation, giving eight relations in total.\n\nXOR ⊕ is addition in GF(2)³ and describes state differences and toggles. Two distinct GRB primaries satisfy a∧b=000, so a∨b=a⊕b; two distinct YCM primaries satisfy a∨b=111, so a∧b=XNOR(a,b), where XNOR(a,b)=¬(a⊕b). These equalities hold for two inputs under the stated conditions; join/meet and XOR/XNOR remain distinct operations.",
+  theory_mixing_grb: "GRB · join ∨",
+  theory_mixing_ycm: "YCM · meet ∧",
+  theory_mixing_join_rule: "Collect channels present in any input",
+  theory_mixing_meet_rule: "Keep channels common to every input",
+  theory_mixing_input: "Input",
+  theory_mixing_result: "Result",
+  theory_mixing_choose_inputs: "Select at least two inputs",
+  theory_mixing_input_aria: "Input {0}, bits {1}",
+  theory_mixing_gate_aria: "Logic gate applying {0} to each of the three bits",
+  theory_mixing_graph_aria: "{0} mixing graph. {1}",
+  theory_mixing_bits_aria: "GRB channel calculation for {0}",
   theory_cube_desc:
     "The eight algebraic levels occupy the vertices of the RGB cube, and each edge toggles one channel. Each edge's color identifies the channel of the single bit that differs between its endpoints. The six chromatic vertices form a six-cycle around the K-W body diagonal, and complement c↦c⊕7 flips all three bits. XOR matters here as the language of state difference and channel transition.",
   theory_cube_faces_desc:
     "Each face fixes one bit and contains all four combinations of the other two. Every bit is 1 an even number of times, so its vertices a,b,c,d satisfy a⊕b⊕c⊕d=000: three vertices recover the fourth as d=a⊕b⊕c. For example, G, C, and Y give W through 100⊕101⊕110=111. AND and OR of colors on the same face also stay on that face. Each square is therefore a small Boolean lattice on two free channels.",
   theory_cube_desc2:
     "The Hasse toggle redraws the same Q₃ graph as a rank-layer diagram. K is placed at the bottom and W at the top, while Boolean-lattice rank rk_B(S)=|S| divides the vertices into four layers of 1, 3, 3, and 1. This 0..3 Boolean rank is distinct from the 0..7 brightness-order rank rank_s used by Binary Tone. The twelve edges split into three perfect matchings for G, R, and B; moving upward adds a set element and moving downward removes one. Complement reverses the order and pairs the RGB atoms with the CMY coatoms. The same Q₃ therefore reveals both the 1-3-3-1 rank structure and complement symmetry.",
-  theory_cube_mix_desc:
-    "Mixing mode separates the lattice operations of this discrete model from the ordinary toggle display while keeping them on the same Q₃. The cube view preserves the three-dimensional arrangement, the Hasse view makes inclusion direction explicit, and the two presentations remain switchable during mixing. If the first input is R, G, or B, all later inputs are restricted to the RGB atoms and join ∨ is shown as additive mixing. If the first input is C, M, or Y, later inputs are restricted to the CMY coatoms and meet ∧ is shown as subtractive mixing. With two inputs, arrows mark the two cover edges from the inputs to the result. With three inputs, the three pairwise results become intermediate vertices and every symmetric two-stage cover route to the final result is arrowed. The three pair relations and one triple relation in each family give exactly the eight vertex views of the Color Die. K and W are results rather than inputs: they are respectively the three-input meet and join. The mode displays ∨ and ∧ as least upper bound and greatest lower bound, while XOR remains the language of state difference.",
   theory_gray_title: "Chromatic One-Bit Six-Cycle",
   theory_gray_desc:
-    "Removing K and W from Q₃ leaves every remaining vertex with degree two, so the induced subgraph is a single six-cycle. R→Y→G→C→B→M→R is one presentation obtained by choosing a starting point and an orientation; the structure itself is unrooted and undirected. Exactly one channel changes on each edge, every channel labels two opposite edges, and complementary vertices lie three steps apart.\n\nComposing the three one-primary toggles produces not only the three edge-generating actions but also all two- and three-primary toggles, for seven nonidentity actions in total. The next chapter reads these seven masks as common labels for finite geometry and coding.",
+    "Removing K and W from Q₃ leaves every remaining vertex with degree two, so the induced subgraph is a single six-cycle. R→Y→G→C→B→M→R is one presentation obtained by choosing a starting point and an orientation; the structure itself is unrooted and undirected. Exactly one channel changes on each edge, every channel labels two opposite edges, and complementary vertices lie three steps apart.",
   theory_action_title: "Toggle Action, Cube, and Chromatic Six-Cycle",
   theory_action_desc:
     "Where L evaluates each state, the toggle action τ determines movement between states. After Γ has generated a state x, a primary mask e_c acts by τ_c(x)=x⊕e_c. Every τ_c returns to the starting state when applied twice, and toggles on different channels commute. Moreover, L(τ_c(x))−L(x)=±w_c, so the atomic weight of the toggled bit is the absolute change in rank.\n\nDefine the Hamming distance between states by d_H(x,y)=wt(x⊕y). Joining exactly the pairs with d_H(x,y)=1 produces the three-dimensional cube Q₃, within which the six chromatic states induce C₆.",
@@ -366,6 +384,8 @@ export const en = {
   theory_hamming_stage_syndrome: "SYNDROME",
   theory_hamming_stage_corrected: "CORRECTED",
   theory_hamming_stage_output: "DATA OUT",
+  theory_hamming_pending: "pending",
+  theory_hamming_calculating: "Calculating… Results appear as each stage completes.",
   theory_hamming_operation_encode: "Generate parity (add P1, P2, P4)",
   theory_hamming_operation_transmit_clean: "Transmit (no error)",
   theory_hamming_operation_transmit_errors: "Transmit ({0}-bit error)",
@@ -380,6 +400,7 @@ export const en = {
   theory_hamming_received_error_marker: "error",
   theory_hamming_corrected_marker: "fixed",
   theory_hamming_trial_marker: "trial",
+  theory_hamming_operation_correction: "Correct the position indicated by the syndrome",
   theory_hamming_operation_correction_none: "j=0 → Keep RECEIVED unchanged",
   theory_hamming_operation_correction_single: "j={0} → Flip position {1} ({2}→{3})",
   theory_hamming_operation_correction_multiple: "j={0} → Trial flip at position {1} (outside guaranteed correction)",
@@ -391,8 +412,23 @@ export const en = {
     "One error detected at position {0} ({1}). The syndrome identifies the position, correction restores the codeword, and DATA OUT matches DATA IN.",
   theory_hamming_status_multiple:
     "{0} errors are selected. Syndrome {1}={2} still points to one position, but Hamming [7,4,3] guarantees correction only for one error. Check DATA OUT rather than treating that position as reliable.",
-  theory_hamming_venn_title: "Standard three parity-check sets",
+  theory_hamming_venn_title: "Three Parity-Check Sets",
   theory_hamming_venn_aria: "Three overlapping parity-check sets P1, P2, and P4 containing the seven Hamming positions",
+  theory_hamming_venn_help: "Select a check to highlight its four positions. Press a point to add or remove an error at that position.",
+  theory_hamming_venn_select_check: "Select a parity check to inspect its four positions",
+  theory_hamming_venn_check_label: "{0} check",
+  theory_hamming_venn_positions: "Positions",
+  theory_hamming_venn_bit_legend: "received bit",
+  theory_hamming_venn_error_legend: "injected error",
+  theory_hamming_venn_failed_legend: "failed check",
+  theory_hamming_venn_node_aria: "Position {0}, {1}, received bit {2}. {3}",
+  theory_hamming_venn_add_error: "Press to add an error",
+  theory_hamming_venn_remove_error: "Press to remove the error",
+  theory_hamming_venn_inspect_hint:
+    "Select the G, R, or B check to see its four received bits and their XOR. Press the same check again to show all positions equally.",
+  theory_hamming_venn_check_pending: "Waiting for this check to finish.",
+  theory_hamming_venn_even: "An even number of 1s gives XOR 0: the check passes.",
+  theory_hamming_venn_odd: "An odd number of 1s gives XOR 1: the check fails.",
   theory_hamming_generator_title: "Parity generator · even parity",
   theory_hamming_checker_title: "Parity checker · syndrome",
   theory_connections_title: "Synthesis and Exact Scope",
@@ -400,7 +436,7 @@ export const en = {
     "The finite argument closes on one base object A and one named rank L. Generation constructs the elements of A; valuation relates their rank to the operations; toggle action produces Q₃ and C₆; the seven nonzero masks lead to Fano/Hamming structure; and Hamming distance leads to the K₈ partition.\n\nThe subsequent geometry chapter does not alter that finite algebra. It adds the pure-hue loop H obtained by affine interpolation of the six C₆ edges, a face arrangement preserving hue order, and the dual cell complex of the resulting cube. Intermediate points of H are continuous representatives evaluated by the affine extension λ of L, not new elements of A. The final summaries therefore separate the discrete objects, continuous representation, rank, and operations.",
   theory_empirical_title: "Color Order Meets Binary Rank",
   theory_empirical_desc:
-    "Let s(g,r,b)=w_Gg+w_Rr+w_Bb be a positive additive score on the eight binary vertices. The observations s(G)>s(M)=s(R)+s(B) and s(R)>s(B) are equivalent to w_G>w_R+w_B and w_R>w_B>0. Hence 0 < w_B < w_R < w_R+w_B < w_G < w_G+w_B < w_G+w_R < w_G+w_R+w_B, giving the complete order K<B<R<M<G<C<Y<W.\n\nFor each state c, define rank_s(c)=#{x∈A | s(x)<s(c)}, the number of darker vertices. Counting the preceding chain from zero gives rank_s(K,B,R,M,G,C,Y,W)=(0,1,2,3,4,5,6,7). In particular B=1, R=2, and G=4, and the named rank is rank_s(g,r,b)=4g+2r+b.\n\nIndependently, order three positive integer weights as 0<a≤b≤c, and suppose their eight subset sums fill 0..7 without a gap or repetition. Producing 1 forces a=1. Producing 2 without a gap or collision then forces b=2. Once the existing sums are 0,1,2,3, producing the next value 4 forces c=4. Conversely, the subset sums of {1,2,4} fill 0..7 exactly once, so this unnamed weight set is unique up to permutation.\n\nColor order alone supplies the named rank, while the gapless subset-sum condition alone supplies the unnamed {1,2,4} with its atomic permutation symmetry intact. Combining the paths does not create rank for the first time; it shows that two independent characterizations converge at the same L(g,r,b)=4g+2r+b. The derivation map below summarizes the route from the generation algebra to this convergence and its finite consequences.",
+    "Two independent conditions characterize the rank of the same eight states. On the left, positive integer subset sums fill 0–7 without gaps. On the right, color-order conditions constrain a positive additive score on the binary vertices. Color order alone supplies the named rank.",
   theory_empirical_condition: "Two comparisons determine the full order",
   theory_empirical_order: "Brightness order is binary order",
   theory_empirical_rank: "Counting the ranks reveals binary",
@@ -420,25 +456,12 @@ export const en = {
   theory_cube_equator: "Equatorial belt",
   theory_cube_complements: "Complements",
   theory_cube_hasse: "Hasse",
-  theory_cube_mix: "Mixing",
-  theory_cube_mix_exit: "Exit mixing",
-  theory_cube_mix_aria: "RGB and CMY mixing on the Color Cube",
-  theory_cube_mix_status_aria: "Mixing result from the lattice operation on the selected primaries",
-  theory_cube_mix_hint: "Select the first input from R, G, B or C, M, Y",
-  theory_cube_mix_rgb_hint: "RGB additive mixing: {0} selected. Choose one or two more inputs from R, G, B",
-  theory_cube_mix_cmy_hint: "CMY subtractive mixing: {0} selected. Choose one or two more inputs from C, M, Y",
-  theory_cube_mix_join: "least upper bound",
-  theory_cube_mix_meet: "greatest lower bound",
-  theory_cube_mix_vertex_selected: "{0}, selected as an input",
-  theory_cube_mix_vertex_selectable: "{0}, available as an input",
-  theory_cube_mix_vertex_intermediate: "{0}, intermediate result of the three-input mix",
-  theory_cube_mix_vertex_unavailable: "{0}, unavailable in the current mixing family",
   theory_conn_core:
     "A=𝒫(E) is the Boolean algebra of generated states; (A,⊕)≅(𝔽₂³,+) is its toggle group. Stating the operations is part of stating the structure.",
   theory_conn_order:
     "The unnamed subset-sum theorem and the named brightness order converge at L(g,r,b)=4g+2r+b; valuation and complement are consequences of that rank.",
   theory_conn_structures:
-    "Hamming distance partitions all state pairs: d=1 gives Q₃, the chromatic vertices induce C₆, nonzero masks give Fano/Hamming, d=2 gives two parity tetrahedra, and d=3 gives four complement pairs. C₆ and L then produce the Tone Zigzag and hue-order net, while the combinatorial dual of the folded die is the octahedron.",
+    "Hamming distance partitions all state pairs: d=1 gives Q₃, the chromatic vertices induce C₆, nonzero masks give Fano/Hamming, d=2 gives two parity tetrahedra, and d=3 gives four complement pairs. Edgewise affine extension of C₆ and L gives the Tone Zigzag. The Color Die, with complementary colors on opposite faces, unfolds while preserving the hue-order connections; its combinatorial dual is the octahedron.",
   theory_conn_limit_vertices:
     "Objects: A contains exactly the eight binary states generated from E={G,R,B}. Under the characteristic-vector embedding ι:A→{0,1}³, the pure-hue loop H=⋃ᵢ[ι(cᵢ),ι(cᵢ₊₁)] is a display space formed by affine interpolation between the six chromatic states; points of H∖ι(A) are not additional elements of A.",
   theory_conn_limit_tone:
@@ -468,30 +491,37 @@ export const en = {
   theory_fano_show_secondary: "CMY",
   theory_fano_show_all: "All",
 
+  theory_subset_title: "Building gapless subset sums",
+  theory_subset_intro: "The eight subset sums of three positive integer weights must fill 0–7 without gaps or duplicates.",
+  theory_subset_start: "Start",
+  theory_subset_existing: "Existing sums",
+  theory_subset_translated: "Sums plus the new weight",
+  theory_subset_rule:
+    "The next weight is the current maximum plus 1. A smaller weight repeats a sum; a larger one leaves a gap. This forces the weights 1, 2, and 4.",
+  theory_subset_naming: "These are the unnamed weights {1,2,4}. The independent color-order conditions identify them as B=1, R=2, G=4.",
+  theory_k8_mask_title: "Mask",
+  theory_k8_mask_aria: "Highlight four edges for mask {0} {1}",
+  theory_k8_mask_result: "Mask {0} · distance {1} · 4 edges",
+  theory_k8_comparison_title: "Bit distance and rank difference",
+  theory_k8_comparison_pair: "Color pair",
+  theory_k8_comparison_distance: "Bit distance",
+  theory_k8_comparison_gap: "Rank gap",
+  theory_k8_comparison_note: "All three rank gaps are 1, but the numbers of changed bits are 1, 2, and 3.",
   theory_k8_title: "K₈ Partitioned by Hamming Distance",
   theory_k8_desc:
-    "The 28 unordered pairs of distinct states split without overlap by d_H(a,b)=wt(a⊕b). A vertex has C(3,d) vertices at distance d, one for every choice of d bits to toggle, so the number of undirected edges is 8·C(3,d)/2. Thus there are twelve d=1 cube edges, twelve d=2 pairs, and four d=3 complement pairs; 12+12+4=28 exhausts the edges of K₈.\n\nBit parity π:(A,⊕)→𝔽₂, π(g,r,b)=g⊕r⊕b is a group homomorphism. Its kernel T0=ker π={K,M,C,Y} is isomorphic under XOR to the Klein four-group V₄. The odd-parity set T1=B⊕T0={B,R,G,W} is its unique nontrivial coset. Distinct three-bit states of equal parity differ in exactly two bits, so the d=2 edges join all six pairs inside T0 and all six pairs inside T1. These are two copies of K₄, hence two tetrahedra.\n\nDistance three toggles all bits and gives four complement pairs. The diagram switches between distances 1, 2, and 3 to show each layer separately. All overlays the three layers, showing all 28 edges of K₈, the complete graph connecting every pair of the eight vertices.",
+    "The 28 unordered pairs of distinct states split without overlap by d_H(a,b)=wt(a⊕b). A vertex has C(3,d) vertices at distance d, one for every choice of d bits to toggle, so the number of undirected edges is 8·C(3,d)/2. Thus there are twelve d=1 cube edges, twelve d=2 pairs, and four d=3 complement pairs; 12+12+4=28 exhausts the edges of K₈.\n\nThe diagram switches between distances 1, 2, and 3 to show each layer separately. All overlays the three layers, showing all 28 edges of K₈, the complete graph connecting every pair of the eight vertices.\n\nEach nonzero mask m pairs x with x⊕m in four edges; the seven masks partition all 28 edges. In distance 1, choose G, R, or B to highlight four edges; in distance 2, choose M, C, or Y. Select the same mask again to restore all twelve edges in that layer.",
+
   theory_stella_desc:
-    "T0 and T1 are regular tetrahedra (Color Tetrahedra), each with four vertices, six edges, and four faces. Compounding them yields the Color Star (Stella Octangula). The Color Cube's 12 distance-1 edges have one-primary difference masks, whereas the two tetrahedra's 12 distance-2 edges have the two-primary masks 011, 101, and 110, named M, C, and Y. The diagram shows these relationships using nodes and edges. Nodes only shows the eight vertices; distances 1, 2, and 3 show their corresponding edges. Distance 2 distinguishes the six T0 edges in yellow and the six T1 edges in blue. All overlays the three layers as K₈.",
+    "Bit parity π:(A,⊕)→𝔽₂, π(g,r,b)=g⊕r⊕b is a group homomorphism. The even set T0=ker π={K,M,C,Y} is isomorphic under XOR to the Klein four-group V₄, and the odd set T1=B⊕T0={B,R,G,W} is its unique nontrivial coset. Distinct three-bit states of equal parity have distance 2, so the twelve distance-2 edges split into six within T0 and six within T1. Each forms K₄ and, in the cube vertex arrangement, a regular tetrahedron (Color Tetrahedron).\n\nThese are the only two regular tetrahedra whose four vertices can be chosen from the eight cube vertices. Their compound in the same cube arrangement is called the Color Star (Stella Octangula). The diagram distinguishes the six T0 edges in yellow and the six T1 edges in blue when distance 2 is selected.",
 
+  theory_stella_toggle_desc:
+    "Two-channel toggles with masks M=011, C=101, and Y=110 preserve parity and move within the same tetrahedron. A one-primary toggle G, R, or B, and the all-bit complement move to the other tetrahedron. In particular, complementing every vertex gives ¬T0=T1 and ¬T1=T0, exchanging the two tetrahedra.",
   theory_stella_faces_desc:
-    "In both T0 and T1, each bit is 1 at exactly two of the four vertices, so the four-vertex XOR is 000. For a triangular face a,b,c and the vertex d outside that face, the same equation d=a⊕b⊕c used on a cube face recovers the remaining vertex. For example, the R, G, W face gives 010⊕100⊕111=001, recovering B in the same tetrahedron. One XOR relation thus recovers the missing corner of a square or the vertex opposite a tetrahedral face.",
-  theory_stella_duality_title: "Face Majority and Duality",
-  theory_stella_duality_desc:
-    "Define bitwise majority by maj(a,b,c)=(a∧b)∨(b∧c)∨(c∧a). This operation is derived from AND and OR: each output bit is 1 when at least two inputs have that bit set. Each bit occurs twice in a tetrahedron, so removing vertex d leaves 2−dᵢ ones on its opposite face. Hence maj(a,b,c)=¬d. For example, the majority of R, G, and W is Y=110, the complement of their XOR result B=001.\n\nWrite p_a for a three-dimensional vertex position with the cube center as origin. Each tetrahedron satisfies p_a+p_b+p_c+p_d=0, and complement gives p_¬d=−p_d. The face centroid is therefore g_F=(p_a+p_b+p_c)/3=p_¬d/3. Tripling the vector from the center to that centroid reaches the complementary vertex of the other tetrahedron. XOR returns the remaining vertex d in the same tetrahedron; majority returns its dual counterpart ¬d. The centroid explains the geometry and does not add a new color state to the eight-state set A.",
-
-  theory_tetra_face_select: "Select a face",
-  theory_tetra_face_aria:
-    "Tetrahedral face {0}. XOR is {1}; majority is {2}. A straight line passes from the center through the face centroid to the majority vertex",
-  theory_tetra_face_input: "Input {0}",
-  theory_tetra_face_ones: "Number of ones",
-  theory_tetra_face_majority: "Majority",
-  theory_tetra_face_centroid: "O: center; g_F: face centroid. O→g_F is 1/3 of O→{0}. The label maj marks the majority result.",
-  theory_tetra_face_table: "The selected face: three inputs and results (GRB)",
-  theory_tetra_face_row: "Input / result",
+    "Each bit is 1 at two vertices of either tetrahedron, so its four-vertex XOR is 000. The three vertices a,b,c of a face therefore recover the remaining vertex as d=a⊕b⊕c. For example, R⊕G⊕W=010⊕100⊕111=001=B.",
 
   // Stella Octangula
-  theory_stella_title: "Color Tetrahedra and Color Star",
+  theory_stella_title: "Distance 2 and the Two Color Tetrahedra",
+
   theory_stella_distance_modes: "Select the graph display",
   theory_stella_nodes: "Nodes only",
   theory_stella_nodes_annotation: "Only the eight nodes are shown. Select a distance to reveal its edges.",
@@ -499,14 +529,18 @@ export const en = {
   theory_stella_distance_2: "Distance 2 · 12 edges",
   theory_stella_distance_3: "Distance 3 · 4 edges",
   theory_stella_distance_all: "All · 28 edges",
-  theory_stella_distance_1_annotation: "The 12 edges that change exactly one channel form a cube.",
-  theory_stella_distance_2_annotation: "12 edges change two channels: 6 in T0 (yellow) + 6 in T1 (blue).",
-  theory_stella_distance_3_annotation: "The 4 edges that change all three channels connect complementary colors.",
+  theory_stella_distance_1_annotation: "12 one-channel toggles: cube edges connecting T0 to T1.",
+
+  theory_stella_distance_2_annotation: "Two-channel toggles stay in one tetrahedron: 6 T0 edges (yellow) + 6 T1 edges (blue).",
+
+  theory_stella_distance_3_annotation: "4 all-bit toggles connect complementary vertices in T0 and T1.",
+
   theory_stella_k8_degree: "Degrees: 3 + 3 + 1 = 7 = deg(K\u2088)",
   theory_stella_compare_select_first: "Select an anchor vertex in K\u2088",
   theory_stella_compare_select_second: "{0} is fixed as the anchor. Select a vertex to compare",
   theory_stella_compare_distance_1: "distance 1: Q\u2083 edge / one-primary toggle",
-  theory_stella_compare_distance_2: "distance 2: Stella edge / same vertex parity",
+  theory_stella_compare_distance_2: "distance 2: edge within one tetrahedron / same vertex parity",
+
   theory_stella_compare_distance_3: "distance 3: complement pair M\u2084 / all-bit toggle",
   theory_stella_compare_parity_note: "Here π is the parity of a three-bit state, not a P1, P2, or P4 parity check in Hamming [7,4,3].",
   theory_stella_compare_input_a_aria: "{0}, level {1}, bits {2}, selected as the distance-comparison anchor",
@@ -514,10 +548,10 @@ export const en = {
 
   theory_geometry_title: "Rank Geometry of the Chromatic Six-Cycle",
   theory_geometry_desc:
-    "The preceding chapters gave the chromatic six-cycle C₆, showed that each one-bit edge produces the signed rank differences ΔL=(+4,−2,+1,−4,+2,−1), placed complements three steps apart, and proved that complement reverses rank by L↦7−L. This chapter derives a sequence of geometric representations from the same C₆ and L.\n\nFirst, affine interpolation of the six edges forms the pure-hue loop H, on which the linear extension λ becomes the Tone Zigzag. Second, mapping the signs to two orthogonal lattice directions produces the hue-order net, whose shared edges fold into the Color Die. Third, dualizing the faces and vertices of that cube produces an octahedron with the six chromatic colors as vertices. Continuous intermediate points and dual cells belong to the representation layer; they do not alter the operations on A.",
+    "The preceding chapters gave the chromatic six-cycle C₆, showed that each one-bit edge produces the signed rank differences ΔL=(+4,−2,+1,−4,+2,−1), placed complements three steps apart, and proved that complement reverses rank by L↦7−L. This chapter gives geometric representations of C₆, L, and complement.\n\nFirst, affine interpolation of the six edges forms the pure-hue loop H, on which the linear extension λ becomes the Tone Zigzag. Second, choose a cube with complementary colors on opposite faces as the Color Die, and unfold it while preserving the hue-order connections. Third, dualizing the faces and vertices of that cube produces an octahedron with the six chromatic colors as vertices. Continuous intermediate points and dual cells belong to the representation layer; they do not alter the operations on A.",
   theory_zigzag_title: "Tone Zigzag and Hue-Edge Differences",
   theory_zigzag_desc:
-    "Let ι:A→{0,1}³⊂ℝ³ be the characteristic-vector embedding and write the chromatic six-cycle as c₀=R,c₁=Y,c₂=G,c₃=C,c₄=B,c₅=M, with indices modulo six. On edge i set γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁) for 0≤u≤1. Their union H=⋃ᵢγᵢ([0,1]) is the pure-hue loop. The affine functional λ(x_G,x_R,x_B)=4x_G+2x_R+x_B restricts to L on ι(A), so λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁). Each segment therefore changes by ΔLᵢ=L(cᵢ₊₁)−L(cᵢ), producing the six-segment Tone Zigzag.\n\nExtend complement from the binary vertices to the cube by κ̄(x)=1−x. It moves each edge point three edges ahead without changing u: κ̄(γᵢ(u))=γᵢ₊₃(u). Parametrize the complete loop by h∈ℝ/ℤ and set T(h)=λ(γ(h))/7. Then γ(h+1/2)=κ̄(γ(h)) and T(h+1/2)=1−T(h). Integer levels 1 through 6 meet H in 1,3,3,3,3,1 points, fourteen intersections in total. Reading them from h=0 around the half-open circuit 0≤h<1 gives the top sequence 23456545432123. The diagram also marks the two open level bands in which a noninteger level has four preimages.\n\nThe table below reads the same six edges from the discrete side. Consecutive states differ in exactly one bit, so |ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}. The sign gives the direction of inclusion, while the absolute-value sequence (4,2,1,4,2,1) gives the weights of the toggled primary bits. This one table is the shared discrete data behind both the continuous zigzag and the hue-order net that follows.",
+    "Let ι:A→{0,1}³⊂ℝ³ be the characteristic-vector embedding and write the chromatic six-cycle as c₀=R,c₁=Y,c₂=G,c₃=C,c₄=B,c₅=M, with indices modulo six. On edge i set γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁) for 0≤u≤1. Their union H=⋃ᵢγᵢ([0,1]) is the pure-hue loop. The affine functional λ(x_G,x_R,x_B)=4x_G+2x_R+x_B restricts to L on ι(A), so λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁). Each segment therefore changes by ΔLᵢ=L(cᵢ₊₁)−L(cᵢ), producing the six-segment Tone Zigzag.\n\nExtend complement from the binary vertices to the cube by κ̄(x)=1−x. It moves each edge point three edges ahead without changing u: κ̄(γᵢ(u))=γᵢ₊₃(u). Parametrize the complete loop by h∈ℝ/ℤ and set T(h)=λ(γ(h))/7. Then γ(h+1/2)=κ̄(γ(h)) and T(h+1/2)=1−T(h). Integer levels 1 through 6 meet H in 1,3,3,3,3,1 points, fourteen intersections in total. Reading them from h=0 around the half-open circuit 0≤h<1 gives the top sequence 23456545432123. The diagram also marks the two open level bands in which a noninteger level has four preimages.\n\nThe table below reads the same six edges from the discrete side. Consecutive states differ in exactly one bit, so |ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}. The sign gives the direction of inclusion, while the absolute-value sequence (4,2,1,4,2,1) gives the weights of the toggled primary bits. The table connects each segment of the continuous zigzag to its discrete toggle and rank difference.",
   theory_zigzag_intersection_sequence_aria: "Fourteen integer-level intersections read over one hue circuit",
   theory_zigzag_level_controls_aria: "Select an integer level on the Tone Zigzag",
   theory_zigzag_table_aria: "Chromatic six-cycle transitions, toggle channels, signed rank differences, and inclusion directions",
@@ -525,29 +559,27 @@ export const en = {
   theory_zigzag_table_toggle: "Toggle and weight",
   theory_zigzag_table_delta: "ΔL",
   theory_zigzag_table_inclusion: "Inclusion",
-  theory_octa_dual_title: "The Color Die and Its Dual Octahedron",
-  theory_octa_dual_desc:
-    "Regard the Color Die as a cubic cell complex D and take its combinatorial dual D*. The six faces of D become the six vertices of D*, while the three pairs of opposite complementary faces become the three antipodal vertex axes of the octahedron. Each of the twelve die edges, where two faces meet, becomes the octahedral edge joining their dual vertices. Thus the graph on the six chromatic vertices joining exactly the noncomplementary pairs is K₂,₂,₂, the octahedral graph.\n\nAt each die vertex, three faces meet—one chosen from each complementary pair. The 2³=8 choices correspond to the eight triangular faces of the octahedron. Label each triangle by the state in A whose bits record which axes chose their primary endpoint. Adjacent triangles differ on exactly one axis, so the face-adjacency graph of the octahedron is Q₃.\n\nDeleting K and W from the standard RGB cube and taking the convex hull of the remaining six vertices also gives an affine octahedron of the same combinatorial type: after centering, its vertices are three opposite vector pairs. In the standard RGB metric it is not regular—its edges have lengths 1 and √2. The diagram uses a regular octahedral realization to make the face–vertex duality legible; it does not identify the two Euclidean embeddings.",
-  theory_octa_faces_desc:
-    "The eight triangular faces realize the eight mixing relations already shown on the Color Die as vertex triples. For example, {R,G,Y} expresses R∨G=Y and {C,M,B} expresses C∧M=B; the RGB and CMY faces express the three-input relations. On every face, OR of all three vertices gives its face color when at least two are primaries; AND does so when at least two are CMY colors. Meanwhile, {R,G,Y}, {G,B,C}, {B,R,M}, and {C,M,Y} are four Fano lines with three-vertex XOR 000. Their opposite faces have XOR 111 by complement. The same face thus carries both a mixing result and XOR parity.",
-  theory_octa_dual_aria: "The faces and vertices of the Color Die paired with the vertices and triangular faces of its dual octahedron",
-  theory_octa_dual_die: "Color Die D",
-  theory_octa_dual_octa: "Dual Octahedron D*",
-  theory_octa_dual_die_vertex_aria: "Die vertex {0}, level {1}, GRB bits {2}",
-  theory_octa_dual_octa_vertex_aria: "Octahedral vertex {0}, level {1}, GRB bits {2}",
-  theory_octa_dual_die_faces_aria: "The six chromatic faces of the Color Die",
-  theory_octa_dual_die_face_aria: "Die face {0}, level {1}, GRB bits {2}",
-  theory_octa_dual_octa_faces_aria: "The eight triangular faces of the dual octahedron",
-  theory_octa_dual_octa_face_aria: "Octahedral face {0}, level {1}, GRB bits {2}",
-  theory_octa_dual_face_vertex: "6 die faces ↔ 6 octahedral vertices",
-  theory_octa_dual_edge_edge: "12 die edges ↔ 12 octahedral edges",
-  theory_octa_dual_vertex_face: "8 die vertices ↔ 8 triangular faces",
-  theory_octa_dual_axis: "opposite faces (complements) ↔ antipodal vertex axes",
-  theory_octa_dual_q3: "octahedral face-adjacency graph ≅ Q₃",
-  theory_octa_face_operation_prompt: "Select one of the eight triangles to see its mixing relation and XOR.",
-  theory_octa_face_operation: "Face {0}: {1}",
-  theory_octa_face_fano: "The three vertices have XOR 000, so they form a Fano line.",
-  theory_octa_face_opposite_fano: "The complementary opposite face {0} is a Fano line with XOR 000.",
+
+  theory_chromatic_octa_title: "Octahedron of Six Chromatic Colors",
+  theory_octa_aria: "Explore XOR and complement on the edges of the chromatic octahedron",
+  theory_octa_diagram: "Regular octahedron of six chromatic colors",
+  theory_octa_hint: "Select an edge or a color pair below. Dashed lines show the rear edges.",
+  theory_octa_duality_note:
+    "This octahedron is dual to the Color Die in the preceding section: each die face corresponds to a vertex. Joining the six face centers of a regular cube gives the same regular octahedron.",
+  theory_octa_geometry_note:
+    "The six edge midpoints of T0 and those of T1 also coincide with these six vertices. The solids enclosed by the two tetrahedra intersect in this octahedron, forming the center of the Color Star. This is a geometric intersection; the color sets T0 and T1 remain disjoint.",
+  theory_chromatic_octa_desc:
+    "For two distinct chromatic colors a and b, joining every pair whose XOR a⊕b remains chromatic gives the octahedron. The two triangular faces incident to each edge have third vertices a⊕b and ¬(a⊕b). Select an edge to show the XOR triangle in blue and the triangle completed by its complement in amber.\n\nThe 12 edges comprise six distance-1 edges along the hue cycle R→Y→G→C→B→M→R and six distance-2 edges forming the GRB and CMY triangles. Distance-3 complement pairs occupy opposite vertices and have no connecting edge. The equal edge lengths of the regular octahedron do not represent bit-distance values.",
+  theory_octa_fano_note:
+    "The four faces with XOR 000, {R,G,Y}, {G,B,C}, {B,R,M}, and {C,M,Y}, correspond to Fano lines and cover all 12 edges exactly once. Within each of these triangles, any two vertices XOR to the remaining vertex. Moving to an adjacent face replaces the third vertex by its complement, switching the XOR between 000 and 111.",
+
+  theory_octa_edge_choice: "Octahedral edge {0} {1} — {2} {3}",
+  theory_octa_edge_choices: "Select an octahedral edge",
+  theory_octa_edge_selected: "Two faces incident to edge {0}–{1}",
+  theory_octa_edge_xor: "XOR",
+  theory_octa_edge_complement: "Its complement (XNOR)",
+  theory_octa_edge_triangle: "Face {{0}}",
+  theory_octa_edge_face_xor: "Three-vertex XOR: {0}",
 
   theory_fano_cmy_collapse: "CMY line",
   theory_fano_cmy_eq: "τRB·τGB·τGR = id \u2192 collinear!",

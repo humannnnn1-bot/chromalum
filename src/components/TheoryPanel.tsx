@@ -11,17 +11,16 @@ import { BinaryTable } from "./theory/BinaryTable";
 import { ColorDice, HueOrderNet } from "./theory/ColorDice";
 import { FanoPlane } from "./theory/FanoPlane";
 import { ColorCube } from "./theory/ColorCube";
-import { GrayCodeHex } from "./theory/GrayCodeHex";
+import { ColorMixing } from "./theory/ColorMixing";
 import { HammingDiagram } from "./theory/HammingDiagram";
 import { PrimaryGeneration } from "./theory/PrimaryGeneration";
 import { ToggleActionTable } from "./theory/ToggleActionTable";
 import { TogglePatternBridge } from "./theory/TogglePatternBridge";
 import { StellaOctangula } from "./theory/StellaOctangula";
-import { TetraFaceDuality } from "./theory/TetraFaceDuality";
-import { ToneZigzag } from "./theory/ToneZigzag";
-import { OctahedronDual } from "./theory/OctahedronDual";
+import { HueTraversal } from "./theory/HueTraversal";
+import { ChromaticOctahedron } from "./theory/ChromaticOctahedron";
 import { ConnectionsSummary, ScopeSummary } from "./theory/ConnectionsSummary";
-import { DerivationMap, EmpiricalResonance, ValuationSummary } from "./theory/DerivationMap";
+import { DerivationMap, ValuationSummary } from "./theory/DerivationMap";
 
 const S_SECTION: React.CSSProperties = {
   display: "flex",
@@ -131,6 +130,14 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
               <VennDiagram hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
             <PrimaryGeneration mode="generation" hlLevel={hlLevel} onHover={onHover} />
+            <Subsection title={t("theory_mixing_title")} desc={t("theory_mixing_desc")}>
+              <ColorMixing />
+              {splitParagraphs(t("theory_mixing_operations_desc")).map((paragraph, index) => (
+                <p key={index} className="theory-desc">
+                  {paragraph}
+                </p>
+              ))}
+            </Subsection>
           </Section>
 
           <hr style={S_DIVIDER} />
@@ -138,7 +145,6 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
           {/* Chapter 2 — independent mathematical and color-order paths */}
           <Section id="theory-rank" title={t("theory_empirical_title")} desc={t("theory_empirical_desc")}>
             <DerivationMap />
-            <EmpiricalResonance />
             <Subsection title={t("theory_binary_title")} desc={t("theory_binary_desc")}>
               <BinaryTable hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
@@ -155,15 +161,8 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           {/* Chapter 4 — toggle action, Hamming cube, and chromatic six-cycle */}
           <Section id="theory-cube-cycle" title={t("theory_action_title")} desc={t("theory_action_desc")}>
-            <PrimaryGeneration mode="toggle" hlLevel={hlLevel} onHover={onHover} />
-            <Subsection
-              title={t("theory_cube_title")}
-              desc={[t("theory_cube_desc"), t("theory_cube_faces_desc"), t("theory_cube_desc2"), t("theory_cube_mix_desc")]}
-            >
+            <Subsection title={t("theory_cube_title")} desc={[t("theory_cube_desc"), t("theory_cube_faces_desc"), t("theory_cube_desc2")]}>
               <ColorCube hlLevel={hlLevel} onHover={onHover} />
-            </Subsection>
-            <Subsection title={t("theory_gray_title")} desc={t("theory_gray_desc")}>
-              <GrayCodeHex hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
           </Section>
 
@@ -189,11 +188,9 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           {/* Chapter 6 — K8 partitioned by Hamming distance */}
           <Section id="theory-k8" title={t("theory_k8_title")} desc={t("theory_k8_desc")}>
-            <Subsection title={t("theory_stella_title")} desc={[t("theory_stella_desc"), t("theory_stella_faces_desc")]}>
+            <Subsection title={t("theory_stella_title")} desc={[t("theory_stella_desc"), t("theory_stella_toggle_desc")].join("\n\n")}>
               <StellaOctangula hlLevel={hlLevel} onHover={onHover} />
-            </Subsection>
-            <Subsection title={t("theory_stella_duality_title")} desc={t("theory_stella_duality_desc")}>
-              <TetraFaceDuality />
+              <p className="theory-desc">{t("theory_stella_faces_desc")}</p>
             </Subsection>
           </Section>
 
@@ -201,21 +198,29 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
 
           {/* Chapter 7 — geometric readings of already-defined relations */}
           <Section id="theory-geometry" title={t("theory_geometry_title")} desc={t("theory_geometry_desc")}>
-            <Subsection title={t("theory_zigzag_title")} desc={t("theory_zigzag_desc")}>
-              <ToneZigzag hlLevel={hlLevel} onHover={onHover} />
+            <Subsection title={t("theory_zigzag_title")} desc={[t("theory_gray_desc"), t("theory_zigzag_desc")]}>
+              <HueTraversal hlLevel={hlLevel} onHover={onHover} />
             </Subsection>
-            <Subsection title={t("theory_dice_net_title")} desc={t("theory_dice_net_desc")}>
-              <HueOrderNet hlLevel={hlLevel} onHover={onHover} />
-            </Subsection>
-            <Subsection title={t("theory_dice_title")} desc={[t("theory_dice_desc"), t("theory_dice_desc2"), t("theory_dice_views_desc")]}>
-              <ColorDice hlLevel={hlLevel} onHover={onHover} />
-            </Subsection>
-            <Subsection
-              title={t("theory_octa_dual_title")}
-              desc={[...splitParagraphs(t("theory_octa_dual_desc")), t("theory_octa_faces_desc")]}
-            >
-              <OctahedronDual hlLevel={hlLevel} onHover={onHover} />
-            </Subsection>
+            <section id="theory-color-die" aria-label={t("theory_dice_title")} style={S_SECTION}>
+              <Subsection title={t("theory_dice_title")} desc={t("theory_dice_net_desc")}>
+                <div className="theory-die-figure">
+                  <HueOrderNet hlLevel={hlLevel} onHover={onHover} />
+                  <ColorDice />
+                </div>
+                <p className="theory-desc">{t("theory_dice_desc")}</p>
+                <p className="theory-desc">{t("theory_dice_desc2")}</p>
+              </Subsection>
+            </section>
+            <section id="theory-octahedron" aria-label={t("theory_chromatic_octa_title")} style={S_SECTION}>
+              <Subsection title={t("theory_chromatic_octa_title")} desc={t("theory_chromatic_octa_desc")}>
+                <ChromaticOctahedron />
+                <p id="theory-octa-face-algebra" className="theory-desc">
+                  {t("theory_octa_fano_note")}
+                </p>
+                <p className="theory-desc">{t("theory_octa_duality_note")}</p>
+                <p className="theory-desc">{t("theory_octa_geometry_note")}</p>
+              </Subsection>
+            </section>
           </Section>
 
           <hr style={S_DIVIDER} />

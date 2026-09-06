@@ -1,64 +1,69 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { LanguageProvider } from "../../../i18n";
-import { GrayCodeHex } from "../GrayCodeHex";
+import { HueTraversal } from "../HueTraversal";
 
-function renderWithLanguage() {
+function renderTraversal() {
   localStorage.setItem("chromalum_lang", "en");
   return render(
     <LanguageProvider>
-      <GrayCodeHex hlLevel={null} onHover={vi.fn()} />
+      <HueTraversal hlLevel={null} onHover={vi.fn()} />
     </LanguageProvider>,
   );
 }
 
-function activeEdges(svg: HTMLElement) {
-  return [...svg.querySelectorAll("line")].filter((line) => line.getAttribute("stroke-width") === "2.5");
+function selectedEdges(container: HTMLElement) {
+  return ["data-cycle-edge", "data-hue-edge", "data-edge-row"].map((attribute) =>
+    [...container.querySelectorAll("[" + attribute + '][data-hue-selected="true"]')].map((element) => element.getAttribute(attribute)),
+  );
 }
 
-describe("GrayCodeHex", () => {
-  it("aligns the active edge with the counter-clockwise transition", () => {
-    renderWithLanguage();
+afterEach(() => vi.useRealTimers());
 
-    const svg = screen.getByRole("img", { name: "Chromatic One-Bit Six-Cycle" });
-
-    expect(activeEdges(svg)).toHaveLength(1);
-    expect(activeEdges(svg)[0].getAttribute("stroke")).toBe("#00ff00");
-
-    fireEvent.click(screen.getByRole("button", { name: "↺ Counter-clockwise" }));
-
-    expect(screen.getByText("Toggle: B")).toBeTruthy();
-    expect(screen.getByText("010 (Red) → 011 (Magenta)")).toBeTruthy();
-    expect(activeEdges(svg)).toHaveLength(1);
-    expect(activeEdges(svg)[0].getAttribute("stroke")).toBe("#0000ff");
+describe("Shared hue traversal", () => {
+  it("selects the same edge in the six-cycle, zigzag, and table, with signed direction", () => {
+    const { container } = renderTraversal();
+    expect(selectedEdges(container)).toEqual([["0"], ["0"], ["0"]]);
+    expect(screen.getByRole("status").textContent).toContain("R 010 → Y 110 · toggle G · ΔL=+4");
+    const row = container.querySelector('[data-edge-row="3"]')!;
+    fireEvent.click(within(row as HTMLElement).getByRole("button"));
+    expect(selectedEdges(container)).toEqual([["3"], ["3"], ["3"]]);
+    expect(screen.getByRole("status").textContent).toContain("C 101 → B 001 · toggle G · ΔL=−4");
+    fireEvent.click(screen.getByRole("button", { name: "Reverse direction" }));
+    expect(selectedEdges(container)).toEqual([["3"], ["3"], ["3"]]);
+    expect(screen.getByRole("status").textContent).toContain("B 001 → C 101 · toggle G · ΔL=+4");
+    expect(row.textContent).toContain("B₁ → C₅");
+    expect(row.textContent).toContain("B₁ ⊂ C₅");
+    expect(container.querySelector('[data-hue-edge="3"]')?.textContent).toContain("+4");
   });
 
-  it("follows clockwise adjacent node clicks without starting playback", () => {
-    renderWithLanguage();
-
-    const svg = screen.getByRole("img", { name: "Chromatic One-Bit Six-Cycle" });
-
-    fireEvent.click(screen.getByText("110"));
-
-    expect(screen.getByText("110 (Yellow) → 100 (Green)")).toBeTruthy();
-    expect(screen.getByText("Toggle: R")).toBeTruthy();
-    expect(activeEdges(svg)).toHaveLength(1);
-    expect(activeEdges(svg)[0].getAttribute("stroke")).toBe("#ff0000");
-    expect(screen.queryByRole("button", { name: "⏸ Pause" })).toBeNull();
+  it("selects a cycle edge by keyboard without conflating tone selection with an edge", () => {
+    const { container } = renderTraversal();
+    const cycle = screen.getByRole("group", { name: "Chromatic One-Bit Six-Cycle" });
+    const edge = within(cycle).getByRole("button", { name: "Select edge B–M" });
+    fireEvent.keyDown(edge, { key: "Enter" });
+    expect(selectedEdges(container)).toEqual([["4"], ["4"], ["4"]]);
+    fireEvent.click(container.querySelector('[data-tone-level-control="2"]')!);
+    expect(selectedEdges(container)).toEqual([["4"], ["4"], ["4"]]);
+    expect(container.querySelector('[data-active-fiber="2"]')).not.toBeNull();
   });
 
-  it("follows counter-clockwise adjacent node clicks without starting playback", () => {
-    renderWithLanguage();
-
-    const svg = screen.getByRole("img", { name: "Chromatic One-Bit Six-Cycle" });
-
-    fireEvent.click(screen.getByText("011"));
-
-    expect(screen.getByText("011 (Magenta) → 001 (Blue)")).toBeTruthy();
-    expect(screen.getByText("Toggle: R")).toBeTruthy();
-    expect(activeEdges(svg)).toHaveLength(1);
-    expect(activeEdges(svg)[0].getAttribute("stroke")).toBe("#ff0000");
-    expect(screen.queryByRole("button", { name: "⏸ Pause" })).toBeNull();
+  it("wraps playback in either direction and cancels its timer on manual selection and unmount", () => {
+    vi.useFakeTimers();
+    const { container, unmount } = renderTraversal();
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    act(() => vi.advanceTimersByTime(900));
+    expect(selectedEdges(container)).toEqual([["1"], ["1"], ["1"]]);
+    fireEvent.click(screen.getByRole("button", { name: "Previous edge" }));
+    act(() => vi.advanceTimersByTime(1800));
+    expect(selectedEdges(container)).toEqual([["0"], ["0"], ["0"]]);
+    fireEvent.click(screen.getByRole("button", { name: "Reverse direction" }));
+    fireEvent.click(screen.getByRole("button", { name: "Play" }));
+    act(() => vi.advanceTimersByTime(900));
+    expect(selectedEdges(container)).toEqual([["5"], ["5"], ["5"]]);
+    expect(screen.getByRole("status").textContent).toContain("R 010 → M 011");
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 });

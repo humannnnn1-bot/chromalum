@@ -12,6 +12,7 @@ import { C, FS, FW, SP, FONT } from "../../styles/tokens";
 import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
+import { K8DistanceComparison, K8MaskControls } from "./K8Relations";
 
 const VW = 320; // single-view width
 const VR = 6.3;
@@ -37,6 +38,8 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
   const [pinned, setPinned] = useState<number | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("stella");
   const [comparisonPair, setComparisonPair] = useState<ComparisonPair>([]);
+  const [mask, setMask] = useState<number | null>(null);
+  const maskMode = mask !== null;
   const nodesOnly = viewMode === "nodes";
   const distanceMode = nodesOnly ? "none" : viewMode === "cube" ? 1 : viewMode === "complement" ? 3 : viewMode === "k8" ? "all" : 2;
 
@@ -89,10 +92,19 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
 
   const selectViewMode = useCallback(
     (nextMode: ViewMode) => {
-      if (viewMode !== nextMode) clearSelection();
+      clearSelection();
+      setMask(null);
       setViewMode(nextMode);
     },
-    [clearSelection, viewMode],
+    [clearSelection],
+  );
+
+  const selectMask = useCallback(
+    (nextMask: number) => {
+      clearSelection();
+      setMask((previous) => (previous === nextMask ? null : nextMask));
+    },
+    [clearSelection],
   );
 
   const hlQ3 = new Set<number>();
@@ -118,11 +130,20 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       const p = K8_EXPLORER_POINTS[lv];
       const comparisonRole = comparisonActive && comparisonA === lv ? "a" : comparisonComplete && comparisonB === lv ? "b" : null;
       const neighbour =
-        !comparisonActive && hl !== null && lv !== hl && !nodesOnly && (distanceMode === "all" || hammingDist(hl, lv) === distanceMode);
+        !comparisonActive &&
+        hl !== null &&
+        lv !== hl &&
+        !nodesOnly &&
+        (maskMode ? (hl ^ lv) === mask : distanceMode === "all" || hammingDist(hl, lv) === distanceMode);
       const active = comparisonActive ? comparisonRole !== null : hl === lv || neighbour;
-      const dim = comparisonActive ? !active : hl !== null && !active;
+      const dim = maskMode ? false : comparisonActive ? !active : hl !== null && !active;
       const isComplement =
-        !comparisonActive && !nodesOnly && (distanceMode === 3 || distanceMode === "all") && hl !== null && (hl ^ 7) === lv;
+        !comparisonActive &&
+        !nodesOnly &&
+        (!maskMode || mask === 7) &&
+        (distanceMode === 3 || distanceMode === "all") &&
+        hl !== null &&
+        (hl ^ 7) === lv;
       const vertexAriaLabel =
         comparisonRole === "a"
           ? t("theory_stella_compare_input_a_aria", info.short, lv, info.bits.join(""))
@@ -218,69 +239,105 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
 
   const renderGraph = () => (
     <>
+      {maskMode &&
+        [...CUBE_EDGES, ...STELLA_EDGES, ...COMPLEMENT_EDGES]
+          .filter(([a, b]) => (a ^ b) === mask)
+          .map(([a, b]) => (
+            <line
+              key={`mask-outline-${a}-${b}`}
+              x1={K8_EXPLORER_POINTS[a].x}
+              y1={K8_EXPLORER_POINTS[a].y}
+              x2={K8_EXPLORER_POINTS[b].x}
+              y2={K8_EXPLORER_POINTS[b].y}
+              stroke="#e0e0f0"
+              strokeWidth={3.4}
+              opacity={0.5}
+              aria-hidden="true"
+            />
+          ))}
       {(distanceMode === "all" || distanceMode === 1) &&
         CUBE_EDGES.map(([a, b], i) => {
           const compared = isComparedEdge(a, b);
-          const active = comparisonComplete ? compared : hlQ3.has(i);
-          const dim = comparisonComplete ? !compared : hl !== null && !active;
+          const matched = maskMode && (a ^ b) === mask;
+          const active = maskMode ? matched : comparisonComplete ? compared : hlQ3.has(i);
+          const dim = maskMode ? !matched : comparisonComplete ? !compared : hl !== null && !active;
           return (
             <line
               key={`q3-${i}`}
               data-k8-edge={`${a}-${b}`}
               data-k8-distance="1"
+              data-k8-mask={a ^ b}
               data-k8-edge-active={active}
               x1={K8_EXPLORER_POINTS[a].x}
               y1={K8_EXPLORER_POINTS[a].y}
               x2={K8_EXPLORER_POINTS[b].x}
               y2={K8_EXPLORER_POINTS[b].y}
-              stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_Q3_COLOR}
-              strokeWidth={compared ? 3.5 : active ? 2 : distanceMode === 1 ? 1.5 : 1}
-              opacity={dim ? 0.1 : active ? 0.9 : distanceMode === 1 ? 0.75 : 0.4}
+              stroke={
+                matched
+                  ? THEORY_LEVELS[mask].color
+                  : compared && comparisonMask !== null
+                    ? THEORY_LEVELS[comparisonMask].color
+                    : K8_Q3_COLOR
+              }
+              strokeWidth={matched ? 2.2 : compared ? 3.5 : active ? 2 : distanceMode === 1 ? 1.5 : 1}
+              opacity={dim ? 0.1 : matched ? 1 : active ? 0.9 : distanceMode === 1 ? 0.75 : 0.4}
             />
           );
         })}
       {(distanceMode === "all" || distanceMode === 2) &&
         STELLA_EDGES.map(([a, b], i) => {
           const compared = isComparedEdge(a, b);
-          const active = comparisonComplete ? compared : hlStella.has(i);
-          const dim = comparisonComplete ? !compared : hl !== null && !active;
+          const matched = maskMode && (a ^ b) === mask;
+          const active = maskMode ? matched : comparisonComplete ? compared : hlStella.has(i);
+          const dim = maskMode ? !matched : comparisonComplete ? !compared : hl !== null && !active;
           const edgeColor = isDistanceTwo ? (i < TETRA_T0_EDGES.length ? STELLA_T0_COLOR : STELLA_T1_COLOR) : K8_STELLA_COLOR;
           return (
             <line
               key={`st-${i}`}
               data-k8-edge={`${a}-${b}`}
               data-k8-distance="2"
+              data-k8-mask={a ^ b}
               data-k8-edge-active={active}
               x1={K8_EXPLORER_POINTS[a].x}
               y1={K8_EXPLORER_POINTS[a].y}
               x2={K8_EXPLORER_POINTS[b].x}
               y2={K8_EXPLORER_POINTS[b].y}
-              stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : edgeColor}
-              strokeWidth={compared ? 3.5 : active ? 2.2 : isDistanceTwo ? 1.5 : 1.2}
-              strokeDasharray={isDistanceTwo ? undefined : "5,3"}
-              opacity={dim ? 0.1 : active ? 0.9 : isDistanceTwo ? 0.75 : 0.35}
+              stroke={
+                matched ? THEORY_LEVELS[mask].color : compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : edgeColor
+              }
+              strokeWidth={matched ? 2.2 : compared ? 3.5 : active ? 2.2 : isDistanceTwo ? 1.5 : 1.2}
+              strokeDasharray={isDistanceTwo || maskMode ? undefined : "5,3"}
+              opacity={dim ? 0.1 : matched ? 1 : active ? 0.9 : isDistanceTwo ? 0.75 : 0.35}
             />
           );
         })}
       {(distanceMode === "all" || distanceMode === 3) &&
         COMPLEMENT_EDGES.map(([a, b], i) => {
           const compared = isComparedEdge(a, b);
-          const active = comparisonComplete ? compared : hlM4.has(i);
-          const dim = comparisonComplete ? !compared : hl !== null && !active;
+          const matched = maskMode && (a ^ b) === mask;
+          const active = maskMode ? matched : comparisonComplete ? compared : hlM4.has(i);
+          const dim = maskMode ? !matched : comparisonComplete ? !compared : hl !== null && !active;
           return (
             <line
               key={`m4-${i}`}
               data-k8-edge={`${a}-${b}`}
               data-k8-distance="3"
+              data-k8-mask={a ^ b}
               data-k8-edge-active={active}
               x1={K8_EXPLORER_POINTS[a].x}
               y1={K8_EXPLORER_POINTS[a].y}
               x2={K8_EXPLORER_POINTS[b].x}
               y2={K8_EXPLORER_POINTS[b].y}
-              stroke={compared && comparisonMask !== null ? THEORY_LEVELS[comparisonMask].color : K8_M4_COLOR}
-              strokeWidth={compared ? 3.5 : active ? 2.5 : 1.5}
-              strokeDasharray={distanceMode === 3 ? undefined : "2,4"}
-              opacity={dim ? 0.1 : active ? 0.9 : distanceMode === 3 ? 0.8 : 0.3}
+              stroke={
+                matched
+                  ? THEORY_LEVELS[mask].color
+                  : compared && comparisonMask !== null
+                    ? THEORY_LEVELS[comparisonMask].color
+                    : K8_M4_COLOR
+              }
+              strokeWidth={matched ? 2.2 : compared ? 3.5 : active ? 2.5 : 1.5}
+              strokeDasharray={distanceMode === 3 || maskMode ? undefined : "2,4"}
+              opacity={dim ? 0.1 : matched ? 1 : active ? 0.9 : distanceMode === 3 ? 0.8 : 0.3}
             />
           );
         })}
@@ -303,7 +360,10 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     <div
       style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.lg, width: "100%" }}
       onKeyDown={(event) => {
-        if (event.key === "Escape" && comparisonPair.length > 0) clearSelection();
+        if (event.key === "Escape" && (comparisonPair.length > 0 || maskMode)) {
+          clearSelection();
+          setMask(null);
+        }
       }}
     >
       <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
@@ -311,6 +371,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           id="theory-stella-view"
           data-stella-mode={viewMode}
           data-stella-distance={distanceMode}
+          data-stella-mask={maskMode ? mask : undefined}
           viewBox="12 -12 156 148"
           style={{ width: "100%", maxWidth: VW }}
           role="group"
@@ -321,13 +382,20 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
       </div>
 
       {/* Annotation below SVG — fixed height to prevent layout shift on mode toggle */}
-      <div style={{ minHeight: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {viewMode === "k8" ? (
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        style={{ minHeight: 28, display: "flex", alignItems: "center", justifyContent: "center" }}
+      >
+        {maskMode ? (
+          <p className="theory-k8-mask-caption">{t("theory_k8_mask_result", THEORY_LEVELS[mask].bits.join(""), hammingDist(0, mask))}</p>
+        ) : viewMode === "k8" ? (
           <div style={{ textAlign: "center" }}>
             <p style={{ fontSize: FS.xxs, fontFamily: FONT.mono, margin: 0 }}>
               <span style={{ color: K8_Q3_COLOR }}>Q&#x2083;(12)</span>
               <span style={{ color: "rgba(255,255,255,0.4)" }}> + </span>
-              <span style={{ color: K8_STELLA_COLOR }}>&#x2606;(12)</span>
+              <span style={{ color: K8_STELLA_COLOR }}>2K&#x2084;(12)</span>
               <span style={{ color: "rgba(255,255,255,0.4)" }}> + </span>
               <span style={{ color: K8_M4_COLOR }}>M&#x2084;(4)</span>
               <span style={{ color: "rgba(255,255,255,0.5)" }}> = 28</span>
@@ -351,46 +419,45 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
         )}
       </div>
 
-      <div
-        role="group"
-        aria-label={t("theory_stella_distance_modes")}
-        style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: SP.md }}
-      >
-        {(
-          [
-            { mode: "nodes", label: "theory_stella_nodes", color: C.accentBright },
-            { mode: "cube", label: "theory_stella_distance_1", color: K8_Q3_COLOR },
-            { mode: "stella", label: "theory_stella_distance_2", color: K8_STELLA_COLOR },
-            { mode: "complement", label: "theory_stella_distance_3", color: K8_M4_COLOR },
-            { mode: "k8", label: "theory_stella_distance_all", color: C.accentBright },
-          ] as const
-        ).map(({ mode, label, color }) => (
-          <button
-            key={mode}
-            className="theory-annotation theory-diagram-button"
-            type="button"
-            aria-controls="theory-stella-view"
-            aria-pressed={viewMode === mode}
-            onClick={() => selectViewMode(mode)}
-            style={{
-              ...S_BTN,
-              whiteSpace: "nowrap",
-              borderColor: viewMode === mode ? color : C.border,
-              color: viewMode === mode ? color : C.textMuted,
-            }}
-          >
-            {t(label)}
-          </button>
-        ))}
+      <div className="theory-k8-controls">
+        <div
+          role="group"
+          aria-label={t("theory_stella_distance_modes")}
+          style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: SP.md }}
+        >
+          {(
+            [
+              { mode: "nodes", label: "theory_stella_nodes", color: C.accentBright },
+              { mode: "cube", label: "theory_stella_distance_1", color: K8_Q3_COLOR },
+              { mode: "stella", label: "theory_stella_distance_2", color: K8_STELLA_COLOR },
+              { mode: "complement", label: "theory_stella_distance_3", color: K8_M4_COLOR },
+              { mode: "k8", label: "theory_stella_distance_all", color: C.accentBright },
+            ] as const
+          ).map(({ mode, label, color }) => (
+            <button
+              key={mode}
+              className="theory-annotation theory-diagram-button"
+              type="button"
+              aria-controls="theory-stella-view"
+              aria-pressed={viewMode === mode}
+              onClick={() => selectViewMode(mode)}
+              style={{
+                ...S_BTN,
+                whiteSpace: "nowrap",
+                borderColor: viewMode === mode ? color : C.border,
+                color: viewMode === mode ? color : C.textMuted,
+              }}
+            >
+              {t(label)}
+            </button>
+          ))}
+        </div>
+
+        {(distanceMode === 1 || distanceMode === 2) && <K8MaskControls distance={distanceMode} selectedMask={mask} onSelect={selectMask} />}
       </div>
 
       {viewMode === "k8" && (
-        <div
-          data-testid="stella-comparison-status"
-          role="status"
-          aria-live="polite"
-          style={{ minHeight: 62, textAlign: "center", fontFamily: FONT.mono, fontSize: FS.sm, color: C.textMuted }}
-        >
+        <div className="theory-k8-comparison-status" data-testid="stella-comparison-status" role="status" aria-live="polite">
           {comparisonA === null ? (
             t("theory_stella_compare_select_first")
           ) : !comparisonComplete || comparisonB === null || comparisonMask === null || comparisonDistance === null ? (
@@ -406,15 +473,19 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
               <div style={{ marginTop: SP.xs }}>
                 d<sub>H</sub> = wt({THEORY_LEVELS[comparisonMask].bits.join("")}) = {comparisonDistance} · {comparisonLayerLabel}
               </div>
-              <div style={{ marginTop: SP.xs, fontSize: FS.xs }}>
+              <div style={{ marginTop: SP.xs }}>
+                |ΔL| = |{comparisonB} − {comparisonA}| = {Math.abs(comparisonB - comparisonA)}
+              </div>
+              <div style={{ marginTop: SP.xs, fontSize: 11 }}>
                 π({THEORY_LEVELS[comparisonA].short})={comparisonParityA} ({comparisonParityA === 0 ? "T0" : "T1"}) · π(
                 {THEORY_LEVELS[comparisonB].short})={comparisonParityB} ({comparisonParityB === 0 ? "T0" : "T1"})
               </div>
-              <div style={{ marginTop: SP.xs, fontSize: FS.xxs, color: C.textDimmer }}>{t("theory_stella_compare_parity_note")}</div>
+              <div style={{ marginTop: SP.xs, fontSize: 11, color: C.textMuted }}>{t("theory_stella_compare_parity_note")}</div>
             </>
           )}
         </div>
       )}
+      <K8DistanceComparison />
     </div>
   );
 });

@@ -1,71 +1,36 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React from "react";
 import { THEORY_LEVELS, GRAY_PATH, GRAY_TOGGLES, GRAY_POINTS } from "../../data/theory-data";
-import { C, FS, FW, SP } from "../../styles/tokens";
-import { S_BTN, S_CURSOR_POINTER } from "../../styles/shared";
+import { C, FS, FW } from "../../styles/tokens";
+import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 
 const W = 300,
-  H = 340;
+  H = 300;
 const DOT_R = 16;
-const WALKER_R = 8;
-const STEP_MS = 900;
 const CHANNEL_COLORS: Record<string, string> = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
-type Direction = "cw" | "ccw";
 
 interface Props {
+  selectedEdge: number;
+  direction: 1 | -1;
+  onSelectEdge: (edge: number) => void;
   hlLevel: number | null;
   onHover: (lv: number | null) => void;
 }
 
-export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }: Props) {
+export const GrayCodeHex = React.memo(function GrayCodeHex({ selectedEdge, direction, onSelectEdge, hlLevel, onHover }: Props) {
   const { t } = useTranslation();
-  const [step, setStep] = useState(0);
-  const [direction, setDirection] = useState<Direction>("cw");
-  const [playing, setPlaying] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
-  const reducedMotion = useRef(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-
-  useEffect(() => {
-    if (!playing) {
-      clearInterval(timerRef.current);
-      return;
-    }
-    const dir = direction === "cw" ? 1 : 5; // +1 = clockwise, +5 = counterclockwise (mod 6)
-    timerRef.current = setInterval(() => setStep((s) => (s + dir) % 6), STEP_MS);
-    return () => clearInterval(timerRef.current);
-  }, [direction, playing]);
-
-  useEffect(() => {
-    if (reducedMotion.current) setPlaying(false);
-  }, []);
-
-  const handlePlayCW = useCallback(() => {
-    setDirection("cw");
-    setPlaying(true);
-  }, []);
-  const handlePlayCCW = useCallback(() => {
-    setDirection("ccw");
-    setPlaying(true);
-  }, []);
-  const handlePause = useCallback(() => setPlaying(false), []);
-
-  const isCCW = direction === "ccw";
-  const currentLv = GRAY_PATH[step];
-  const fwdStep = (step + 1) % 6;
-  const bwdStep = (step + 5) % 6;
-  const nextStep = isCCW ? bwdStep : fwdStep;
-  const nextLv = GRAY_PATH[nextStep];
-  const toggle = isCCW ? GRAY_TOGGLES[bwdStep] : GRAY_TOGGLES[step];
+  const currentLv = GRAY_PATH[direction === 1 ? selectedEdge : (selectedEdge + 1) % 6];
+  const nextLv = GRAY_PATH[direction === 1 ? (selectedEdge + 1) % 6 : selectedEdge];
+  const toggle = GRAY_TOGGLES[selectedEdge];
   const toggleColor = CHANNEL_COLORS[toggle];
-  const currentEdgeStep = isCCW ? bwdStep : step;
-  const wp = GRAY_POINTS[currentLv];
+  const currentEdgeStep = selectedEdge;
 
   const currentBits = THEORY_LEVELS[currentLv].bits;
-  const nextBits = THEORY_LEVELS[nextLv].bits;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 240 }} role="img" aria-label={t("theory_gray_title")}>
+    <div className="theory-hue-cycle">
+      <h5>{t("theory_gray_title")}</h5>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", maxWidth: 240 }} role="group" aria-label={t("theory_gray_title")}>
         {/* Edges */}
         {GRAY_PATH.map((lv, i) => {
           const nLv = GRAY_PATH[(i + 1) % 6];
@@ -82,7 +47,24 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }:
           const lx = mx + (dx / dist) * 18,
             ly = my + (dy / dist) * 18;
           return (
-            <g key={"ge" + i}>
+            <g
+              key={"ge" + i}
+              data-cycle-edge={i}
+              data-hue-selected={isCurrentEdge}
+              role="button"
+              tabIndex={0}
+              aria-pressed={isCurrentEdge}
+              aria-label={t("theory_hue_select_edge", THEORY_LEVELS[lv].short + "–" + THEORY_LEVELS[nLv].short)}
+              onClick={() => onSelectEdge(i)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  if (!event.repeat) onSelectEdge(i);
+                }
+              }}
+              style={S_CURSOR_POINTER}
+            >
+              <line x1={p0.x} y1={p0.y} x2={p1.x} y2={p1.y} stroke="transparent" strokeWidth={24} />
               <line
                 x1={p0.x}
                 y1={p0.y}
@@ -138,12 +120,9 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }:
               onMouseEnter={() => onHover(lv)}
               onMouseLeave={() => onHover(null)}
               onClick={() => {
-                const clickedStep = GRAY_PATH.indexOf(lv as (typeof GRAY_PATH)[number]);
-                const delta = (clickedStep - step + GRAY_PATH.length) % GRAY_PATH.length;
-                if (delta === 1) setDirection("cw");
-                else if (delta === GRAY_PATH.length - 1) setDirection("ccw");
-                setStep(clickedStep);
-                onHover(lv);
+                const index = GRAY_PATH.indexOf(lv as (typeof GRAY_PATH)[number]);
+                onSelectEdge(direction === 1 ? index : (index + 5) % 6);
+                onHover(null);
               }}
               style={S_CURSOR_POINTER}
             >
@@ -202,9 +181,6 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }:
           );
         })}
 
-        {/* Walker dot */}
-        <circle cx={wp.x} cy={wp.y} r={WALKER_R} fill="#fff" fillOpacity={0.9} stroke={toggleColor} strokeWidth={2} />
-
         {/* Bit visualization in center */}
         {(() => {
           const cx = 150,
@@ -248,34 +224,7 @@ export const GrayCodeHex = React.memo(function GrayCodeHex({ hlLevel, onHover }:
             </g>
           );
         })()}
-
-        {/* Transition info at bottom */}
-        <text x={150} y={H - 22} textAnchor="middle" fontSize={FS.xs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-          {currentBits.join("")} ({THEORY_LEVELS[currentLv].name}) → {nextBits.join("")} ({THEORY_LEVELS[nextLv].name})
-        </text>
       </svg>
-
-      {/* Controls */}
-      <div style={{ display: "flex", gap: SP.lg }}>
-        {playing && direction === "cw" ? (
-          <button className="theory-annotation theory-diagram-button" style={S_BTN} onClick={handlePause}>
-            {t("theory_gray_pause")}
-          </button>
-        ) : (
-          <button className="theory-annotation theory-diagram-button" style={S_BTN} onClick={handlePlayCW}>
-            {t("theory_gray_cw")}
-          </button>
-        )}
-        {playing && direction === "ccw" ? (
-          <button className="theory-annotation theory-diagram-button" style={S_BTN} onClick={handlePause}>
-            {t("theory_gray_pause")}
-          </button>
-        ) : (
-          <button className="theory-annotation theory-diagram-button" style={S_BTN} onClick={handlePlayCCW}>
-            {t("theory_gray_ccw")}
-          </button>
-        )}
-      </div>
     </div>
   );
 });

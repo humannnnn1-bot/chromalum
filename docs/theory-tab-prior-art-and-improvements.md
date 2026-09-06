@@ -25,7 +25,7 @@ Theory タブは、一般的な色彩科学の概説でも、研究ノートに�
 A = P({G,R,B})
 ```
 
-を有限代数の基礎対象とし、生成、順序、valuation、補色、反転作用、Hamming 距離、Fano/Hamming、有限幾何を一つの論脈で示す。その有限的本線を完結させた後に限り、`C6` と `L` から直接得る連続 Tone Zigzag、色相展開図、Color Die、双対八面体を表示層として続ける。
+を有限代数の基礎対象とし、生成、順序、valuation、補色、反転作用、Hamming 距離、Fano/Hamming、有限幾何を一つの論脈で示す。その有限的本線を完結させた後に、`C6` と `L` の辺別延長による連続 Tone Zigzag、補色を対面へ置く Color Die、その色相順を保つ展開図、双対八面体を表示層として続ける。立方体による面配置はモデルの選択として明示する。
 
 `A` は包含・join・meet・補元を持つ一つの Boolean 代数である。`(A,⊕)` は加法群・ベクトル空間 `(F2^3,+)` と同型であり、`(A,⊕,∧)` は直積 Boolean 環 `F2 x F2 x F2` と同型である。これを体 `GF(8)` と同一視しない。
 
@@ -51,13 +51,13 @@ A = P({G,R,B})
 | valuation と補色 | modular identity、XOR補正式、`L(¬a)=7-L(a)` | `L` が単なる番号表ではないことを示す |
 | 反転作用 | `τ_m(x)=x⊕m`, `Q3`, 有彩 `C6`、符号付き順位差 | 生成と状態遷移を分け、差分の符号から包含方向、絶対値から切替チャネルを読む |
 | 有限幾何と符号 | 七つの非零マスク、Fano、Hamming `[7,4,3]` demo | 七つの色ベクトルを `H` の列として読み、`ker H` と syndrome に同じ七点構造が現れることを示す |
-| `K8` 距離分解 | 距離1・2・3による全28組の分割、T0/T1、Color Star | `T0=ker pi ~= V4` と奇剰余類 `T1` を二四面体として個別表示し、複合と全距離分解へ進む |
-| 幾何 | Tone Zigzag、色相辺差分表、符号保存格子実現、2-2-2展開図、Color Die、双対八面体 | `C6` と `L` から、辺別アフィン延長、平面格子実現、折り畳み、面頂双対という別々の表示操作を順に導く |
+| `K8` 距離分解 | 距離1・2・3による全28組の分割、T0/T1、Color Star | 距離2の二つのK4、二チャンネル反転による各組の保存、補色による二組の交換を示す |
+| 幾何 | Tone Zigzag、色相辺差分表、Color Die、色相順の展開図、双対八面体 | 辺別アフィン延長、補色を対面へ置く立方体モデル、色相順を保つ平面展開、面頂双対を区別して示す |
 | 総括と範囲 | 三つの境界、完全作用表は折り畳み | 本線を反復せず対象を限定する |
 
 Theory はこの順序で有限代数を `K8` まで完結させ、その後に連続・立体表示へ進む。音響へは分岐しない。図は文章だけでは関係を把握しにくい場合に限り、色相辺差分表は小さなカードへ埋め込まず Tone Zigzag と同じ節の全幅表として置く。
 
-面の演算については、カラーキューブの四点XOR、テトラの三点からの頂点復元、Hammingの三検査面、八面体と既存の混色・Fanoの対応を各節の本文に置く。テトラの多数決と重心による双対対応は、説明・面選択図・GRB表を常時表示する。八通りの混色表を再掲せず、既存のカラーダイス表示へつなぐ。14アフィン平面と拡張Hamming符号の詳細は[多面体の面と3ビット演算](./polyhedral-face-algebra.md)に記録する。
+面の演算については、カラーキューブの四点XOR、テトラの三点からの頂点復元、Hammingの三検査面、八面体と既存のFano・XORの短い対応説明を各節の本文に置く。テトラの本線は距離2と反転・補色の関係とする。図の後には面の三頂点のXORで残る頂点を復元する短い補足を置く。多数決と重心による双対対応は研究ノートに残し、面選択図・GRB表は本文から外す。八面体の八行の混色・XOR表は研究ノートへ置き、混色の操作は専用のGRB・YCMグラフで扱う。Theory の八面体では、有彩色にとどまるXORの入力組を辺として示す。辺の両側の第三頂点がXORとその補色になる規則を、辺選択で確認できるようにする。Fanoの四面による全12辺の被覆、色相六角形とGRB・CMY三角形、カラースターの共通部分を短く説明する。カラーキューブは反転・補色・包含関係を示し、カラーダイスは展開図と同じ節で色相順・順位・対面の関係を示す。14アフィン平面と拡張Hamming符号の詳細は[多面体の面と3ビット演算](./polyhedral-face-algebra.md)に記録する。
 
 ## Curated Prior-Art Map
 
@@ -82,11 +82,21 @@ Theory はこの順序で有限代数を `K8` まで完結させ、その後に�
 | `4G+2R+B` 色番号を新規発見と読まれる | High | NEC 1981 / Vickers 1982 を引用し、独自候補を数学／色順序の収束・正規化・統合に限定する |
 | `A` の8ラベルと `H` 上の中間候補の混同 | High | `λ` のファイバーと表示代表元を明記し、XOR を `A` に限定する |
 | Boolean lattice の既知性 | High | JSSD を引用し、Hasse 図自体は新規主張しない |
-| XOR/OR と AND/XNOR の限定的一致を演算の同一性と誤読される | Medium | Color Die では `[G,R,B]` ビットと一致条件を示し、演算自体は区別する。二値加法 RGB での対応は明記し、一般の連続色や顔料へは拡張しない |
+| XOR/OR と AND/XNOR の限定的一致を演算の同一性と誤読される | Medium | 専用のGRB・YCM混色節では `[G,R,B]` ビットと一致条件を示し、演算自体は区別する。二値加法 RGB での対応は明記し、一般の連続色や顔料へは拡張しない |
 | dice net 一意性 | Medium | 11 nets の列挙テストに基づく内部補題として扱う |
 | 文献が UI から見えない | Medium | 本ノートと必要なら簡潔な References drawer で扱い、各本文に但し書きを重ねない |
 
 ## Improvement Proposals
+
+### Integrated Theory interactions (2026-09-06)
+
+The rank chapter places gapless subset sums and conditional color order in one panel, with a shared conclusion below. The integer-weight argument determines unnamed `{1,2,4}`; the color-order argument independently determines the named ranks. The former four-step overview and separate order card are no longer repeated.
+
+The cube shows all eight vertices and twelve edges by default. Selecting a vertex highlights its three incident edges; selecting it again or clicking the page background clears the selection. Switching to Hasse preserves the selected vertex. The standalone toggle panel, G/R/B action buttons, and persistent transition readout are removed. State transitions and signed `ΔL` are explored in the linked six-cycle and zigzag, while the complete `K8` display stays in the distance chapter.
+
+The chromatic six-cycle is placed beside Tone Zigzag in the geometry chapter, above their shared six-edge table. Edge index and traversal direction are shared across all three views. Tone-fiber selection remains independent because a single tone can have multiple hue preimages. The diagrams stack on narrow screens.
+
+Hamming DATA and error controls live in their respective flow stages. Parity-generation equations precede ENCODED; the parity-set diagram, three check results, and selected equation occupy the RECEIVED-to-SYNDROME step. Selecting a check highlights its four received positions. The simulator still calculates downstream results at separate times and cancels superseded runs; pending stages show no precomputed result.
 
 ### P0: Claim Hygiene
 
@@ -97,7 +107,7 @@ Theory はこの順序で有限代数を `K8` まで完結させ、その後に�
 3. Binary-level copy は、無名の `{1,2,4}` と明るさ順位 `K<B<R<M<G<C<Y<W` が名前付き GRB rank へ収束する説明を中心にする。測定係数や luma 式は持ち込まない。
 4. `XOR 混色` ではなく `XOR 演算` と呼ぶ。
 5. 一つのブール代数 `A = P({G,R,B})` と、その加法群・ベクトル空間としての `(F2^3,+)`、Boolean 環としての `F2 x F2 x F2` を区別する。
-6. Color Die は、有彩閉路 `R₂->Y₆->G₄->C₅->B₁->M₃->R₂` の差分 `(+4,-2,+1,-4,+2,-1)` から構成する。正値 valuation により符号は `R⊂Y⊃G⊂C⊃B⊂M⊃R` を表す。隣接色の Hamming 距離は1なので `|ΔL_i|=L(c_i⊕c_(i+1))` となり、絶対値は単一原子の切替チャネル `G,R,B,G,R,B` を識別する。その上で、正差分を固定した格子方向、負差分を直交する固定方向へ対応させる「符号保存格子実現」を追加する。`M--R` を切ると各面は `(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)` に置かれ、2-2-2展開図になる。Theory 図は同じ展開図を画面上で約45度回転し、正差分方向を右上、負差分方向を右下へ写して全経路を左から右へ読む横長ジグザグにする。これは別の net ではなく平面回転である。符号だけが平面方向を強制するという主張ではなく、固定方向・非退化・内部の重ならない単純な単位正方形連結を課した自然な最小実現であり、回転・鏡映・軸交換を同一視する。展開図を折り畳んだ後に `L(κc)=7-L(c)` から対面順位和7と標準サイコロ番号の一致を読む。面番号には Hamming 距離と衝突する `d` ではなく、Theory 全体の順位 valuation `L` を用いる。
+6. Color Die は六有彩色を立方体の六面に対応させ、補色対 R/C、Y/B、G/M を対面へ置くモデルとする。その上で R→Y→G→C→B→M の五つの面接続を残して開くと、六つの正方形の内部が重ならない2-2-2展開図が得られる。閉路を閉じる M–R 接続は切り離され、折り戻すと再びつながる。面番号は既存の順位 L とし、L(κc)=7−L(c) から対面の番号和7を読む。色相順を保つ展開・補色対面・標準ダイスの番号条件の対応を中心に説明する。符号から格子方向を定める構成は用いず、ΔL と切替チャネルは Tone Zigzag の表で扱う。
 7. Cube/Hasse はグラフ配置であり、現行 SVG を K-W 軸方向の正確な幾何投影とは呼ばない。
 8. Color Die の演算式は `011(M) ∧ 110(Y) = 010(R)` のように `[G,R,B]` ビットを主表示とし、異なるRGB原色での `OR=XOR` と異なるCMY原色での `AND=XNOR` は限定的一致として説明する。
 
@@ -122,7 +132,7 @@ CHROMALUM candidate contribution: mathematical/color-order convergence + normali
 3. `L(a∨b)+L(a∧b)=L(a)+L(b)` と XOR 補正式。
 4. Complement theorem: `L(κa)=7-L(a)`.
 
-Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`K8`、T0/T1、双対八面体は関係を空間的に読む必要があるため図を残す。Tone Zigzag は `C6` の六辺を連続化した区分線形グラフ、14整数交点、その巡回列 `23456545432123`、補色対称だけを表示し、同じ節の全幅表で符号・包含・切替チャネルを対応させる。色相展開図では、符号保存格子実現が追加規則であることを明記し、`C6 -> signed path -> lattice rule -> rotated net -> folded die` の構成方向を図示する。画面では同じ net を約45度回転した横長ジグザグとして読みやすく表示し、別の展開図を導入したとは扱わない。T0/T1 は Color Star のモードとして個別化する。八面体は Color Die の六面と八面体六頂点、十二辺同士、ダイス八頂点と八面体八面の双対対応に絞った固定図とし、RGB cube の六頂点凸包も同じ組合せ型の非正則アフィン八面体であることを本文で区別する。11自由立方体展開図の列挙、他の切断辺、厳密な同値関係、最小性・一意性の証明は研究層へ残す。導出順序、範囲、先行研究には図を置かない。Hamming の一ビット誤り訂正デモは、syndrome と位置ラベルの対応を操作で確かめられるため維持する。
+Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`K8`、T0/T1、双対八面体は関係を空間的に読む必要があるため図を残す。Tone Zigzag は `C6` の六辺を連続化した区分線形グラフ、14整数交点、その巡回列 `23456545432123`、補色対称だけを表示し、同じ節の全幅表で符号・包含・切替チャネルを対応させる。色相展開図では、補色を対面へ置く立方体がモデルの選択であることを明記し、五つの色相接続を残して開いた展開図を示す。画面では同じ net を約45度回転した横長ジグザグとして読みやすく表示し、別の展開図を導入したとは扱わない。T0/T1 は距離2の同じ図で黄と青に分ける。二四面体の複合を Color Star と呼び、専用の表面表示や個別モードは設けない。「有彩六色の八面体」では正八面体を一つだけ表示する。正立方体の面中心による構成を保持し、剛体回転で上をR・下をC、上段をM/Y・下段をB/Gにする。ノードはコンパクトな色名表示とし、共通辺を白、XORの第三頂点と面を青、その補色側を黄で強調する。辺は直接クリック・フォーカス・Enter/Spaceで選択でき、図の下にも12組の入力ボタンを用意する。ダイスの図、面・頂点の切替、頂点の位置ビットは表示しない。本文は辺のXOR完成則、距離1・2の接続分解、Fano四面の辺被覆を扱い、ダイスの面との双対関係と二つのテトラの共通部分を短い補足にする。正八面体の辺長がビット距離を表さないことを明記し、RGB cube の六頂点凸包との計量の違い、面隣接 `Q3` の導出、八面の混色表は研究ノートで扱う。11自由立方体展開図の列挙、他の切断辺、厳密な同値関係、固定した面配置と切断条件の下での一意性は研究層へ残す。導出順序、範囲、先行研究には図を置かない。Hamming の一ビット誤り訂正デモは、syndrome と位置ラベルの対応を操作で確かめられるため維持する。
 
 ### P2: Known vs Added Synthesis Record
 
@@ -144,10 +154,10 @@ Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`
 | --- | --- | --- |
 | P0: Claim Hygiene | Done | UI distinguishes the Boolean algebra `A`, its XOR vector-space reduct, and its Boolean-ring presentation; restricted OR/XOR and AND/XNOR coincidences retain their conditions. |
 | Final scope section | Done | Scope starts directly from the eight binary states, ordinal valuation, and operation boundary. |
-| Hue-order net | Done | Theory UI は符号付き差分、交互包含、切替チャネル、追加規則としての符号保存格子実現、座標で定まる2-2-2展開図、その同じ net を約45度回転した横長ジグザグ表示、折り畳み、Color Die、8つの局所三面 view の順で表示する。符号だけから平面方向が決まる、または回転表示が別の net であるとは書かない。11自由立方体展開図の列挙、他の切断辺、同値関係、最小性・一意性の厳密な分類は研究ノートと機械検証に残す。 |
+| Hue-order net | Done | 補色を対面へ置く Color Die と、五つの色相接続を保つ展開図を同じ節で扱う。展開図には矢印・ΔL バッジ・折り畳み案内を置かず、六色の面とラベルを表示する。補色対・面番号・番号和7の一覧は読みやすい大きさで残し、広い画面では展開図と横並び、狭い画面では縦並びにする。順位差から展開図が必然的に導かれるとは書かない。詳細な列挙は研究ノートと機械検証に残す。 |
 | Tone Zigzag | Done | `iota:A->{0,1}^3` 上の辺別アフィン補間、`kappa_bar(x)=1-x`、`T(h+1/2)=1-T(h)`、14整数交点列 `23456545432123`、二つの4-preimage帯を表示し、六辺差分表を同節の全幅表として統合する。 |
-| T0/T1 tetrahedra | Done | `T0=ker pi ~= V4` と `T1` の剰余類構造を本文へ置き、Color Star 図の T0/T1 モードで各4頂点・6辺・4面を個別表示する。 |
-| Color Die / octahedron duality | Done | 旧多機能3D図を復元せず、6面と6頂点、12辺同士、8頂点と8面、補色対面と対頂点軸、面隣接 `Q3` を固定SVGで示す。RGB cube 六頂点の凸包は同じ組合せ型だが標準計量では非正則なアフィン八面体として区別する。 |
+| T0/T1 tetrahedra | Done | 「距離2と二つのカラーテトラ」を主題に、T0/T1の偶奇分割と二つのK4を説明する。M/C/Yによる二チャンネル反転は同じテトラ内、G/R/Bと全ビット補色は相手テトラへ移ることを明記する。Color Starは重ね合わせの名称として紹介し、面のXORは図の後の短い補足、多数決・重心は研究ノートに置く。既存の距離1・2・3・全28辺の切替を使う。 |
+| Chromatic octahedron | Done | 「有彩六色の八面体」として、上R・下Cの正八面体を一つ表示する。辺選択で二色のXORと補色に当たる第三頂点・二面を強調し、3ビット計算を示す。ダイスの図と面・頂点の切替は置かず、双対関係は短い本文で残す。全12辺のXOR則、Fano四面の辺被覆、距離1・2の分解、カラースターの共通部分を扱う。正則性・向き・選択・キーボード操作を検査する。八面の混色表、面隣接 Q3、RGB cube 六頂点凸包との計量の違いは研究ノートで扱う。 |
 | P1: Provenance outside UI | Done | Prior art and novelty remain in docs and are absent from Theory copy. |
 | P1: Cards and figures | Done | 本質的な説明文と短い証明は増補し、新しいカードは増やしていない。図は Tone Zigzag、色相路から展開図とダイスを構成する関係、T0/T1、面頂双対のように文章だけでは把握しにくい関係へ限定した。 |
 | Continuous hue and Music | Done | Tone Zigzag までを離散から連続への直接橋として Theory に置き、sections、Fourier、Music は研究ノート側に保つ。 |
@@ -173,8 +183,8 @@ Fano、Hamming、`Q3`、Tone Zigzag、色相順の2-2-2展開図、Color Die、`
 4. Fano lines satisfy `a⊕b⊕c=0` and are supports of weight-three codewords in `ker H`; with `rank H=3` and seven distinct nonzero columns this yields Hamming `[7,4,3]`.
 5. Hamming labels are coordinate positions and parity-check labels, not color codewords; `r=c⊕e` gives `Hrᵀ=Heᵀ`, and the complete interactive demo remains and restores every single-bit error position `1..7`.
 6. Gray cycle uses only one-bit flips.
-7. K8 edges partition by Hamming distance.
-8. The main UI displays `(+4,-2,+1,-4,+2,-1)`, the alternating containment chain, channel labels `G,R,B,G,R,B`, and the sign-preserving lattice rule before the folded Color Die. Cutting `M->R` must yield research coordinates `(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)`. The visible diagram rigidly rotates that same net by about 45 degrees, sending positive and negative directions upper-right and lower-right so the path reads left-to-right. Copy must state that planar directions come from the added rule and that the rotated view is not a different net; exhaustive net classification remains research-note and machine-verification material.
+7. K8 edges partition by Hamming distance. The distance controls share a compact mask selector: G/R/B for distance 1 and M/C/Y for distance 2; selecting the active mask again restores that layer. Distance 3 needs no additional mask control. The rank-gap comparison stays as a static three-row table; arbitrary vertex pairs remain selectable in All mode.
+8. The main UI explicitly chooses a cube with complementary colors on opposite faces, then unfolds it while preserving R–Y–G–C–B–M. The net and complementary face-number summary share one responsive layout. Keep the six face labels and the opposite-rank sum 7, but remove diagram arrows, delta badges, and the folding banner. The geometric test verifies the nonoverlapping staircase for the chosen cube and five retained connections; it must not treat numerical rank differences as forcing the net.
 9. UI copy requires `明るさ順` / brightness order and binary rank while rejecting measurement coefficients, luma formulas, standards tables, provenance, and external color-space lists.
 10. UI copy admits only the edgewise affine Tone Zigzag from the continuous layer and rejects pitch, frequency, Music, Fourier analysis, and unproved auxiliary constructions.
 11. The modular valuation and XOR correction identities appear in the Theory mainline.

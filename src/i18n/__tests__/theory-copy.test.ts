@@ -23,36 +23,21 @@ describe("Theory copy", () => {
     expect(ja.theory_intro).toContain("G∧R=K");
   });
 
-  it("keeps mathematical weights and empirical color order as independent paths", () => {
-    expect(en.theory_derivation_two_paths_note).toContain("unnamed gapless weights");
-    expect(en.theory_derivation_two_paths_note).toContain("s(G)>s(M)=s(R)+s(B)");
-    expect(en.theory_empirical_desc).toContain("w_G>w_R+w_B and w_R>w_B>0");
-    expect(en.theory_empirical_desc).toContain("K<B<R<M<G<C<Y<W");
-    expect(en.theory_empirical_desc).toContain("rank_s(c)=#{x∈A | s(x)<s(c)}");
-    expect(en.theory_empirical_desc).toContain("{1,2,4}");
-    expect(en.theory_empirical_desc).toContain("Producing 1 forces a=1");
-    expect(en.theory_empirical_desc).toContain("forces b=2");
-    expect(en.theory_empirical_desc).toContain("forces c=4");
+  it("keeps mathematical weights and conditional color rank distinct in the combined panel", () => {
+    expect(en.theory_subset_intro).toContain("positive integer weights");
+    expect(en.theory_subset_rule).toContain("current maximum plus 1");
     expect(en.theory_empirical_desc).toContain("Color order alone supplies the named rank");
-    expect(en.theory_empirical_desc).toContain("Combining the paths does not create rank for the first time");
-    expect(en.theory_empirical_note).toContain("M=R∨B, L(M)=L(R)+L(B)=3");
-    expect(en.theory_empirical_note).toContain("W=G∨R∨B, L(W)=L(G)+L(R)+L(B)=7");
-    expect(en.theory_empirical_note).not.toContain("M=R+B");
-
-    expect(ja.theory_derivation_two_paths_note).toContain("無名の無隙間重み");
-    expect(ja.theory_derivation_two_paths_note).toContain("s(G)>s(M)=s(R)+s(B)");
-    expect(ja.theory_empirical_desc).toContain("w_G>w_R+w_B");
-    expect(ja.theory_empirical_desc).toContain("K<B<R<M<G<C<Y<W");
-    expect(ja.theory_empirical_desc).toContain("rank_s(c)=#{x∈A | s(x)<s(c)}");
-    expect(ja.theory_empirical_desc).toContain("{1,2,4}");
-    expect(ja.theory_empirical_desc).toContain("1を作るにはa=1");
-    expect(ja.theory_empirical_desc).toContain("b=2");
-    expect(ja.theory_empirical_desc).toContain("c=4");
-    expect(ja.theory_empirical_desc).toContain("色の順序は単独で名前付き順位");
-    expect(ja.theory_empirical_desc).toContain("順位を初めて作ることではなく");
-    expect(ja.theory_empirical_note).toContain("M=R∨B, L(M)=L(R)+L(B)=3");
-    expect(ja.theory_empirical_note).toContain("W=G∨R∨B, L(W)=L(G)+L(R)+L(B)=7");
-    expect(ja.theory_empirical_note).not.toContain("M=R+B");
+    expect(en.theory_empirical_order_intro).toContain("assume G exceeds M and R exceeds B");
+    expect(en.theory_empirical_rank_note).toContain("does not assign the measured scores");
+    expect(en.theory_derivation_convergence_note).toContain("unnamed weights {1,2,4}");
+    expect(en.theory_derivation_convergence_note).toContain("named ranks B=1, R=2, G=4");
+    expect(ja.theory_subset_intro).toContain("正整数重み");
+    expect(ja.theory_subset_rule).toContain("既存の最大値＋1");
+    expect(ja.theory_empirical_desc).toContain("それ自体で名前付き順位");
+    expect(ja.theory_empirical_order_intro).toContain("仮定します");
+    expect(ja.theory_empirical_rank_note).toContain("測定スコアそのものを1・2・4とする主張ではありません");
+    expect(ja.theory_derivation_convergence_note).toContain("無名の{1,2,4}");
+    expect(ja.theory_derivation_convergence_note).toContain("B=1、R=2、G=4という名前付き順位");
   });
 
   it("makes valuation, XOR correction, and complement mainline consequences", () => {
@@ -101,56 +86,31 @@ describe("Theory copy", () => {
     expect(ja.theory_hamming_desc).toContain("単一誤り位置");
   });
 
-  it("constructs the die from the hue-order net before applying complement rank", () => {
-    expect(en.theory_dice_net_desc).toContain("Cut the closing M–R edge");
-    expect(en.theory_dice_net_desc).toContain("R→Y→G→C→B→M");
-    expect(en.theory_dice_net_desc).toContain("ΔL=(+4,−2,+1,−4,+2,−1)");
-    expect(en.theory_dice_net_desc).toContain("R⊂Y⊃G⊂C⊃B⊂M⊃R");
-    expect(en.theory_dice_net_desc).toContain("G,R,B,G,R,B");
-    expect(en.theory_dice_net_desc).toContain("sign-preserving square-lattice rule");
-    expect(en.theory_dice_net_desc).toContain("sending positive steps upper right and negative steps lower right");
-    expect(en.theory_dice_net_desc).toContain("every transition reads from left to right");
-    expect(en.theory_dice_net_desc).toContain("same 2–2–2 net under planar rotation");
-    expect(en.theory_dice_net_desc).toContain("The signs do not determine planar directions by themselves");
-    expect(en.theory_dice_net_desc).toContain("starting construction");
-    expect(en.theory_dice_net_desc).toContain("Folding along the five shared edges");
-    expect(en.theory_dice_net_desc).toContain("R/C, Y/B, and G/M");
-    expect(en.theory_dice_desc2).toContain("L(κ(c))=7−L(c)");
-    expect(en.theory_dice_desc2).toContain("(R₂,C₅)");
-    expect(en.theory_dice_desc2).toContain("(Y₆,B₁)");
-    expect(en.theory_dice_desc2).toContain("(G₄,M₃)");
-    expect(en.theory_dice_desc2).toContain("standard die numbering");
-    expect(en.theory_dice_views_desc).toContain("eight vertices");
-    expect(en.theory_dice_views_desc).toContain("remaining six");
-    expect(en.theory_dice_footer_subtractive).toContain("a ∨ b = W");
-    expect(en.theory_dice_footer_subtractive).toContain("L(a∧b)=L(a)+L(b)−7");
-    expect(en.theory_dice_rgb_col).toBe("Disjoint RGB primaries: ∨=⊕");
-    expect(en.theory_dice_cmy_col).toBe("CMY pairs covering all bits: ∧=XNOR");
+  it("keeps the conditional operation identities in the dedicated mixing explanation", () => {
+    for (const copy of [en, ja]) {
+      const text = copy.theory_mixing_operations_desc;
+      for (const formula of ["[G,R,B]", "a∧b=000", "a∨b=a⊕b", "a∨b=111", "a∧b=XNOR(a,b)", "XNOR(a,b)=¬(a⊕b)"]) {
+        expect(text).toContain(formula);
+      }
+    }
+  });
 
-    expect(ja.theory_dice_net_desc).toContain("M–R辺で切ると");
-    expect(ja.theory_dice_net_desc).toContain("R→Y→G→C→B→M");
-    expect(ja.theory_dice_net_desc).toContain("ΔL=(+4,−2,+1,−4,+2,−1)");
-    expect(ja.theory_dice_net_desc).toContain("R⊂Y⊃G⊂C⊃B⊂M⊃R");
-    expect(ja.theory_dice_net_desc).toContain("G,R,B,G,R,B");
-    expect(ja.theory_dice_net_desc).toContain("符号保存の格子規則");
-    expect(ja.theory_dice_net_desc).toContain("正差を右上、負差を右下");
-    expect(ja.theory_dice_net_desc).toContain("全遷移を左から右へ");
-    expect(ja.theory_dice_net_desc).toContain("同じ2–2–2展開図の平面回転");
-    expect(ja.theory_dice_net_desc).toContain("符号だけが平面方向を決めるのではなく");
-    expect(ja.theory_dice_net_desc).toContain("出発点");
-    expect(ja.theory_dice_net_desc).toContain("五つの共有辺");
-    expect(ja.theory_dice_net_desc).toContain("R/C、Y/B、G/M");
-    expect(ja.theory_dice_desc2).toContain("L(κ(c))=7−L(c)");
-    expect(ja.theory_dice_desc2).toContain("(R₂,C₅)");
-    expect(ja.theory_dice_desc2).toContain("(Y₆,B₁)");
-    expect(ja.theory_dice_desc2).toContain("(G₄,M₃)");
+  it("distinguishes the chosen cube model from the hue-order and complement correspondences", () => {
+    expect(en.theory_dice_net_desc).toContain("cube is a chosen model");
+    expect(en.theory_dice_net_desc).toContain("preserving the five connections");
+    expect(en.theory_dice_net_desc).toContain("without overlapping squares");
+    expect(ja.theory_dice_net_desc).toContain("選んだモデル");
+    expect(ja.theory_dice_net_desc).toContain("五つの接続を保って");
+    expect(ja.theory_dice_net_desc).toContain("正方形を重ねずに");
+    for (const copy of [en, ja]) {
+      expect(copy.theory_dice_net_desc).toContain("R→Y→G→C→B→M");
+      expect(copy.theory_dice_net_desc).not.toContain("ΔL");
+      for (const formula of ["L(κ(c))=7−L(c)", "(R₂,C₅)", "(Y₆,B₁)", "(G₄,M₃)"]) {
+        expect(copy.theory_dice_desc2).toContain(formula);
+      }
+    }
+    expect(en.theory_dice_desc2).toContain("standard die numbering");
     expect(ja.theory_dice_desc2).toContain("標準ダイス番号");
-    expect(ja.theory_dice_views_desc).toContain("八つの頂点");
-    expect(ja.theory_dice_views_desc).toContain("残る六視点");
-    expect(ja.theory_dice_footer_subtractive).toContain("a ∨ b = W");
-    expect(ja.theory_dice_footer_subtractive).toContain("L(a∧b)=L(a)+L(b)−7");
-    expect(ja.theory_dice_rgb_col).toBe("非重複RGB原色：∨=⊕");
-    expect(ja.theory_dice_cmy_col).toBe("全ビットを覆うCMY対：∧=XNOR");
   });
 
   it("states the Tone Zigzag as the affine extension of the chromatic six-cycle", () => {
@@ -182,29 +142,33 @@ describe("Theory copy", () => {
   });
 
   it("states the subgroup, coset, and dual-octahedron structures exactly", () => {
-    expect(en.theory_k8_desc).toContain("T0=ker π={K,M,C,Y}");
-    expect(en.theory_k8_desc).toContain("Klein four-group V₄");
-    expect(en.theory_k8_desc).toContain("T1=B⊕T0={B,R,G,W}");
-    expect(en.theory_k8_desc).toContain("unique nontrivial coset");
-    expect(en.theory_stella_desc).toContain("Compounding them yields the Color Star (Stella Octangula)");
-    expect(en.theory_octa_dual_desc).toContain("K₂,₂,₂");
-    expect(en.theory_octa_dual_desc).toContain("2³=8");
-    expect(en.theory_octa_dual_desc).toContain("face-adjacency graph of the octahedron is Q₃");
-    expect(en.theory_octa_dual_desc).toContain("also gives an affine octahedron");
-    expect(en.theory_octa_dual_desc).toContain("edges have lengths 1 and √2");
-    expect(en.theory_octa_dual_edge_edge).toContain("12 die edges");
+    expect(en.theory_stella_desc).toContain("T0=ker π={K,M,C,Y}");
+    expect(en.theory_stella_desc).toContain("Klein four-group V₄");
+    expect(en.theory_stella_desc).toContain("T1=B⊕T0={B,R,G,W}");
+    expect(en.theory_stella_desc).toContain("unique nontrivial coset");
+    expect(en.theory_stella_desc).toContain("Their compound in the same cube arrangement is called the Color Star (Stella Octangula)");
+    expect(en.theory_stella_toggle_desc).toContain("preserve parity and move within the same tetrahedron");
+    expect(en.theory_stella_toggle_desc).toContain("¬T0=T1");
+    expect(en.theory_stella_toggle_desc).toContain("¬T1=T0");
+    expect(en.theory_chromatic_octa_desc).toContain("six distance-1 edges");
+    expect(en.theory_chromatic_octa_desc).toContain("six distance-2 edges");
+    expect(en.theory_chromatic_octa_desc).toContain("do not represent bit-distance values");
+    expect(en.theory_octa_fano_note).toContain("switching the XOR between 000 and 111");
+    expect(en.theory_octa_duality_note).toContain("each die face corresponds to a vertex");
 
-    expect(ja.theory_k8_desc).toContain("T0=ker π={K,M,C,Y}");
-    expect(ja.theory_k8_desc).toContain("クライン四群V₄");
-    expect(ja.theory_k8_desc).toContain("T1=B⊕T0={B,R,G,W}");
-    expect(ja.theory_k8_desc).toContain("剰余類");
-    expect(ja.theory_stella_desc).toContain("二つを複合すると、カラースター（星形八面体）が得られます");
-    expect(ja.theory_octa_dual_desc).toContain("K₂,₂,₂");
-    expect(ja.theory_octa_dual_desc).toContain("2³=8");
-    expect(ja.theory_octa_dual_desc).toContain("面隣接グラフはQ₃");
-    expect(ja.theory_octa_dual_desc).toContain("同じ組合せ型のアフィン八面体");
-    expect(ja.theory_octa_dual_desc).toContain("辺長が1と√2");
-    expect(ja.theory_octa_dual_edge_edge).toContain("ダイスの12辺");
+    expect(ja.theory_stella_desc).toContain("T0=ker π={K,M,C,Y}");
+    expect(ja.theory_stella_desc).toContain("クライン四群V₄");
+    expect(ja.theory_stella_desc).toContain("T1=B⊕T0={B,R,G,W}");
+    expect(ja.theory_stella_desc).toContain("剰余類");
+    expect(ja.theory_stella_desc).toContain("同じ立方体配置で二つを重ねたものを、カラースター（星形八面体）と呼びます");
+    expect(ja.theory_stella_toggle_desc).toContain("偶奇を保ち、同じテトラの中を移動");
+    expect(ja.theory_stella_toggle_desc).toContain("¬T0=T1");
+    expect(ja.theory_stella_toggle_desc).toContain("¬T1=T0");
+    expect(ja.theory_chromatic_octa_desc).toContain("距離1の6辺");
+    expect(ja.theory_chromatic_octa_desc).toContain("距離2の6辺");
+    expect(ja.theory_chromatic_octa_desc).toContain("辺の長さは、ビット距離の値を表しません");
+    expect(ja.theory_octa_fano_note).toContain("XORは000と111の間で切り替わります");
+    expect(ja.theory_octa_duality_note).toContain("各面を頂点に対応させた双対");
   });
 
   it("ends with exact boundaries between A, H, rank, and operations", () => {

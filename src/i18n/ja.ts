@@ -222,10 +222,22 @@ export const ja = {
   // Theory panel — scholarly content (label_theory + theory_* keys below) is
   // CC BY 4.0 (Doctor Chromaticus); see docs/LICENSE.md.
   label_theory: "ALGEBRAIC COLOR THEORY",
+  theory_empirical_order_intro: "正の加法的スコアについて、GがMより、RがBより大きいと仮定します。",
+  theory_empirical_rank_note:
+    "各色よりスコアの小さい状態を数えると、上の0〜7の順位になります。測定スコアそのものを1・2・4とする主張ではありません。",
+  theory_hue_previous: "前の辺",
+  theory_hue_next: "次の辺",
+  theory_hue_reverse: "向きを反転",
+  theory_hue_play: "再生",
+  theory_hue_link_hint: "六閉路・ジグザグ・表は同じ辺を示します。図の辺や表の行を押して選べます。",
+  theory_hue_select_edge: "辺{0}を選択",
+  theory_hue_transition: "{0} → {1} · {2}反転 · ΔL={3}",
+  theory_hamming_data_input_hint: "D1〜D4のビットを押して入力を変更",
+  theory_hamming_error_input_hint: "受信位置を押して誤りを追加・解除。検査を選ぶと、その4位置を強調します。",
   theory_title: "離散代数的色彩理論",
   theory_intro:
-    "E={G,R,B} とします。二値RGBの各状態は部分集合 S⊆E であり、八状態全体は A=𝒫(E) です。S∨T=S∪T はチャンネルの和、S∧T=S∩T は共通部分、¬S=E∖S は補集合、S⊕T=S△T は一方だけに属するチャンネルからなる対称差です。したがってAは、join・meet・補元を持つブール代数です。\n\n∨・∧・¬をいったん忘れ、⊕だけを取り出した構造がreduct (A,⊕) です。これは加法群・ベクトル空間 (𝔽₂³,+) と同型です。さらに∧を積として加えた (A,⊕,∧) はブール環 𝔽₂×𝔽₂×𝔽₂ と同型ですが、体 GF(8) ではありません。たとえば非零元G、Rに対してG∧R=Kとなるからです。同じ八状態でも、どの演算を保つかによって述べている構造が異なります。\n\n理論の中心は二つの独立な経路の合流です。無隙間な部分和が無名の重み {1,2,4} を定め、二値頂点の明るさ順がそれらを B=1、R=2、G=4 と名付けます。その合流が L(g,r,b)=4g+2r+b を与えます。valuation、補色、Hamming立方体と有彩六閉路、Fano/Hamming、K₈の距離分解は、AとLから順に導かれます。有限代数を完結させた後、有彩六閉路のアフィン補間をトーンジグザグとして読み、同じ符号付き順位差を色相展開図、カラーダイス、その双対八面体へ移します。",
-  theory_derivation_aria: "八状態ブール代数から二つの独立な経路を経て二進順位と有限代数上の帰結へ至る四段階の導出",
+    "E={G,R,B} とします。二値RGBの各状態は部分集合 S⊆E であり、八状態全体は A=𝒫(E) です。S∨T=S∪T はチャンネルの和、S∧T=S∩T は共通部分、¬S=E∖S は補集合、S⊕T=S△T は一方だけに属するチャンネルからなる対称差です。したがってAは、join・meet・補元を持つブール代数です。\n\n∨・∧・¬をいったん忘れ、⊕だけを取り出した構造がreduct (A,⊕) です。これは加法群・ベクトル空間 (𝔽₂³,+) と同型です。さらに∧を積として加えた (A,⊕,∧) はブール環 𝔽₂×𝔽₂×𝔽₂ と同型ですが、体 GF(8) ではありません。たとえば非零元G、Rに対してG∧R=Kとなるからです。同じ八状態でも、どの演算を保つかによって述べている構造が異なります。\n\n理論の中心は二つの独立な経路の合流です。無隙間な部分和が無名の重み {1,2,4} を定め、二値頂点の明るさ順がそれらを B=1、R=2、G=4 と名付けます。その合流が L(g,r,b)=4g+2r+b を与えます。valuation、補色、Hamming立方体と有彩六閉路、Fano/Hamming、K₈の距離分解は、AとLから順に導かれます。有限代数を完結させた後、有彩六閉路のアフィン補間をトーンジグザグとして読みます。さらに、補色を対面に置くカラーダイスを選び、その色相順を保つ展開図と双対八面体を示します。",
+  theory_derivation_aria: "無隙間な部分和と色の順序から二進順位へ至る二つの経路",
   theory_derivation_root: "三原色生成の核",
   theory_derivation_root_note: "部分集合Sは存在させる原色を選びます。和は状態を生成し、対称差は生成後の状態へ作用する反転を合成します。",
   theory_derivation_two_paths: "二つの独立な経路",
@@ -233,7 +245,7 @@ export const ja = {
     "数学は無名の無隙間重みを定めます。これとは独立に、s(G)>s(M)=s(R)+s(B) と s(R)>s(B) が重みの色名を定めます。",
   theory_derivation_convergence: "GRB二進順位での合流",
   theory_derivation_convergence_note:
-    "数学が重みを与え、色の順序がそれらをB、R、Gへ割り当てます。得られた順位はそのまま3ビット二進数です。",
+    "部分和の条件は無名の{1,2,4}を、色順の条件はB=1、R=2、G=4という名前付き順位を与えます。独立な二つの特徴づけが同じLに一致します。",
   theory_derivation_consequences: "有限代数上の帰結",
   theory_derivation_consequences_note: "同じAとLから、valuation恒等式、補色反転、1ビット幾何、七点構造、全二色対の距離分解が得られます。",
   theory_venn_title: "ベン図",
@@ -245,6 +257,10 @@ export const ja = {
   theory_generation_select: "三つの原色生成元から選ぶ",
   theory_generation_select_aria: "原色生成元G、R、B",
   theory_generation_primary_aria: "原色{0}、ビット{1}、重み{2}",
+  theory_generation_result: "生成結果",
+  theory_generation_states_title: "原色の数と八つの状態",
+  theory_generation_states_hint: "状態を押すと、対応する原色を選択",
+  theory_generation_state_aria: "状態{0}、ビット{1}の原色を選択",
   theory_generation_layers_aria: "選択した原色数で分けた八状態",
   theory_generation_layer_0: "0原色",
   theory_generation_layer_1: "1原色",
@@ -264,28 +280,17 @@ export const ja = {
   theory_binary_color: "色",
   theory_binary_tone_formula: "Tone (GRB 4:2:1): T = (4G + 2R + B) / 7 = level / 7",
   theory_binary_tone_complement: "補色トーン定理: T\u2096 + T\u2087\u208b\u2096 = 1",
-  theory_dice_net_title: "色相順の2–2–2展開図",
   theory_dice_net_desc:
-    "直前のトーンジグザグ表は、向きづけた経路 R→Y→G→C→B→M→R、符号付き差分 ΔL=(+4,−2,+1,−4,+2,−1)、交互包含 R⊂Y⊃G⊂C⊃B⊂M⊃R、切替チャネル G,R,B,G,R,B を確定しました。色相展開図は、その同じ離散データへ平面上の面配置を与えます。\n\nこの符号列を平面上に実現するため、正負の差分を互いに直交する二つの単位格子方向へ写す、符号保存の格子規則を採用します。幾何的な歩幅はすべて一単位であり、|ΔL|はユークリッド長ではなく、G・R・Bのどのチャンネルを切り替えたかとして保持されます。軸平行座標では二方向を右と下に取れます。下図は同じ格子実現全体を約45度回転し、正差を右上、負差を右下へ写すため、全遷移を左から右へ読めます。これは同じ2–2–2展開図の平面回転であり、別の展開図ではありません。\n\n閉路を閉じるM–R辺で切ると、残る五差分の符号は +,−,+,−,+ です。軸平行格子では六つの正方形が右・下・右・下・右へ進み、三行の各行に二面ずつを置く2–2–2型階段状展開図になります。符号だけが平面方向を決めるのではなく、ここで採用した直交格子規則までを合わせてこの形が定まります。展開図は完成したダイスを開いて得る結果ではなく、C₆の色相順を立方体の面隣接へ移す出発点です。\n\n五つの共有辺に沿って折り畳むと立方体になり、閉路上で三歩隔たる補色 R/C、Y/B、G/M がそれぞれ対面になります。したがって構成の向きは、有彩六閉路から色相展開図へ、さらに折り畳まれたカラーダイスへ進みます。",
-  theory_dice_net_cut: "C₆をM–R辺で切断して得る色相路：R₂ → Y₆ → G₄ → C₅ → B₁ → M₃",
-  theory_dice_net_aria: "有彩六閉路をM–R辺で切った色相順の2–2–2立方体展開図",
-  theory_dice_net_fold: "色相順の五つの共有辺に沿って折り畳む",
-  theory_dice_net_delta_definition: "ΔL = L(次の色) − L(現在の色)（符号付き順位差）",
-  theory_dice_net_cut_edge: "切断辺：M₃ → R₂、ΔL=−1",
-  theory_dice_net_edge_aria: "{0}から{1}へ、符号付き順位差{2}",
-  theory_dice_title: "カラーダイス",
+    "六つの有彩色を立方体の六面に対応させ、補色対 R/C、Y/B、G/M を対面に置きます。この面配置がカラーダイスです。立方体は、色相順と補色関係を面の接続として表すために選んだモデルです。\n\n下図は、このカラーダイスを、色相順 R→Y→G→C→B→M の五つの接続を保って開いた展開図です。六面を一度ずつ通る一本のつながりを残したまま、正方形を重ねずに平面へ開けます。閉路を閉じるM–Rの接続は切り離し、折り戻すと再びつながります。",
+  theory_dice_net_cut: "展開図に残す色相順：R₂ → Y₆ → G₄ → C₅ → B₁ → M₃",
+  theory_dice_net_aria: "カラーダイスを色相順の五つの接続を保って開いた2–2–2展開図",
+  theory_dice_net_cut_edge: "M₃–R₂の接続は切り離し、折り戻すと再びつながります",
+  theory_dice_title: "色相順の展開図とカラーダイス",
+  theory_dice_pairs_title: "補色と対面番号",
   theory_dice_desc:
-    "折り畳まれた立方体の六面は、有彩状態の集合 C=A∖{K,W} です。各面c∈Cには新しい量を導入せず、すでに得た順位 L(c)∈{1,…,6} を記します。これにより色相展開図の各色名とダイスの面番号が同じ面上で結び付きます。",
+    "各面c∈C=A∖{K,W}には、すでに得た順位 L(c)∈{1,…,6} を記します。色名・3ビット表記・ダイスの面番号が、同じ六面に対応します。",
   theory_dice_desc2:
-    "補色κ(c)=¬cでは L(κ(c))=7−L(c) なので、展開図を折り畳んだ対面は (R₂,C₅)、(Y₆,B₁)、(G₄,M₃) となり、番号では (2,5)、(6,1)、(4,3) です。各対面和が7となるため、色相順、補色対、標準ダイス番号の対面条件が一つの折り畳みで一致します。",
-  theory_dice_views_desc:
-    "立方体には八つの頂点があり、各頂点から三つの隣接面が一組として見えます。図の最初の二視点は、RGB三原子のjoinがWになる関係と、CMY三余原子のmeetがKになる関係を示します。残る六視点は、三つの異なるRGB原色対と、それぞれを補色化した三つのCMY対です。各矢印は二つの側面を入力、上面を結果として指し、成立条件を列見出しとビット式に明示します。",
-  theory_dice_rgb_col: "非重複RGB原色：∨=⊕",
-  theory_dice_cmy_col: "全ビットを覆うCMY対：∧=XNOR",
-  theory_dice_footer_ops: "3ビット順 = [G,R,B] | ∨/∧ = ブール束のjoin/meet | ⊕ = GF(2)³の加法 | XNOR(a,b) = (a ⊕ b)'",
-  theory_dice_footer_demorgan: "表示した異なるRGB原色では a ∧ b = 0 なので、a ∨ b = a ⊕ b です。",
-  theory_dice_footer_subtractive:
-    "対応する異なるCMY原色では a ∨ b = W なので、a ∧ b = XNOR(a,b) かつ L(a∧b)=L(a)+L(b)−7 です。いずれも限定的な一致で、演算自体は区別します。",
+    "折り戻したときの対面は、補色の組 (R₂,C₅)、(Y₆,B₁)、(G₄,M₃) です。補色κ(c)=¬cは L(κ(c))=7−L(c) を満たすため、番号では (2,5)、(6,1)、(4,3) となり、各対面和が7になります。色相順の五つの接続を保つ展開図と、補色対、標準ダイス番号の対面条件が、一つの面配置で結び付きます。",
   theory_fano_title: "ファノ平面",
   theory_fano_desc:
     "七つの非零反転パターンを点とします。異なる二パターンを合成すると一意な第三の非零パターンになり、三つすべてを合成すると出発状態へ戻ります。この閉じる三つ組を線にすると、7点、7線、各線3点、各点3線のPG(2,2)が得られます。",
@@ -302,17 +307,31 @@ export const ja = {
   theory_fano_completion_input_b_aria: "{0}、level {1}、ビット{2}、第2入力として選択済み",
   theory_fano_completion_result_aria: "{0}、level {1}、ビット{2}、計算された第三点",
   theory_cube_title: "カラーキューブ",
+  theory_mixing_title: "GRBとYCMの混色",
+  theory_mixing_desc:
+    "この3ビットモデルでは、GRBの混色をjoin ∨、YCMの混色をmeet ∧として表します。配線上の斜線と「3」は [G,R,B] の3ビット信号を表し、ゲートは各ビットに同じOR／ANDを適用します。各図の入力ノードを押して二色または三色選ぶと、結果とG・R・Bごとの計算が変わります。選んでいない入力は表では「—」で示します。二つの図の同じ位置には補色対G↔M、R↔C、B↔Yを置いています。同じ位置の入力を選ぶと、ド・モルガンの法則 ¬(a∨b)=¬a∧¬b により結果も補色になり、三色ではWとKが対応します。",
+  theory_mixing_operations_desc:
+    "3ビットの順は [G,R,B] です。join ∨ は入力をすべて含む最小上界、meet ∧ はすべての入力に共通する最大下界を与えます。この二つの図ではGRBとYCMをそれぞれ入力とし、W=111とK=000は三色を選んだときの結果として現れます。各図の三つの二色関係と一つの三色関係、計八関係をここで確認できます。\n\n⊕ は GF(2)³ の加法であり、状態の差分や反転を表します。異なるGRB原色二つでは a∧b=000 なので a∨b=a⊕b、異なるYCM原色二つでは a∨b=111 なので a∧b=XNOR(a,b) となります。ここで XNOR(a,b)=¬(a⊕b) です。これらは条件を満たす二入力での一致であり、join／meetとXOR／XNORは演算として区別します。",
+  theory_mixing_grb: "GRB · join ∨",
+  theory_mixing_ycm: "YCM · meet ∧",
+  theory_mixing_join_rule: "いずれかの入力にあるチャンネルを集める",
+  theory_mixing_meet_rule: "すべての入力に共通するチャンネルを残す",
+  theory_mixing_input: "入力",
+  theory_mixing_result: "結果",
+  theory_mixing_choose_inputs: "二色以上の入力を選んでください",
+  theory_mixing_input_aria: "入力{0}、ビット{1}",
+  theory_mixing_gate_aria: "3ビットの各ビットに{0}を適用する論理ゲート",
+  theory_mixing_graph_aria: "{0}の混色グラフ。{1}",
+  theory_mixing_bits_aria: "{0}のGRBチャンネル計算",
   theory_cube_desc:
     "8つの代数levelはRGB立方体の頂点にあり、各辺は1チャンネルの切替です。辺の色は、両端で異なる1ビットのチャンネルを表します。六つの有彩頂点はK-W体対角線を囲む6-cycleを成し、補色c↦c⊕7は三ビットすべてを反転します。ここでXORは、状態差分とチャンネル遷移を表す言語として働きます。",
   theory_cube_faces_desc:
     "各面は一つのビットを固定し、残る二つの全組合せを取る4頂点です。各ビットの1は偶数回現れるため、面の頂点a,b,c,dは a⊕b⊕c⊕d=000 を満たし、三点から残る一点を d=a⊕b⊕c と復元できます。例えばG・C・Yからは 100⊕101⊕110=111 によりWを得ます。同じ面の色同士のAND・ORもその面に留まり、各正方形は二つの自由なチャンネルを扱う小さなブール束になります。",
   theory_cube_desc2:
     "「ハッセ図」ボタンは、同じQ\u2083グラフをランク別の模式図として描き替えます。Kを下端、Wを上端とし、チャンネル部分集合Sのブール階数 rk_B(S)=|S| によって頂点を1, 3, 3, 1の4層へ分けます。この0..3のブール階数は、Binary Toneで使う0..7の明るさ順位 rank_s とは別です。12辺はG, R, Bに対応する3つの完全マッチングへ分かれ、上向きは集合要素の追加、下向きは除去を表します。補集合は順序を反転し、原子RGBと余原子CMYを一対一に対応させます。この自己双対性により、同じQ\u2083の中に1, 3, 3, 1の層構造と補色対称が同時に現れます。",
-  theory_cube_mix_desc:
-    "「混色」モードは通常の反転表示とは分けて、この離散モデルにおける束演算を同じQ₃上に示します。立方体表示では三次元配置を保ち、ハッセ表示では包含の上下関係を明示し、混色中も二表示を切り替えられます。最初の入力がR・G・Bなら以後の入力をRGB原子に限定し、join ∨ を加法混色として表示します。最初の入力がC・M・YならCMY余原子に限定し、meet ∧ を減法混色として表示します。二色入力では二入力から結果への二本の被覆辺を矢印で示します。三色入力では三つの二色結果を中間頂点とし、最終結果へ至る対称な二段階の被覆辺をすべて矢印で示します。各系列の三つの二色関係と一つの三色関係、合計八関係はカラーダイスの八つの頂点表示と一致します。KとWは入力ではなく、それぞれ三項meetと三項joinの結果です。ここでは∨と∧が最小上界と最大下界を与えることを示し、XORは引き続き状態差分の表示に限定します。",
   theory_gray_title: "有彩1ビット六閉路",
   theory_gray_desc:
-    "Q₃からKとWを除くと、残る各頂点の次数は2となり、誘導部分グラフは一つの六閉路になります。R→Y→G→C→B→M→R はその一つの開始点と向きを選んだ表示です。構造自体は無根・無向であり、各辺では一つのチャンネルだけが変化し、各チャンネルは向かい合う二辺をラベル付けします。補色頂点は三ステップ反対側です。\n\n三つの一原色反転を合成すると、辺を作る三作用だけでなく、二原色・三原色を同時に反転する七つの非恒等作用が得られます。次章では、その七マスクを有限幾何と符号の共通ラベルとして読みます。",
+    "Q₃からKとWを除くと、残る各頂点の次数は2となり、誘導部分グラフは一つの六閉路になります。R→Y→G→C→B→M→R はその一つの開始点と向きを選んだ表示です。構造自体は無根・無向であり、各辺では一つのチャンネルだけが変化し、各チャンネルは向かい合う二辺をラベル付けします。補色頂点は三ステップ反対側です。",
   theory_action_title: "反転作用・立方体・有彩六閉路",
   theory_action_desc:
     "Lが各状態を評価するのに対し、反転作用τは状態間の移動を定めます。Γが状態xを生成した後、原色マスクe_cは τ_c(x)=x⊕e_c として作用します。各τ_cは二度作用すると元へ戻り、異なるチャンネルの反転は可換です。また L(τ_c(x))−L(x)=±w_c なので、反転するビットの重みが順位差の絶対値になります。\n\n二状態間のHamming距離を d_H(x,y)=wt(x⊕y) と定めます。d_H(x,y)=1のときだけ辺を結んだグラフが三次元立方体Q₃であり、その内部で六つの有彩状態がC₆を成します。",
@@ -362,6 +381,8 @@ export const ja = {
   theory_hamming_stage_syndrome: "SYNDROME",
   theory_hamming_stage_corrected: "訂正語",
   theory_hamming_stage_output: "DATA OUT",
+  theory_hamming_pending: "計算待ち",
+  theory_hamming_calculating: "計算中… 各段階の結果を順に表示します。",
   theory_hamming_operation_encode: "パリティ生成（P1・P2・P4を追加）",
   theory_hamming_operation_transmit_clean: "通信（誤りなし）",
   theory_hamming_operation_transmit_errors: "通信（{0}ビット誤り）",
@@ -376,6 +397,7 @@ export const ja = {
   theory_hamming_received_error_marker: "誤り",
   theory_hamming_corrected_marker: "訂正",
   theory_hamming_trial_marker: "仮反転",
+  theory_hamming_operation_correction: "シンドロームが指す位置を訂正",
   theory_hamming_operation_correction_none: "j=0 → 反転しない（受信語をそのまま通す）",
   theory_hamming_operation_correction_single: "j={0} → 位置{1}を反転（{2}→{3}）",
   theory_hamming_operation_correction_multiple: "j={0}を指示 → 位置{1}を仮反転（1ビット訂正保証外）",
@@ -387,8 +409,23 @@ export const ja = {
     "位置{0}（{1}）の1ビット誤りを検出しました。syndromeが位置を特定し、訂正後はDATA OUTとDATA INが一致します。",
   theory_hamming_status_multiple:
     "{0}個の誤りが選択されています。syndrome {1}={2}は一つの位置を指しますが、Hamming [7,4,3]が訂正を保証するのは1ビット誤りだけです。指示位置を正しいとみなさず、DATA OUTを確認してください。",
-  theory_hamming_venn_title: "標準的な三つのパリティ検査集合",
+  theory_hamming_venn_title: "三つのパリティ検査集合",
   theory_hamming_venn_aria: "七つのハミング位置を含むP1、P2、P4の三つの重なったパリティ検査集合",
+  theory_hamming_venn_help: "検査を選ぶと対象の4点を強調します。点を押すと、その位置の誤りを入れたり戻したりできます。",
+  theory_hamming_venn_select_check: "対象の4位置を確認するパリティ検査を選択",
+  theory_hamming_venn_check_label: "{0}検査",
+  theory_hamming_venn_positions: "位置",
+  theory_hamming_venn_bit_legend: "受信ビット",
+  theory_hamming_venn_error_legend: "入れた誤り",
+  theory_hamming_venn_failed_legend: "検査失敗",
+  theory_hamming_venn_node_aria: "位置{0}、{1}、受信ビット{2}。{3}",
+  theory_hamming_venn_add_error: "押すと誤りを入れます",
+  theory_hamming_venn_remove_error: "押すと誤りを戻します",
+  theory_hamming_venn_inspect_hint:
+    "G・R・Bの検査を選ぶと、4位置の受信ビットとXOR計算を確認できます。同じ検査をもう一度押すと、全体表示に戻ります。",
+  theory_hamming_venn_check_pending: "検査結果を計算中です。",
+  theory_hamming_venn_even: "1が偶数個なので、XORは0。検査を通過します。",
+  theory_hamming_venn_odd: "1が奇数個なので、XORは1。検査は失敗です。",
   theory_hamming_generator_title: "パリティ生成 · 偶数パリティ",
   theory_hamming_checker_title: "パリティ検査 · syndrome",
   theory_connections_title: "総括と厳密な範囲",
@@ -396,7 +433,7 @@ export const ja = {
     "有限代数の議論は、一つの基礎対象Aと一つの名前付き順位Lに閉じています。生成はAの元を作り、valuationはその順位を演算と結び、反転作用はQ₃とC₆を作り、七つの非零マスクはFano/Hammingへ、Hamming距離はK₈分解へ進みます。\n\nその後の幾何章は有限代数を変更せず、C₆の六辺をアフィン補間した純色相環H、色相順を保つ面配置、その立方体双対を表示層として加えます。Hの中間点はAの新しい元ではなく、Lを線形に延長したλで評価する連続代表です。最後に、離散対象、連続表示、順位、演算の境界を分けてまとめます。",
   theory_empirical_title: "色の順序と二進順位の一致",
   theory_empirical_desc:
-    "二値8頂点上の正の加法的スコアを s(g,r,b)=w_Gg+w_Rr+w_Bb とします。観察 s(G)>s(M)=s(R)+s(B) と s(R)>s(B) は w_G>w_R+w_B および w_R>w_B>0 と同値です。したがって 0 < w_B < w_R < w_R+w_B < w_G < w_G+w_B < w_G+w_R < w_G+w_R+w_B となり、八状態の全順序 K<B<R<M<G<C<Y<W が得られます。\n\n各状態cについて rank_s(c)=#{x∈A | s(x)<s(c)}、すなわちcより暗い頂点の個数を順位とします。上の鎖を0から数えると rank_s(K,B,R,M,G,C,Y,W)=(0,1,2,3,4,5,6,7) なので、B=1、R=2、G=4であり、名前付き順位は rank_s(g,r,b)=4g+2r+b です。\n\nこれとは独立に、三つの正整数重みを0<a≤b≤cと並べ、その八部分和が0..7を重複も隙間もなく埋めるとします。1を作るにはa=1、次の2を隙間や衝突なしに作るにはb=2、既知の部分和0,1,2,3の次の4を埋めるにはc=4です。逆に{1,2,4}の部分和は0..7を一度ずつ埋めるので、この無名の重み集合は置換を除いて一意です。\n\n色の順序は単独で名前付き順位を与え、無隙間部分和は単独で原子置換の対称性を残す無名の{1,2,4}を与えます。二経路を合わせる意味は順位を初めて作ることではなく、独立な二つの特徴づけが同じ L(g,r,b)=4g+2r+b へ収束することです。以下の導出図は、第1章の生成からこの合流と有限的帰結までを一つの見取り図にまとめます。",
+    "同じ八状態の順位を、二つの独立な条件から特徴づけます。左は正整数の部分和を0〜7へ隙間なく並べる数学的条件、右は二値頂点上の正の加法的スコアについての色順の条件です。色順の条件は、それ自体で名前付き順位を定めます。",
   theory_empirical_condition: "二比較が全順序を定める",
   theory_empirical_order: "明るさ順序と二進順序",
   theory_empirical_rank: "順位を数えると二進数になる",
@@ -416,23 +453,10 @@ export const ja = {
   theory_cube_equator: "\u8d64\u9053\u5e2f",
   theory_cube_complements: "補色対角",
   theory_cube_hasse: "\u30cf\u30c3\u30bb\u56f3",
-  theory_cube_mix: "混色",
-  theory_cube_mix_exit: "混色を終了",
-  theory_cube_mix_aria: "カラーキューブ上のRGB・CMY混色",
-  theory_cube_mix_status_aria: "選択した原色の束演算による混色結果",
-  theory_cube_mix_hint: "R・G・BまたはC・M・Yから最初の入力色を選択",
-  theory_cube_mix_rgb_hint: "RGB加法混色：{0}を選択中。R・G・Bからさらに一色または二色を選択",
-  theory_cube_mix_cmy_hint: "CMY減法混色：{0}を選択中。C・M・Yからさらに一色または二色を選択",
-  theory_cube_mix_join: "最小上界",
-  theory_cube_mix_meet: "最大下界",
-  theory_cube_mix_vertex_selected: "{0}、入力として選択済み",
-  theory_cube_mix_vertex_selectable: "{0}、入力として選択可能",
-  theory_cube_mix_vertex_intermediate: "{0}、三色混色の中間結果",
-  theory_cube_mix_vertex_unavailable: "{0}、現在の混色系列では選択不可",
   theory_conn_core: "A=𝒫(E)は生成済み状態のブール代数であり、(A,⊕)≅(𝔽₂³,+)はその反転群です。どの演算を保つかまでが構造の指定です。",
   theory_conn_order: "無名の部分和定理と名前付き明るさ順は L(g,r,b)=4g+2r+b で合流し、valuationと補色がその順位の帰結になります。",
   theory_conn_structures:
-    "Hamming距離は全状態対を分解します。d=1がQ₃、有彩頂点がC₆、非零マスクがFano/Hamming、d=2が二つのパリティ四面体、d=3が四補色対です。C₆とLはトーンジグザグと色相展開図へ進み、折り畳まれたダイスの組合せ論的双対が八面体になります。",
+    "Hamming距離は全状態対を分解します。d=1がQ₃、有彩頂点がC₆、非零マスクがFano/Hamming、d=2が二つのパリティ四面体、d=3が四補色対です。C₆とLの辺別アフィン延長がトーンジグザグです。補色を対面に置くカラーダイスは色相順の接続を保って展開でき、その組合せ論的双対が八面体になります。",
   theory_conn_limit_vertices:
     "対象：AはE={G,R,B}から生成される八つの二値状態だけを含みます。特性ベクトル埋め込み ι:A→{0,1}³ の下で、純色相環 H=⋃ᵢ[ι(cᵢ),ι(cᵢ₊₁)] は六つの有彩状態間をアフィン補間する表示空間であり、H∖ι(A)の点はAへ追加された色状態ではありません。",
   theory_conn_limit_tone:
@@ -462,29 +486,36 @@ export const ja = {
   theory_fano_show_secondary: "CMY",
   theory_fano_show_all: "全て",
 
+  theory_subset_title: "部分和を隙間なく広げる",
+  theory_subset_intro: "三つの正整数重みの8部分和で、0〜7を重複も隙間もなく埋めます。",
+  theory_subset_start: "開始",
+  theory_subset_existing: "既存の部分和",
+  theory_subset_translated: "新しい重みを加えた部分和",
+  theory_subset_rule: "次の重みは、既存の最大値＋1です。小さければ和が重なり、大きければ隙間が空くため、重みは1、2、4と決まります。",
+  theory_subset_naming: "ここで決まるのは無名の重み{1,2,4}です。独立な色順の条件と合わせて、B=1、R=2、G=4と対応させます。",
+  theory_k8_mask_title: "マスク",
+  theory_k8_mask_aria: "マスク{0} {1}の4辺を強調",
+  theory_k8_mask_result: "マスク{0} · 距離{1} · 4辺",
+  theory_k8_comparison_title: "ビット距離と順位差",
+  theory_k8_comparison_pair: "色の組",
+  theory_k8_comparison_distance: "ビット距離",
+  theory_k8_comparison_gap: "順位差",
+  theory_k8_comparison_note: "三組とも順位差は1ですが、変わるビット数は1・2・3です。",
   theory_k8_title: "Hamming距離によるK₈分解",
   theory_k8_desc:
-    "八状態の異なる二状態からなる28組は、d_H(a,b)=wt(a⊕b)によって重複なく分かれます。各頂点から距離dの頂点はC(3,d)個なので、無向辺数は8·C(3,d)/2です。したがってd=1の立方体辺は12本、d=2の対は12本、d=3の補色対は4本であり、12+12+4=28がK₈の全辺を尽くします。\n\nビットの偶奇 π:(A,⊕)→𝔽₂, π(g,r,b)=g⊕r⊕b は群準同型です。その核 T0=ker π={K,M,C,Y} はXORの下でクライン四群V₄と同型であり、奇数パリティ集合 T1=B⊕T0={B,R,G,W} はその唯一の非自明な剰余類です。同じパリティを持つ異なる三ビット状態の差は必ず重み2なので、d=2の辺はT0内とT1内の全6組をそれぞれ結び、二つのK₄、すなわち二つの四面体を作ります。\n\nd=3では全ビットが反転するため四つの補色対となります。下図では距離1・2・3を切り替えて各層を個別に表示できます。「すべて」では三層を重ね、8頂点のすべての組を結ぶ完全グラフK₈の全28辺を確認できます。",
+    "八状態の異なる二状態からなる28組は、d_H(a,b)=wt(a⊕b)によって重複なく分かれます。各頂点から距離dの頂点はC(3,d)個なので、無向辺数は8·C(3,d)/2です。したがってd=1の立方体辺は12本、d=2の対は12本、d=3の補色対は4本であり、12+12+4=28がK₈の全辺を尽くします。\n\n下図では距離1・2・3を切り替えて各層を個別に表示できます。「すべて」では三層を重ね、8頂点のすべての組を結ぶ完全グラフK₈の全28辺を確認できます。\n\n同じ非零マスクmで結ばれる組 x↔x⊕m は4辺ずつで、七つのマスクが全28辺を分割します。距離1ではG・R・B、距離2ではM・C・Yのマスクを選んで4辺を強調できます。同じマスクをもう一度押すと、その距離の12辺に戻ります。",
+
   theory_stella_desc:
-    "T0とT1はそれぞれ四頂点・六辺・四面からなる正四面体（カラーテトラ）です。二つを複合すると、カラースター（星形八面体）が得られます。カラーキューブの12辺（距離1）の差分マスクが一原色RGBであるのに対し、二四面体の12辺（距離2）は二原色反転マスク011、101、110を持ち、それらをM、C、Yと名付けます。下図はノードと辺でこれらの関係を示します。「ノードのみ」は8頂点を表示し、距離1・2・3で対応する辺を表示します。距離2ではT0の6辺を黄、T1の6辺を青で区別します。「すべて」は三層を重ねたK₈です。",
+    "ビットの偶奇 π:(A,⊕)→𝔽₂, π(g,r,b)=g⊕r⊕b は群準同型です。偶数側 T0=ker π={K,M,C,Y} はXORの下でクライン四群V₄と同型で、奇数側 T1=B⊕T0={B,R,G,W} はその唯一の非自明な剰余類です。同じ偶奇を持つ異なる三ビット状態の距離は必ず2なので、距離2の12辺はT0内の6辺とT1内の6辺に分かれます。それぞれがK₄をなし、立方体の頂点配置では正四面体（カラーテトラ）になります。\n\n立方体の8頂点から4点を選んでできる正四面体は、この二つだけです。同じ立方体配置で二つを重ねたものを、カラースター（星形八面体）と呼びます。下図の距離2では、T0の6辺を黄、T1の6辺を青で区別します。",
 
+  theory_stella_toggle_desc:
+    "M・C・Yのマスク011・101・110による2チャンネル反転は偶奇を保ち、同じテトラの中を移動します。一原色G・R・Bの反転と、全ビットを反転する補色操作は、もう一方のテトラへ移ります。とくに補色を各頂点に取ると ¬T0=T1、¬T1=T0 となり、二つのテトラが入れ替わります。",
   theory_stella_faces_desc:
-    "T0とT1はどちらも各ビットの1を四頂点のうち二つに持つため、四頂点のXORは000です。三角形の面をa,b,c、面に含まれない頂点をdとすれば、立方体の面と同じ式 d=a⊕b⊕c で残る頂点を復元できます。例えばR・G・Wの面では 010⊕100⊕111=001 となり、同じテトラのBを得ます。正方形では面の残りの一点、テトラでは面の反対側の一点を、同じXOR関係で求められます。",
-  theory_stella_duality_title: "面の多数決と双対性",
-  theory_stella_duality_desc:
-    "三入力のビット多数決を maj(a,b,c)=(a∧b)∨(b∧c)∨(c∧a) と定めます。各ビットで1が二つ以上なら1を返す、AND・ORから作る派生演算です。テトラ全体では各ビットの1が二つなので、頂点dを除いた面には1が2−dᵢ個残ります。したがって maj(a,b,c)=¬d となり、例えばR・G・Wの多数決はY=110、XORで得るB=001の補色です。\n\n立方体の中心を原点とする三次元の頂点位置をp_aと書きます。各テトラでは p_a+p_b+p_c+p_d=0、補色では p_¬d=−p_d なので、面の重心は g_F=(p_a+p_b+p_c)/3=p_¬d/3 です。中心から面の重心へ向かうベクトルを3倍すると、もう一方のテトラの補色頂点に届きます。XORは同じテトラの残る頂点dを、多数決は双対側の頂点¬dを返します。重心はこの幾何対応を説明する点であり、八つの色状態Aに新しい状態を加えるものではありません。",
-
-  theory_tetra_face_select: "面を選択",
-  theory_tetra_face_aria: "テトラの面 {0}。XORは{1}、多数決は{2}。中心から面の重心を通って多数決の頂点へ至る直線",
-  theory_tetra_face_input: "入力 {0}",
-  theory_tetra_face_ones: "1の個数",
-  theory_tetra_face_majority: "多数決",
-  theory_tetra_face_centroid: "O：中心、g_F：面の重心。O→g_F は O→{0} の1/3です。maj は多数決の結果を示します。",
-  theory_tetra_face_table: "選んだ面の3入力と演算結果（GRB）",
-  theory_tetra_face_row: "入力・結果",
+    "各テトラの四頂点では、各ビットの1が二つずつなので、四頂点のXORは000です。このため、面の三頂点a,b,cから残る頂点を d=a⊕b⊕c と復元できます。例えば、R⊕G⊕W=010⊕100⊕111=001=Bです。",
 
   // Stella Octangula
-  theory_stella_title: "カラーテトラとカラースター",
+  theory_stella_title: "距離2と二つのカラーテトラ",
+
   theory_stella_distance_modes: "グラフの表示を選択",
   theory_stella_nodes: "ノードのみ",
   theory_stella_nodes_annotation: "8つのノードだけを表示します。距離を選ぶと、対応する辺が現れます。",
@@ -492,14 +523,18 @@ export const ja = {
   theory_stella_distance_2: "距離2 12本",
   theory_stella_distance_3: "距離3 4本",
   theory_stella_distance_all: "すべて 28本",
-  theory_stella_distance_1_annotation: "1チャンネルだけ変わる12本の辺が、立方体を作ります。",
-  theory_stella_distance_2_annotation: "2チャンネルが変わる12本の辺：T0の6本（黄）＋T1の6本（青）。",
-  theory_stella_distance_3_annotation: "3チャンネルすべてが変わる4本の線が、補色どうしを結びます。",
+  theory_stella_distance_1_annotation: "1チャンネル反転の12本：T0とT1を結ぶ立方体の辺。",
+
+  theory_stella_distance_2_annotation: "2チャンネル反転は同じテトラ内へ：T0の6本（黄）＋T1の6本（青）。",
+
+  theory_stella_distance_3_annotation: "全ビット反転の4本：T0とT1の補色どうしを結びます。",
+
   theory_stella_k8_degree: "度数: 3 + 3 + 1 = 7 = deg(K₈)",
   theory_stella_compare_select_first: "K₈上の基準点を選択してください",
   theory_stella_compare_select_second: "{0}を基準点として固定中です。比較する点を選択してください",
   theory_stella_compare_distance_1: "距離1：Q₃の辺／一原色反転",
-  theory_stella_compare_distance_2: "距離2：Stellaの辺／同じ頂点偶奇",
+  theory_stella_compare_distance_2: "距離2：同じテトラ内の辺／同じ頂点偶奇",
+
   theory_stella_compare_distance_3: "距離3：補色対M₄／全ビット反転",
   theory_stella_compare_parity_note: "ここでのπは三ビット状態の頂点偶奇で、Hamming [7,4,3]のP1・P2・P4パリティ検査とは異なります。",
   theory_stella_compare_input_a_aria: "{0}、level {1}、ビット{2}、距離比較の基準点として選択済み",
@@ -507,10 +542,10 @@ export const ja = {
 
   theory_geometry_title: "有彩六閉路の順位幾何",
   theory_geometry_desc:
-    "前章までに、有彩六閉路C₆が六色の巡回順を与え、各辺の一ビット反転が符号付き順位差 ΔL=(+4,−2,+1,−4,+2,−1) を生み、補色が閉路上で三歩反対に位置して順位を L↦7−L と反転することを得ました。この章では同じC₆とLから一連の幾何表示を導きます。\n\n第一に、六辺をアフィン補間して純色相環Hを作ると、Lの線形延長λがトーンジグザグになります。第二に、差分符号を直交格子方向へ移すと色相順の展開図が得られ、それを折り畳むとカラーダイスになります。第三に、その立方体の面と頂点を双対化すると、有彩六色を頂点に持つ八面体になります。連続中間点と双対セルは表示層であり、Aの演算体系を変更しません。",
+    "前章までに、有彩六閉路C₆が六色の巡回順を与え、各辺の一ビット反転が符号付き順位差 ΔL=(+4,−2,+1,−4,+2,−1) を生み、補色が閉路上で三歩反対に位置して順位を L↦7−L と反転することを得ました。この章ではC₆とL、および補色関係を幾何的に表示します。\n\n第一に、六辺をアフィン補間して純色相環Hを作ると、Lの線形延長λがトーンジグザグになります。第二に、補色を対面に置く立方体をカラーダイスとし、色相順の接続を保って開いた展開図を示します。第三に、その立方体の面と頂点を双対化すると、有彩六色を頂点に持つ八面体になります。連続中間点と双対セルは表示層であり、Aの演算体系を変更しません。",
   theory_zigzag_title: "トーンジグザグと色相辺差分",
   theory_zigzag_desc:
-    "特性ベクトル埋め込みを ι:A→{0,1}³⊂ℝ³ とし、有彩六閉路を c₀=R,c₁=Y,c₂=G,c₃=C,c₄=B,c₅=M と書きます。添字は6を法として読み、辺iを γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)（0≤u≤1）で補間します。その和集合 H=⋃ᵢγᵢ([0,1]) が純色相環です。アフィン汎関数 λ(x_G,x_R,x_B)=4x_G+2x_R+x_B はι(A)上でLに一致するため、λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁)です。各区間の変化量は ΔLᵢ=L(cᵢ₊₁)−L(cᵢ) となり、六区間のトーンジグザグが現れます。\n\n二値頂点の補色を立方体へ κ̄(x)=1−x とアフィンに延長すると、辺内位置uを保ったまま三辺先へ移り、κ̄(γᵢ(u))=γᵢ₊₃(u)です。純色相環全体を h∈ℝ/ℤ で媒介し T(h)=λ(γ(h))/7 とおけば、γ(h+1/2)=κ̄(γ(h)) なので T(h+1/2)=1−T(h) となります。整数level 1,…,6との交点数は順に1,3,3,3,3,1個、合計14個です。この14交点を半開区間0≤h<1でh=0から順に読むと、上端の列23456545432123になります。図はこのファイバーと、非整数levelで交点数が4になる二つの帯域を同時に示します。\n\n下の表は同じ六辺を離散側から読み直します。隣接状態は一ビットだけ異なるので、|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1} です。符号は包含の向き、絶対値列 (4,2,1,4,2,1) は切り替えた原色ビットの重みを表します。この一表が、連続ジグザグと次の色相展開図に共通する離散データです。",
+    "特性ベクトル埋め込みを ι:A→{0,1}³⊂ℝ³ とし、有彩六閉路を c₀=R,c₁=Y,c₂=G,c₃=C,c₄=B,c₅=M と書きます。添字は6を法として読み、辺iを γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)（0≤u≤1）で補間します。その和集合 H=⋃ᵢγᵢ([0,1]) が純色相環です。アフィン汎関数 λ(x_G,x_R,x_B)=4x_G+2x_R+x_B はι(A)上でLに一致するため、λ(γᵢ(u))=(1−u)L(cᵢ)+uL(cᵢ₊₁)です。各区間の変化量は ΔLᵢ=L(cᵢ₊₁)−L(cᵢ) となり、六区間のトーンジグザグが現れます。\n\n二値頂点の補色を立方体へ κ̄(x)=1−x とアフィンに延長すると、辺内位置uを保ったまま三辺先へ移り、κ̄(γᵢ(u))=γᵢ₊₃(u)です。純色相環全体を h∈ℝ/ℤ で媒介し T(h)=λ(γ(h))/7 とおけば、γ(h+1/2)=κ̄(γ(h)) なので T(h+1/2)=1−T(h) となります。整数level 1,…,6との交点数は順に1,3,3,3,3,1個、合計14個です。この14交点を半開区間0≤h<1でh=0から順に読むと、上端の列23456545432123になります。図はこのファイバーと、非整数levelで交点数が4になる二つの帯域を同時に示します。\n\n下の表は同じ六辺を離散側から読み直します。隣接状態は一ビットだけ異なるので、|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1} です。符号は包含の向き、絶対値列 (4,2,1,4,2,1) は切り替えた原色ビットの重みを表します。この表で、連続ジグザグの各区間を離散的な反転と順位差へ対応させます。",
   theory_zigzag_intersection_sequence_aria: "色相を一周して読む十四個の整数level交点列",
   theory_zigzag_level_controls_aria: "トーンジグザグの整数levelを選択",
   theory_zigzag_table_aria: "有彩六閉路の遷移、反転チャネル、符号付き順位差、包含方向",
@@ -518,29 +553,27 @@ export const ja = {
   theory_zigzag_table_toggle: "反転と重み",
   theory_zigzag_table_delta: "ΔL",
   theory_zigzag_table_inclusion: "包含方向",
-  theory_octa_dual_title: "カラーダイスと双対八面体",
-  theory_octa_dual_desc:
-    "カラーダイスを立方体セル複体Dとして、その組合せ論的双対D*を取ります。Dの六面はD*の六頂点へ移り、補色として対向する三組の面は八面体の三本の対頂点軸になります。二面が接するダイスの十二辺は、それぞれ双対頂点を結ぶ八面体の辺になります。したがって六有彩色を頂点に持ち、補色でない二頂点だけを結ぶグラフは K₂,₂,₂、すなわち八面体グラフです。\n\nダイスの各頂点には、三補色対から一面ずつ選ばれた三面が接します。その2³=8通りが八面体の八つの三角形面に対応します。各三角形面を、三軸で原色側を選んだビットによってAの状態へ対応させると、隣接面は一軸の選択だけが異なります。ゆえに八面体の面隣接グラフはQ₃です。\n\n標準RGB立方体からKとWを除いた六頂点の凸包も、中心化すると三組の反対ベクトルからなるため、同じ組合せ型のアフィン八面体です。ただし標準RGB計量では辺長が1と√2の二種に分かれ、正則ではありません。下図は面–頂点双対を読みやすくするため正則八面体として表示しており、二つのユークリッド埋め込みを同一視しません。",
-  theory_octa_faces_desc:
-    "八つの三角形面は、前述のカラーダイスの八通りの混色関係を頂点の組として表します。例えば{R,G,Y}はR∨G=Y、{C,M,B}はC∧M=Bを表し、RGB面とCMY面は三入力の関係です。全八面で、原色が二つ以上なら三頂点のOR、CMYが二つ以上ならANDを取ると、その面の色になります。一方、{R,G,Y}・{G,B,C}・{B,R,M}・{C,M,Y}は三頂点のXORが000になる四本のFano線で、反対側の四面では補色によりXORが111になります。混色の結果色とXORの偶奇を、同じ面から読み取れます。",
-  theory_octa_dual_aria: "カラーダイスの面と頂点を双対八面体の頂点と三角形面へ対応させる図",
-  theory_octa_dual_die: "カラーダイス D",
-  theory_octa_dual_octa: "双対八面体 D*",
-  theory_octa_dual_die_vertex_aria: "ダイス頂点{0}、level {1}、GRBビット{2}",
-  theory_octa_dual_octa_vertex_aria: "八面体頂点{0}、level {1}、GRBビット{2}",
-  theory_octa_dual_die_faces_aria: "カラーダイスの六つの有彩面",
-  theory_octa_dual_die_face_aria: "ダイス面{0}、level {1}、GRBビット{2}",
-  theory_octa_dual_octa_faces_aria: "双対八面体の八つの三角形面",
-  theory_octa_dual_octa_face_aria: "八面体面{0}、level {1}、GRBビット{2}",
-  theory_octa_dual_face_vertex: "ダイスの6面 ↔ 八面体の6頂点",
-  theory_octa_dual_edge_edge: "ダイスの12辺 ↔ 八面体の12辺",
-  theory_octa_dual_vertex_face: "ダイスの8頂点 ↔ 八面体の8三角形面",
-  theory_octa_dual_axis: "対向面（補色対）↔ 八面体の対頂点軸",
-  theory_octa_dual_q3: "八面体の面隣接グラフ ≅ Q₃",
-  theory_octa_face_operation_prompt: "八つの三角形から面を選ぶと、その面の混色関係とXORを表示します。",
-  theory_octa_face_operation: "面 {0}：{1}",
-  theory_octa_face_fano: "三頂点のXORが000なので、Fano線です。",
-  theory_octa_face_opposite_fano: "補色の反対面 {0} は、XORが000のFano線です。",
+
+  theory_chromatic_octa_title: "有彩六色の八面体",
+  theory_octa_aria: "有彩六色の八面体で辺のXORと補色を確認する図",
+  theory_octa_diagram: "有彩六色の正八面体",
+  theory_octa_hint: "辺か下の二色の組を選択できます。破線は裏側の辺を示します。",
+  theory_octa_duality_note:
+    "この八面体は、前節のカラーダイスの各面を頂点に対応させた双対です。正立方体の六面の中心を結ぶと、同じ正八面体が得られます。",
+  theory_octa_geometry_note:
+    "また、T0・T1それぞれの六辺の中点も、この六頂点と一致します。二つのテトラが囲む立体の共通部分がこの八面体となり、カラースターの中心を作ります。これは図形上の共通部分であり、色集合T0とT1は交わりません。",
+  theory_chromatic_octa_desc:
+    "六有彩色の異なる二色a,bで、a⊕bが有彩色にとどまる組をすべて結ぶと八面体になります。各辺に接する二つの三角形の第三頂点はa⊕bと¬(a⊕b)です。辺を選ぶと、XORの面を青、その補色の面を黄で表示します。\n\n12辺の内訳は、色相順 R→Y→G→C→B→M→R の距離1の6辺と、GRB・CMYの二つの三角形を作る距離2の6辺です。距離3の補色対は対頂点なので辺で結びません。正八面体の辺の長さは、ビット距離の値を表しません。",
+  theory_octa_fano_note:
+    "XORが000となる四面 {R,G,Y}・{G,B,C}・{B,R,M}・{C,M,Y} はFano線に対応し、12辺を一回ずつ使い切ります。どの二頂点を選んでも、XORで残る頂点を得られます。隣接面へ移ると第三頂点が補色に替わり、XORは000と111の間で切り替わります。",
+
+  theory_octa_edge_choice: "八面体の辺 {0} {1} — {2} {3}",
+  theory_octa_edge_choices: "八面体の辺を選択",
+  theory_octa_edge_selected: "辺 {0}–{1} に接する二つの面",
+  theory_octa_edge_xor: "XOR",
+  theory_octa_edge_complement: "その補色（XNOR）",
+  theory_octa_edge_triangle: "面 {{0}}",
+  theory_octa_edge_face_xor: "三点XOR：{0}",
 
   theory_fano_cmy_collapse: "CMY\u5171\u7dda",
   theory_fano_cmy_eq: "τRB·τGB·τGR = id \u2192 共線！",

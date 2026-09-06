@@ -87,10 +87,10 @@ describe("ToneZigzag", () => {
     expect(table.style.minWidth).toBe("");
     expect(wrapper.style.overflowX).toBe("");
     expect([...table.querySelectorAll("col")].map((column) => column.getAttribute("style"))).toEqual([
-      "width: 28%;",
-      "width: 38%;",
+      "width: 25%;",
+      "width: 31%;",
       "width: 14%;",
-      "width: 20%;",
+      "width: 30%;",
     ]);
 
     const rows = table.querySelectorAll("tbody tr");

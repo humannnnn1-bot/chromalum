@@ -51,7 +51,7 @@ function visibleLevels(container: HTMLElement): number[] {
 describe("StellaOctangula", () => {
   it("switches between the three disjoint distance layers and all 28 pairs", () => {
     const { container } = renderStella();
-    const diagram = screen.getByRole("group", { name: "Color Tetrahedra and Color Star" });
+    const diagram = screen.getByRole("group", { name: "Distance 2 and the Two Color Tetrahedra" });
     const partition = new Set<string>();
     const vertexPositions = () =>
       [...diagram.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map((circle) => [
@@ -143,7 +143,7 @@ describe("StellaOctangula", () => {
 
   it("combines the two tetrahedra as colored edges in the default distance-2 mode", () => {
     const { container } = renderStella();
-    const diagram = screen.getByRole("group", { name: "Color Tetrahedra and Color Star" });
+    const diagram = screen.getByRole("group", { name: "Distance 2 and the Two Color Tetrahedra" });
     const controls = screen.getByRole("group", { name: "Select the graph display" });
     expect([...controls.querySelectorAll("button")].map((button) => button.textContent)).toEqual([
       "Nodes only",
@@ -193,5 +193,106 @@ describe("StellaOctangula", () => {
     fireEvent.keyDown(container.querySelector('[data-stella-vertex="4"]')!, { key: "Escape" });
     expect(container.querySelector("[data-stella-comparison-role]")).toBeNull();
     expect(screen.getByTestId("stella-comparison-status").textContent).toBe("Select an anchor vertex in K₈");
+  });
+
+  it("filters each distance layer by its three masks without changing the geometry", async () => {
+    const { container, onHover } = renderControlledStella();
+    const svg = container.querySelector("svg")!;
+    const positions = () =>
+      [...svg.querySelectorAll("[data-stella-vertex] > circle:first-of-type")].map((node) => [
+        node.getAttribute("cx"),
+        node.getAttribute("cy"),
+      ]);
+    const originalPositions = positions();
+    const allPairs = new Set<string>();
+    const distanceTotals = [0, 0, 0, 0];
+
+    for (const [distance, masks] of [
+      [1, [4, 2, 1]],
+      [2, [3, 5, 6]],
+    ] as const) {
+      const mode = screen.getByRole("button", { name: new RegExp("Distance " + distance) });
+      fireEvent.click(mode);
+      expect(
+        [...container.querySelectorAll("[data-k8-mask-control]")].map((node) => Number(node.getAttribute("data-k8-mask-control"))),
+      ).toEqual(masks);
+      for (const mask of masks) {
+        const control = container.querySelector('[data-k8-mask-control="' + mask + '"]')!;
+        fireEvent.click(control);
+        expect(control.getAttribute("aria-pressed")).toBe("true");
+        expect(mode.getAttribute("aria-pressed")).toBe("true");
+        expect(svg.getAttribute("data-stella-distance")).toBe(String(distance));
+        expect(svg.getAttribute("data-stella-mask")).toBe(String(mask));
+        expect(svg.querySelectorAll("[data-k8-edge]")).toHaveLength(12);
+        const selected = [...svg.querySelectorAll('[data-k8-edge-active="true"]')];
+        expect(selected).toHaveLength(4);
+        const vertices = new Set<number>();
+        for (const edge of selected) {
+          const pair = edge.getAttribute("data-k8-edge")!;
+          const [a, b] = pair.split("-").map(Number);
+          expect(a ^ b).toBe(mask);
+          expect(edge.tagName).toBe("line");
+          expect(edge.hasAttribute("stroke-dasharray")).toBe(false);
+          expect(allPairs.has(pair)).toBe(false);
+          allPairs.add(pair);
+          vertices.add(a);
+          vertices.add(b);
+          distanceTotals[distance]++;
+        }
+        expect(vertices.size).toBe(8);
+        expect(container.querySelectorAll("[data-k8-mask-pair]")).toHaveLength(0);
+        expect(positions()).toEqual(originalPositions);
+        fireEvent.mouseEnter(svg.querySelector('[data-stella-vertex="2"]')!);
+        expect(svg.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(4);
+        expect(svg.querySelectorAll('[data-stella-dimmed="true"]')).toHaveLength(0);
+        fireEvent.mouseLeave(svg.querySelector('[data-stella-vertex="2"]')!);
+        fireEvent.click(control);
+        expect(control.getAttribute("aria-pressed")).toBe("false");
+        expect(svg.hasAttribute("data-stella-mask")).toBe(false);
+        expect(svg.querySelectorAll('[data-k8-edge-active="true"]')).toHaveLength(0);
+      }
+    }
+    fireEvent.click(container.querySelector('[data-k8-mask-control="5"]')!);
+    fireEvent.click(screen.getByRole("button", { name: /Distance 3/ }));
+    expect(svg.hasAttribute("data-stella-mask")).toBe(false);
+    for (const edge of svg.querySelectorAll("[data-k8-edge]")) {
+      expect(edge.getAttribute("data-k8-mask")).toBe("7");
+      allPairs.add(edge.getAttribute("data-k8-edge")!);
+      distanceTotals[3]++;
+    }
+    expect(allPairs.size).toBe(28);
+    expect(distanceTotals).toEqual([0, 12, 12, 4]);
+    for (const label of [/Distance 3/, /Nodes only/, /All · 28/]) {
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      expect(container.querySelectorAll("[data-k8-mask-control]")).toHaveLength(0);
+    }
+    fireEvent.click(screen.getByRole("button", { name: /Distance 2/ }));
+    fireEvent.click(container.querySelector('[data-k8-mask-control="5"]')!);
+    fireEvent.keyDown(svg, { key: "Escape" });
+    await waitFor(() => expect(onHover).toHaveBeenLastCalledWith(null));
+    expect(svg.hasAttribute("data-stella-mask")).toBe(false);
+    expect(svg.querySelectorAll("[data-k8-edge]")).toHaveLength(12);
+  });
+
+  it("keeps the rank-gap examples static while allowing arbitrary pairs in the graph", () => {
+    const { container } = renderStella();
+    const comparison = screen.getByTestId("k8-distance-comparison");
+    expect(comparison.querySelector("button, [tabindex]")).toBeNull();
+    for (const [pair, distance] of [
+      ["0-1", 1],
+      ["1-2", 2],
+      ["3-4", 3],
+    ] as const) {
+      const row = comparison.querySelector('[data-k8-comparison-pair="' + pair + '"]')!;
+      expect(row.querySelector("[data-pair-distance]")?.textContent).toBe(String(distance));
+      expect(row.querySelector("[data-pair-gap]")?.textContent).toBe("1");
+      fireEvent.click(row);
+      expect(container.querySelector("svg")?.getAttribute("data-stella-distance")).toBe("2");
+    }
+    fireEvent.click(screen.getByRole("button", { name: /All · 28/ }));
+    fireEvent.click(container.querySelector('[data-stella-vertex="0"]')!);
+    fireEvent.click(container.querySelector('[data-stella-vertex="4"]')!);
+    expect(screen.getByTestId("stella-comparison-status").textContent).toContain("dH = wt(100) = 1");
+    expect(screen.getByTestId("stella-comparison-status").textContent).toContain("|ΔL| = |4 − 0| = 4");
   });
 });

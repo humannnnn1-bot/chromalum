@@ -70,89 +70,121 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
   };
 
   return (
-    <div style={{ width: "100%", maxWidth: 620, display: "flex", flexDirection: "column", alignItems: "center", gap: SP.xl }}>
+    <div
+      style={{
+        width: "100%",
+        maxWidth: mode === "generation" ? 760 : 620,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: SP.xl,
+      }}
+    >
       {mode !== "toggle" && (
-        <div style={S_CARD}>
-          <h4 style={S_LABEL}>{t("theory_generation_select")}</h4>
-
-          <div
-            role="group"
-            aria-label={t("theory_generation_select_aria")}
-            style={{ display: "flex", justifyContent: "center", gap: SP["2xl"], flexWrap: "wrap" }}
-          >
-            {CHANNELS.map(({ channel }) => {
-              const level = CHROMALUM_GRB_WEIGHTS[channel];
-              const info = THEORY_LEVELS[level];
-              const active = (selected & level) !== 0;
-              return (
-                <button
-                  key={channel}
-                  type="button"
-                  aria-pressed={active}
-                  aria-label={t("theory_generation_primary_aria", channel, info.bits.join(""), level)}
-                  onClick={() => toggleGenerator(channel)}
-                  onMouseEnter={() => onHover(level)}
-                  onMouseLeave={() => onHover(null)}
-                  onFocus={() => onHover(level)}
-                  onBlur={() => onHover(null)}
-                  style={{
-                    width: 76,
-                    minHeight: 52,
-                    borderRadius: R.xl,
-                    border: active ? "2px solid #fff" : `1px solid ${C.borderHover}`,
-                    background: active ? info.color : C.bgInput,
-                    color: active && level >= G ? "#000" : active ? "#fff" : info.color,
-                    opacity: active ? 1 : 0.68,
-                    cursor: "pointer",
-                    fontFamily: FONT.mono,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: SP.xs,
-                  }}
-                >
-                  <span style={{ fontSize: FS["2xl"], fontWeight: FW.bold }}>{channel}</span>
-                  <span style={{ fontSize: FS.xs }}>
-                    {info.bits.join("")} · {level}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          <div
-            data-testid="generation-equation"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: SP.xl, flexWrap: "wrap", fontFamily: FONT.mono }}
-          >
-            <span style={{ color: C.textMuted, fontSize: FS.xl }}>
-              {selectedChannels.length === 0 ? "∅" : selectedChannels.map(({ channel }) => channel).join(" ∨ ")}
-            </span>
-            <span style={{ color: C.textDimmer, fontSize: FS.xl }}>→</span>
-            <ColorBadge level={selected} highlighted={hlLevel === selected} onHover={onHover} />
-            <span style={{ color: C.textMuted, fontSize: FS.sm }}>
-              {selectedChannels.length === 0 ? "0" : selectedChannels.map(({ channel }) => CHROMALUM_GRB_WEIGHTS[channel]).join("+")}=
-              {selectedInfo.lv}
-            </span>
-          </div>
-
-          <div
-            data-testid="generation-layers"
-            aria-label={t("theory_generation_layers_aria")}
-            style={{ width: "100%", maxWidth: 460, display: "grid", gridTemplateColumns: "88px minmax(0, 1fr)", gap: SP.md }}
-          >
-            {GENERATION_LAYERS.map(({ count, levels }) => (
-              <React.Fragment key={count}>
-                <div style={{ color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.xs, alignSelf: "center", textAlign: "right" }}>
-                  {t(`theory_generation_layer_${count}`)}
+        <div className="theory-generation" data-testid="primary-generation">
+          <div className="theory-generation-builder">
+            <h4 className="theory-generation-heading">{t("theory_generation_select")}</h4>
+            <div role="group" aria-label={t("theory_generation_select_aria")} className="theory-generation-inputs">
+              {CHANNELS.map(({ channel }) => {
+                const level = CHROMALUM_GRB_WEIGHTS[channel];
+                const info = THEORY_LEVELS[level];
+                const active = (selected & level) !== 0;
+                return (
+                  <button
+                    key={channel}
+                    type="button"
+                    className="theory-generation-primary"
+                    aria-pressed={active}
+                    aria-label={t("theory_generation_primary_aria", channel, info.bits.join(""), level)}
+                    onClick={() => toggleGenerator(channel)}
+                    onMouseEnter={() => onHover(level)}
+                    onMouseLeave={() => onHover(null)}
+                    onFocus={() => onHover(level)}
+                    onBlur={() => onHover(null)}
+                  >
+                    <span className="theory-generation-primary-label">
+                      <span className="theory-generation-swatch" style={{ background: info.color }} aria-hidden="true" />
+                      {channel}
+                      <span className="theory-generation-check" aria-hidden="true">
+                        {active ? "✓" : "−"}
+                      </span>
+                    </span>
+                    <span className="theory-generation-primary-bits">
+                      {info.bits.join("")} · {level}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            <div data-testid="generation-equation" className="theory-generation-result" role="status" aria-live="polite" aria-atomic="true">
+              <span
+                className="theory-generation-preview"
+                style={{ background: selectedInfo.color }}
+                onMouseEnter={() => onHover(selected)}
+                onMouseLeave={() => onHover(null)}
+                aria-hidden="true"
+              />
+              <div>
+                <div className="theory-generation-result-label">{t("theory_generation_result")}</div>
+                <div className="theory-generation-result-value" data-generation-result={selected}>
+                  <strong>{selectedInfo.short}</strong>
+                  <span>{selectedInfo.bits.join("")}</span>
                 </div>
-                <div style={{ display: "flex", justifyContent: "center", gap: SP.lg, flexWrap: "wrap" }}>
-                  {levels.map((level) => (
-                    <ColorBadge key={level} level={level} compact highlighted={hlLevel === level} onHover={onHover} />
-                  ))}
+              </div>
+              <div className="theory-generation-formula">
+                <span>
+                  {selectedChannels.length === 0 ? "∅" : selectedChannels.map(({ channel }) => channel).join(" ∨ ")} → {selectedInfo.short}
+                </span>
+                <span>
+                  {selectedChannels.length === 0 ? "0" : selectedChannels.map(({ channel }) => CHROMALUM_GRB_WEIGHTS[channel]).join("+")}=
+                  {selectedInfo.lv}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="theory-generation-states">
+            <h5 className="theory-generation-heading">{t("theory_generation_states_title")}</h5>
+            <p className="theory-generation-state-hint">{t("theory_generation_states_hint")}</p>
+            <div
+              data-testid="generation-layers"
+              role="group"
+              aria-label={t("theory_generation_layers_aria")}
+              className="theory-generation-layers"
+            >
+              {GENERATION_LAYERS.map(({ count, levels }) => (
+                <div key={count} className="theory-generation-layer">
+                  <span className="theory-generation-count">{t(`theory_generation_layer_${count}`)}</span>
+                  <div className="theory-generation-layer-states">
+                    {levels.map((level) => {
+                      const info = THEORY_LEVELS[level];
+                      return (
+                        <button
+                          key={level}
+                          type="button"
+                          className="theory-generation-state"
+                          data-level={level}
+                          data-highlighted={hlLevel === level}
+                          aria-pressed={selected === level}
+                          aria-label={t("theory_generation_state_aria", info.short, info.bits.join(""))}
+                          style={{ gridColumn: levels.length === 1 ? 2 : undefined }}
+                          onClick={() => setSelected(level)}
+                          onMouseEnter={() => onHover(level)}
+                          onMouseLeave={() => onHover(null)}
+                          onFocus={() => onHover(level)}
+                          onBlur={() => onHover(null)}
+                        >
+                          <span className="theory-generation-state-name">
+                            <span className="theory-generation-swatch" style={{ background: info.color }} aria-hidden="true" />
+                            {info.short}
+                          </span>
+                          <span>{info.bits.join("")}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </React.Fragment>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}

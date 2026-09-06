@@ -63,4 +63,32 @@ describe("PrimaryGeneration", () => {
     expect(transition.textContent).toContain("−2");
     expect(transition.textContent).toContain("w_R=2");
   });
+
+  it("selects every generated state from the layer list and synchronizes its primary controls", () => {
+    renderDemo();
+    const generators = screen.getByRole("group", { name: "Primary generators G, R, and B" });
+    const layers = screen.getByRole("group", { name: "All eight states grouped by the number of selected primaries" });
+    const equation = screen.getByTestId("generation-equation");
+    for (const [name, bits] of [
+      ["K", "000"],
+      ["B", "001"],
+      ["R", "010"],
+      ["M", "011"],
+      ["G", "100"],
+      ["C", "101"],
+      ["Y", "110"],
+      ["W", "111"],
+    ]) {
+      const state = within(layers).getByRole("button", { name: `Select the primaries for state ${name}, bits ${bits}` });
+      fireEvent.click(state);
+      expect(state.getAttribute("aria-pressed")).toBe("true");
+      expect(layers.querySelectorAll('[aria-pressed="true"]')).toHaveLength(1);
+      expect(equation.textContent).toContain(`${name}${bits}`);
+      within(generators)
+        .getAllByRole("button")
+        .forEach((button, index) => {
+          expect(button.getAttribute("aria-pressed")).toBe(String(bits[index] === "1"));
+        });
+    }
+  });
 });

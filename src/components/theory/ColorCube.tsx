@@ -1,80 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef } from "react";
-import {
-  THEORY_LEVELS,
-  CUBE_EDGES,
-  CUBE_POINTS,
-  GRAY_PATH,
-  edgeChannel,
-  isBackEdge,
-  STELLA_EDGES,
-  COMPLEMENT_EDGES,
-} from "../../data/theory-data";
-import { C, FS, SP, FONT } from "../../styles/tokens";
-import { usePinReset } from "./pin-reset";
+import { THEORY_LEVELS, CUBE_EDGES, CUBE_POINTS, GRAY_PATH, edgeChannel, isBackEdge, COMPLEMENT_EDGES } from "../../data/theory-data";
+import { C, FS, SP } from "../../styles/tokens";
 import { S_CURSOR_POINTER, S_THEORY_BTN, S_THEORY_BTN_ACTIVE } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
-import {
-  canonicalColorCubeMixOperands,
-  colorCubeMixFamily,
-  colorCubeMixResult,
-  isColorCubeMixEligible,
-  type ColorCubeMixFamily,
-} from "./color-cube-mixing";
+import { usePinReset } from "./pin-reset";
 
-const DOT_R = 11;
-const SUBSCRIPT = ["₀", "₁", "₂", "₃", "₄", "₅", "₆", "₇"] as const;
+const DOT_R = 9;
+const HIT_R = 17;
 
 function edgesOf(v: number): number[] {
   return CUBE_EDGES.map((e, i) => (e[0] === v || e[1] === v ? i : -1)).filter((i) => i >= 0);
 }
 
 const CHANNEL_COLORS: Record<string, string> = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
-
-function rankedLabel(level: number): string {
-  return `${THEORY_LEVELS[level].short}${SUBSCRIPT[level]}`;
-}
-
-function bitLabel(level: number): string {
-  return `${THEORY_LEVELS[level].bits.join("")}(${THEORY_LEVELS[level].short})`;
-}
-
-function shortenedLine(from: { x: number; y: number }, to: { x: number; y: number }, startGap: number, endGap: number) {
-  const dx = to.x - from.x;
-  const dy = to.y - from.y;
-  const length = Math.hypot(dx, dy);
-  const ux = dx / length;
-  const uy = dy / length;
-  return {
-    x1: from.x + ux * startGap,
-    y1: from.y + uy * startGap,
-    x2: to.x - ux * endGap,
-    y2: to.y - uy * endGap,
-  };
-}
-
-function isSubset(subset: number, superset: number): boolean {
-  return (subset & superset) === subset;
-}
-
-function directedMixCoverEdges(
-  operands: readonly number[],
-  family: ColorCubeMixFamily | null,
-  result: number | null,
-): readonly (readonly [number, number])[] {
-  if (family === null || result === null) return [];
-  if (operands.length === 2) return operands.map((operand) => [operand, result] as const);
-  if (operands.length !== 3) return [];
-
-  return CUBE_EDGES.flatMap(([a, b]) => {
-    const [lower, upper] = isSubset(a, b) ? [a, b] : [b, a];
-    const liesOnMixPath =
-      family === "rgb"
-        ? operands.some((operand) => isSubset(operand, lower)) && isSubset(upper, result)
-        : operands.some((operand) => isSubset(upper, operand)) && isSubset(result, lower);
-    if (!liesOnMixPath) return [];
-    return [family === "rgb" ? ([lower, upper] as const) : ([upper, lower] as const)];
-  });
-}
 
 // Hasse diagram target positions = pure linear projection of the cube onto a
 // body-diagonal-vertical viewpoint. x-coordinates match the isometric cube exactly
@@ -134,16 +72,11 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
   const [pinned, setPinned] = useState<number | null>(null);
   const [equatorMode, setEquatorMode] = useState(false);
   const [showComplements, setShowComplements] = useState(false);
-  const [showK8, setShowK8] = useState(false);
   const [hasseMode, setHasseMode] = useState(false);
-  const [mixActive, setMixActive] = useState(false);
-  const [mixOperands, setMixOperands] = useState<number[]>([]);
   const [animT, setAnimT] = useState(0);
   const animTRef = useRef(0);
   const reducedMotion = useRef(typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const clearMixOperands = useCallback((_value: null) => setMixOperands([]), []);
   usePinReset(setPinned);
-  usePinReset(clearMixOperands);
 
   useEffect(() => {
     if (reducedMotion.current) {
@@ -167,30 +100,9 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
     return () => cancelAnimationFrame(raf);
   }, [hasseMode]);
 
-  useEffect(() => {
-    if (!mixActive) return;
-    const clearOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setMixOperands([]);
-    };
-    window.addEventListener("keydown", clearOnEscape);
-    return () => window.removeEventListener("keydown", clearOnEscape);
-  }, [mixActive]);
-
-  const mixFamily = mixOperands.length > 0 ? colorCubeMixFamily(mixOperands[0]) : null;
-  const mixResult = mixFamily === null ? null : colorCubeMixResult(mixOperands, mixFamily);
-  const orderedMixOperands = mixFamily === null ? mixOperands : canonicalColorCubeMixOperands(mixOperands, mixFamily);
-  const mixOperator = mixFamily === "cmy" ? "∧" : "∨";
-  const mixFormula =
-    mixResult === null ? null : `${orderedMixOperands.map(rankedLabel).join(` ${mixOperator} `)} = ${rankedLabel(mixResult)}`;
-  const mixBitFormula = mixResult === null ? null : `${orderedMixOperands.map(bitLabel).join(` ${mixOperator} `)} = ${bitLabel(mixResult)}`;
-  const mixOperandSet = new Set(mixOperands);
-  const mixCoverEdges = directedMixCoverEdges(mixOperands, mixFamily, mixResult);
-  const mixIntermediateSet = new Set(
-    mixCoverEdges.flatMap(([from, to]) => [from, to]).filter((level) => !mixOperandSet.has(level) && level !== mixResult),
-  );
-
-  const hl = mixActive ? null : hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : pinned;
-  const hlEdges = hl !== null ? edgesOf(hl) : [];
+  const preview = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : null;
+  const hl = preview ?? pinned;
+  const hlEdges = hl === null ? [] : edgesOf(hl);
   const hlVerts = new Set<number>();
   if (hl !== null) {
     hlVerts.add(hl);
@@ -200,40 +112,15 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
     }
   }
 
-  const onEnter = useCallback(
-    (lv: number) => {
-      if (!mixActive) onHover(lv);
-    },
-    [mixActive, onHover],
-  );
-  const onLeave = useCallback(() => {
-    if (!mixActive) onHover(null);
-  }, [mixActive, onHover]);
+  const onEnter = useCallback((lv: number) => onHover(lv), [onHover]);
+  const onLeave = useCallback(() => onHover(null), [onHover]);
   const onTap = useCallback(
     (lv: number) => {
-      setPinned((prev) => {
-        const next = prev === lv ? null : lv;
-        queueMicrotask(() => onHover(next));
-        return next;
-      });
+      setPinned((previous) => (previous === lv ? null : lv));
+      onHover(null);
     },
     [onHover],
   );
-  const onMixTap = useCallback((lv: number) => {
-    setMixOperands((previous) => {
-      if (previous.includes(lv)) return previous.filter((operand) => operand !== lv);
-      const family = previous.length > 0 ? colorCubeMixFamily(previous[0]) : null;
-      if (!isColorCubeMixEligible(lv, family) || previous.length >= 3) return previous;
-      return [...previous, lv];
-    });
-  }, []);
-  const onMixModeToggle = useCallback(() => {
-    setPinned(null);
-    setMixOperands([]);
-    onHover(null);
-    setMixActive((active) => !active);
-  }, [onHover]);
-
   const getPos = (lv: number) => {
     const cube = CUBE_POINTS[lv];
     if (animT <= 0) return cube;
@@ -252,40 +139,19 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
     }).join(" ") + "Z";
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
-      <svg
-        viewBox="30 35 240 195"
-        style={{ width: "100%", maxWidth: 360 }}
-        role={mixActive ? "group" : "img"}
-        aria-label={mixActive ? t("theory_cube_mix_aria") : t("theory_cube_title")}
-        onClick={(event) => {
-          if (mixActive && event.target === event.currentTarget) setMixOperands([]);
-        }}
-      >
-        {mixActive && mixCoverEdges.length > 0 && (
-          <defs>
-            <marker
-              id="cube-mix-arrow"
-              viewBox="0 0 6 6"
-              refX={5}
-              refY={3}
-              markerWidth={mixOperands.length === 2 ? 5 : 4}
-              markerHeight={mixOperands.length === 2 ? 5 : 4}
-              orient="auto"
-            >
-              <path d="M 0 0 L 6 3 L 0 6 Z" fill={C.textWhite} />
-            </marker>
-          </defs>
-        )}
-
+    <div
+      className="theory-cube"
+      data-selected-level={pinned ?? undefined}
+      style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}
+    >
+      <svg viewBox="30 35 240 195" style={{ width: "100%", maxWidth: 360 }} role="group" aria-label={t("theory_cube_title")}>
         {/* Equator path (toggle overlay) */}
-        {!mixActive && equatorMode && (
+        {equatorMode && (
           <path d={equatorPath} fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.40)" strokeWidth={1.5} strokeDasharray="4,3" />
         )}
 
         {/* Complement diagonals (all 4 body diagonals) */}
-        {!mixActive &&
-          showComplements &&
+        {showComplements &&
           COMPLEMENT_EDGES.map(([a, b]) => {
             const pa = getPos(a),
               pb = getPos(b);
@@ -315,48 +181,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
             );
           })}
 
-        {/* K₈ distance-2 edges (stella octangula) */}
-        {!mixActive &&
-          showK8 &&
-          STELLA_EDGES.map(([a, b], i) => {
-            const pa = getPos(a),
-              pb = getPos(b);
-            return (
-              <line
-                key={"stella" + i}
-                x1={pa.x}
-                y1={pa.y}
-                x2={pb.x}
-                y2={pb.y}
-                stroke="rgba(255,255,255,0.35)"
-                strokeWidth={1}
-                strokeDasharray="5,3"
-              />
-            );
-          })}
-
-        {/* K₈ distance-3 edges (complement matching) */}
-        {!mixActive &&
-          showK8 &&
-          COMPLEMENT_EDGES.map(([a, b], i) => {
-            const pa = getPos(a),
-              pb = getPos(b);
-            const la = THEORY_LEVELS[a],
-              lb = THEORY_LEVELS[b];
-            const gradId = `k8Comp${a}${b}`;
-            return (
-              <g key={"k8c" + i}>
-                <defs>
-                  <linearGradient id={gradId} x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor={la.color} stopOpacity={0.8} />
-                    <stop offset="100%" stopColor={lb.color} stopOpacity={0.8} />
-                  </linearGradient>
-                </defs>
-                <line x1={pa.x} y1={pa.y} x2={pb.x} y2={pb.y} stroke={`url(#${gradId})`} strokeWidth={1.5} strokeDasharray="2,3" />
-              </g>
-            );
-          })}
-
         {/* Edges */}
         {CUBE_EDGES.map((e, ei) => {
           const p0 = getPos(e[0]),
@@ -367,10 +191,12 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           const ch = edgeChannel(e[0], e[1]);
           const chColor = CHANNEL_COLORS[ch];
           const isEqEdge = isEquator(e[0]) && isEquator(e[1]);
-          const edgeOpacity = mixActive ? 0.12 : dim ? 0.15 : active ? 0.9 : isEqEdge && equatorMode ? 0.6 : 0.55;
+          const edgeOpacity = dim ? 0.15 : active ? 0.9 : isEqEdge && equatorMode ? 0.6 : 0.55;
           return (
             <g key={"ce" + ei}>
               <line
+                data-cube-edge={`${e[0]}-${e[1]}`}
+                data-cube-active={active}
                 x1={p0.x}
                 y1={p0.y}
                 x2={p1.x}
@@ -383,27 +209,6 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
             </g>
           );
         })}
-
-        {/* Directed cover edges show the pair result or every symmetric two-stage route to a triple result. */}
-        {mixActive &&
-          mixCoverEdges.map(([fromLevel, toLevel]) => {
-            const from = getPos(fromLevel);
-            const to = getPos(toLevel);
-            const line = shortenedLine(from, to, DOT_R + 2, DOT_R + 5);
-            return (
-              <line
-                key={`mix-arrow-${fromLevel}-${toLevel}`}
-                data-testid={`cube-mix-edge-${fromLevel}-${toLevel}`}
-                {...line}
-                stroke={C.textWhite}
-                strokeWidth={mixOperands.length === 2 ? 2 : 1.4}
-                opacity={mixOperands.length === 2 ? 0.95 : 0.7}
-                strokeDasharray={animT < 0.5 && isBackEdge(fromLevel, toLevel) ? "3,3" : undefined}
-                markerEnd="url(#cube-mix-arrow)"
-                pointerEvents="none"
-              />
-            );
-          })}
 
         {/* Rank labels + Pascal counts with column headers (Hasse mode) */}
         {animT > 0 && (
@@ -473,23 +278,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
             const { dx, dy, anchor } = SET_LABEL_OFFSETS[lv];
             const active = hlVerts.has(lv);
             const dim = hl !== null && !active;
-            const mixSelected = mixOperandSet.has(lv);
-            const mixIsResult = mixResult === lv;
-            const mixIntermediate = mixIntermediateSet.has(lv);
-            const mixEligible = isColorCubeMixEligible(lv, mixFamily);
-            const opacity = mixActive
-              ? mixSelected || mixIsResult
-                ? 1
-                : mixIntermediate
-                  ? 0.72
-                  : mixEligible
-                    ? 0.65
-                    : 0.18
-              : dim
-                ? 0.3
-                : active
-                  ? 1
-                  : 0.85;
+            const opacity = dim ? 0.3 : active ? 1 : 0.85;
             return (
               <text
                 key={"setlabel" + lv}
@@ -514,133 +303,48 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           const info = THEORY_LEVELS[lv];
           const active = hlVerts.has(lv);
           const dim = hl !== null && !active;
-          const mixInput = colorCubeMixFamily(lv) !== null;
-          const mixSelected = mixOperandSet.has(lv);
-          const mixIsResult = mixResult === lv;
-          const mixIntermediate = mixIntermediateSet.has(lv);
-          const mixEligible = isColorCubeMixEligible(lv, mixFamily);
-          const mixDim = mixActive && !mixSelected && !mixIsResult && !mixIntermediate;
-          const fillOpacity = mixActive
-            ? mixSelected || mixIsResult
-              ? 0.95
-              : mixIntermediate
-                ? 0.48
-                : mixEligible
-                  ? 0.62
-                  : 0.12
-            : dim
-              ? 0.2
-              : 0.85;
-          const labelOpacity = mixActive
-            ? mixSelected || mixIsResult
-              ? 1
-              : mixIntermediate
-                ? 0.78
-                : mixEligible
-                  ? 0.72
-                  : 0.2
-            : dim
-              ? 0.3
-              : 1;
-          const mixVertexLabel = !mixInput
-            ? undefined
-            : mixSelected
-              ? t("theory_cube_mix_vertex_selected", rankedLabel(lv))
-              : mixIntermediate
-                ? t("theory_cube_mix_vertex_intermediate", rankedLabel(lv))
-                : mixEligible
-                  ? t("theory_cube_mix_vertex_selectable", rankedLabel(lv))
-                  : t("theory_cube_mix_vertex_unavailable", rankedLabel(lv));
+          const fillOpacity = dim ? 0.2 : 0.85;
+          const labelOpacity = dim ? 0.3 : 1;
           return (
             <g
               key={"cv" + lv}
               data-level={lv}
-              data-mix-state={
-                mixActive
-                  ? mixSelected
-                    ? "operand"
-                    : mixIsResult
-                      ? "result"
-                      : mixIntermediate
-                        ? "intermediate"
-                        : mixEligible
-                          ? "eligible"
-                          : "unavailable"
-                  : undefined
-              }
-              role={mixActive && mixInput ? "button" : undefined}
-              tabIndex={mixActive && mixInput && mixEligible ? 0 : undefined}
-              aria-label={mixActive ? mixVertexLabel : undefined}
-              aria-pressed={mixActive && mixInput ? mixSelected : undefined}
-              aria-disabled={mixActive && mixInput ? !mixEligible : undefined}
+              role="button"
+              tabIndex={0}
+              aria-label={t("theory_toggle_state_button_aria", info.short, info.bits.join(""), String(lv))}
+              aria-pressed={pinned === lv}
               onMouseEnter={() => onEnter(lv)}
               onMouseLeave={onLeave}
-              onClick={() => {
-                if (mixActive) {
-                  if (mixEligible) onMixTap(lv);
-                } else {
-                  onTap(lv);
-                }
-              }}
+              onClick={() => onTap(lv)}
+              onFocus={() => onEnter(lv)}
+              onBlur={onLeave}
               onKeyDown={(event) => {
-                if (!mixActive || !mixInput || !mixEligible) return;
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault();
-                  onMixTap(lv);
+                  if (!event.repeat) onTap(lv);
                 }
               }}
-              style={mixActive ? (mixInput ? (mixEligible ? S_CURSOR_POINTER : { cursor: "not-allowed" }) : undefined) : S_CURSOR_POINTER}
+              style={S_CURSOR_POINTER}
             >
-              <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="transparent" />
-              {!mixActive && active && (
-                <circle cx={p.x} cy={p.y} r={DOT_R + 4} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1.5} />
-              )}
-              {mixActive && mixSelected && (
-                <circle data-mix-operand={lv} cx={p.x} cy={p.y} r={DOT_R + 4} fill="none" stroke={C.accentBright} strokeWidth={2} />
-              )}
-              {mixActive && mixIsResult && (
-                <circle data-mix-result={lv} cx={p.x} cy={p.y} r={DOT_R + 5} fill="none" stroke={C.textWhite} strokeWidth={2.5} />
-              )}
-              {mixActive && mixIntermediate && (
-                <circle
-                  data-mix-intermediate={lv}
-                  cx={p.x}
-                  cy={p.y}
-                  r={DOT_R + 3}
-                  fill="none"
-                  stroke={C.textWhite}
-                  strokeWidth={1.25}
-                  strokeOpacity={0.55}
-                />
-              )}
+              <circle cx={p.x} cy={p.y} r={HIT_R} fill="transparent" />
+              {pinned === lv && <circle cx={p.x} cy={p.y} r={DOT_R + 6} fill="none" stroke={C.accentBright} strokeWidth={1.5} />}
+              {active && <circle cx={p.x} cy={p.y} r={DOT_R + 4} fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth={1.5} />}
               <circle
                 cx={p.x}
                 cy={p.y}
                 r={DOT_R}
                 fill={lv === 0 ? C.bgRoot : info.color}
                 fillOpacity={fillOpacity}
-                stroke={
-                  mixActive && mixIsResult
-                    ? C.textWhite
-                    : mixActive && mixSelected
-                      ? C.accentBright
-                      : mixActive && mixIntermediate
-                        ? C.textWhite
-                        : mixDim || dim
-                          ? lv === 0
-                            ? C.textDimmer
-                            : info.color
-                          : "#fff"
-                }
-                strokeWidth={lv === 0 ? 1 : mixIsResult || mixSelected || active ? 2.5 : mixIntermediate ? 1.75 : 1.5}
-                strokeOpacity={mixDim || dim ? 0.3 : mixIntermediate ? 0.65 : 0.8}
+                stroke={dim ? (lv === 0 ? C.textDimmer : info.color) : "#fff"}
+                strokeWidth={lv === 0 ? 1 : active ? 2.5 : 1.5}
+                strokeOpacity={dim ? 0.3 : 0.8}
               />
               <text
                 x={p.x}
                 y={p.y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={FS.sm}
+                fontSize={8}
                 fontWeight={900}
                 fontFamily="var(--font-mono)"
                 fill={lv >= 4 ? "#000" : "#fff"}
@@ -653,112 +357,31 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
         })}
       </svg>
 
-      {mixActive && (
-        <div
-          role="status"
-          aria-label={t("theory_cube_mix_status_aria")}
-          aria-live="polite"
-          data-testid="cube-mix-status"
-          style={{
-            minHeight: 38,
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: SP.xs,
-            flexWrap: "wrap",
-            fontFamily: FONT.mono,
-            fontSize: FS.xs,
-            textAlign: "center",
-          }}
-        >
-          {mixFormula !== null && mixBitFormula !== null ? (
-            <>
-              <span style={{ color: C.textPrimary }}>
-                <span style={{ color: C.textMuted }}>
-                  {mixFamily === "rgb" ? t("theory_cube_mix_join") : t("theory_cube_mix_meet")}
-                  {" · "}
-                </span>
-                <strong>{mixFormula}</strong>
-              </span>
-              <span style={{ color: C.textDimmer }}>{mixBitFormula}</span>
-            </>
-          ) : mixFamily === "rgb" ? (
-            <span style={{ color: C.textDimmer }}>{t("theory_cube_mix_rgb_hint", rankedLabel(mixOperands[0]))}</span>
-          ) : mixFamily === "cmy" ? (
-            <span style={{ color: C.textDimmer }}>{t("theory_cube_mix_cmy_hint", rankedLabel(mixOperands[0]))}</span>
-          ) : (
-            <span style={{ color: C.textDimmer }}>{t("theory_cube_mix_hint")}</span>
-          )}
-        </div>
-      )}
-
-      <div
-        style={{
-          fontSize: FS.xs,
-          color: C.textDimmer,
-          textAlign: "center",
-          fontFamily: FONT.mono,
-          visibility: !mixActive && showK8 ? "visible" : "hidden",
-        }}
-      >
-        {"K\u2088 = Q\u2083 \u222A (K\u2084\u2294K\u2084) \u222A M\u2084"}
-      </div>
-
       <div style={{ display: "flex", gap: SP.sm, flexWrap: "wrap", justifyContent: "center" }}>
-        {mixActive ? (
-          <>
-            <button
-              className="theory-annotation theory-diagram-button"
-              style={hasseMode ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
-              onClick={() => setHasseMode((v) => !v)}
-              aria-pressed={hasseMode}
-            >
-              {t("theory_cube_hasse")}
-            </button>
-            <button className="theory-annotation theory-diagram-button" style={S_THEORY_BTN_ACTIVE} onClick={onMixModeToggle} aria-pressed>
-              {t("theory_cube_mix_exit")}
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              className="theory-annotation theory-diagram-button"
-              style={equatorMode ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
-              onClick={() => setEquatorMode((v) => !v)}
-              aria-pressed={equatorMode}
-            >
-              {t("theory_cube_equator")}
-            </button>
-            <button
-              className="theory-annotation theory-diagram-button"
-              style={showComplements ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
-              onClick={() => setShowComplements((v) => !v)}
-              aria-pressed={showComplements}
-            >
-              {t("theory_cube_complements")}
-            </button>
-            <button
-              className="theory-annotation theory-diagram-button"
-              style={showK8 ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
-              onClick={() => setShowK8((v) => !v)}
-              aria-pressed={showK8}
-            >
-              {"K\u2088"}
-            </button>
-            <button
-              className="theory-annotation theory-diagram-button"
-              style={hasseMode ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
-              onClick={() => setHasseMode((v) => !v)}
-              aria-pressed={hasseMode}
-            >
-              {t("theory_cube_hasse")}
-            </button>
-            <button className="theory-annotation theory-diagram-button" style={S_THEORY_BTN} onClick={onMixModeToggle} aria-pressed={false}>
-              {t("theory_cube_mix")}
-            </button>
-          </>
-        )}
+        <button
+          className="theory-annotation theory-diagram-button"
+          style={equatorMode ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
+          onClick={() => setEquatorMode((v) => !v)}
+          aria-pressed={equatorMode}
+        >
+          {t("theory_cube_equator")}
+        </button>
+        <button
+          className="theory-annotation theory-diagram-button"
+          style={showComplements ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
+          onClick={() => setShowComplements((v) => !v)}
+          aria-pressed={showComplements}
+        >
+          {t("theory_cube_complements")}
+        </button>
+        <button
+          className="theory-annotation theory-diagram-button"
+          style={hasseMode ? S_THEORY_BTN_ACTIVE : S_THEORY_BTN}
+          onClick={() => setHasseMode((v) => !v)}
+          aria-pressed={hasseMode}
+        >
+          {t("theory_cube_hasse")}
+        </button>
       </div>
     </div>
   );

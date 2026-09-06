@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
-import { S_BTN_SM } from "../../styles/shared";
 import { C, FONT, FS, FW, R, SP } from "../../styles/tokens";
+import { HammingParitySets } from "./HammingParitySets";
 
 export type Bit = 0 | 1;
 export type DataWord = readonly [Bit, Bit, Bit, Bit];
@@ -12,23 +12,18 @@ const DATA_POSITIONS = [3, 5, 6, 7] as const;
 const CODE_POSITIONS = [1, 2, 3, 4, 5, 6, 7] as const;
 const CODE_POSITION_ROLES = ["P1", "P2", "D1", "P4", "D2", "D3", "D4"] as const;
 const HAMMING_COLUMN_BITS = ["001", "010", "011", "100", "101", "110", "111"] as const;
-const FLOW_ROW_COLUMNS = "24px minmax(72px, 0.55fr) minmax(0, 1fr)";
+const FLOW_ROW_COLUMNS = "var(--theory-hamming-row-columns, 24px minmax(72px, 0.4fr) minmax(0, 1fr))";
 const ZERO_ERRORS: HammingWord = [0, 0, 0, 0, 0, 0, 0];
+const EMPTY_SLOTS = CODE_POSITIONS.map(() => null);
 const INITIAL_DATA: DataWord = [1, 0, 1, 1];
 const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇";
-const FLOW_TRACE_TIMELINE = {
-  data: 0,
-  encode: 180,
+const FLOW_TIMELINE = {
   encoded: 360,
   transmit: 540,
   received: 720,
-  checkInput: 840,
   checkRows: [900, 1020, 1140],
-  checkOutput: 1200,
   syndrome: 1260,
-  correction: 1440,
   corrected: 1620,
-  extract: 1710,
   output: 1800,
 } as const;
 const READABLE_CHECK_COLORS: Readonly<Record<number, string>> = {
@@ -42,22 +37,7 @@ const PARITY_GROUPS = [
   { parity: 2, channel: "R", checks: [2, 3, 6, 7] as const, data: [1, 3, 4] as const },
   { parity: 4, channel: "G", checks: [4, 5, 6, 7] as const, data: [2, 3, 4] as const },
 ] as const;
-
-const VENN_CIRCLES = [
-  { parity: 2, cx: 170, cy: 94, labelX: 170, labelY: 12 },
-  { parity: 4, cx: 220, cy: 156, labelX: 292, labelY: 248 },
-  { parity: 1, cx: 120, cy: 156, labelX: 48, labelY: 248 },
-] as const;
-
-const VENN_POSITIONS: Readonly<Record<number, { x: number; y: number }>> = {
-  1: { x: 76, y: 194 },
-  2: { x: 170, y: 39 },
-  3: { x: 125, y: 101 },
-  4: { x: 264, y: 194 },
-  5: { x: 170, y: 215 },
-  6: { x: 215, y: 101 },
-  7: { x: 170, y: 153 },
-};
+const SYNDROME_GROUPS = [PARITY_GROUPS[2], PARITY_GROUPS[1], PARITY_GROUPS[0]] as const;
 
 interface HammingComputation {
   readonly encoded: HammingWord;
@@ -79,15 +59,132 @@ export function encodeHamming74([d1, d2, d3, d4]: DataWord): HammingWord {
 /** Run the complete Hamming(7,4) encode, channel, syndrome, and correction pipeline. */
 export function calculateHamming74(data: DataWord, errors: HammingWord): HammingComputation {
   const encoded = encodeHamming74(data);
-  const received = encoded.map((bit, index) => (bit ^ errors[index]) as Bit) as unknown as HammingWord;
-  const s1 = (received[0] ^ received[2] ^ received[4] ^ received[6]) as Bit;
-  const s2 = (received[1] ^ received[2] ^ received[5] ^ received[6]) as Bit;
-  const s4 = (received[3] ^ received[4] ^ received[5] ^ received[6]) as Bit;
-  const syndromeBits = [s4, s2, s1] as const;
-  const syndrome = 4 * s4 + 2 * s2 + s1;
-  const corrected = received.map((bit, index) => (bit ^ (syndrome === index + 1 ? 1 : 0)) as Bit) as unknown as HammingWord;
-  const output = [corrected[2], corrected[4], corrected[5], corrected[6]] as const;
+  const received = transmitWord(encoded, errors);
+  const syndromeBits = SYNDROME_GROUPS.map((group) => checkParity(received, group.checks)) as unknown as readonly [Bit, Bit, Bit];
+  const syndrome = syndromePosition(syndromeBits);
+  const corrected = correctWord(received, syndrome);
+  const output = extractData(corrected);
   return { encoded, received, syndromeBits, syndrome, corrected, output };
+}
+
+function transmitWord(encoded: HammingWord, errors: HammingWord): HammingWord {
+  return encoded.map((bit, index) => (bit ^ errors[index]) as Bit) as unknown as HammingWord;
+}
+
+function checkParity(received: HammingWord, positions: readonly number[]): Bit {
+  return positions.reduce<Bit>((parity, position) => (parity ^ received[position - 1]) as Bit, 0);
+}
+
+function syndromePosition([s4, s2, s1]: readonly [Bit, Bit, Bit]): number {
+  return 4 * s4 + 2 * s2 + s1;
+}
+
+function correctWord(received: HammingWord, syndrome: number): HammingWord {
+  return received.map((bit, index) => (bit ^ (syndrome === index + 1 ? 1 : 0)) as Bit) as unknown as HammingWord;
+}
+
+function extractData(corrected: HammingWord): DataWord {
+  return [corrected[2], corrected[4], corrected[5], corrected[6]];
+}
+
+type HammingProgress = { readonly [Key in keyof HammingComputation]: HammingComputation[Key] | null } & {
+  readonly checkBits: readonly [Bit | null, Bit | null, Bit | null];
+};
+
+interface HammingSimulation {
+  readonly data: DataWord;
+  readonly errors: HammingWord;
+  readonly run: { readonly encoded: HammingWord | null } | null;
+  readonly result: HammingProgress;
+}
+
+function pendingComputation(encoded: HammingWord | null): HammingProgress {
+  return { encoded, received: null, checkBits: [null, null, null], syndromeBits: null, syndrome: null, corrected: null, output: null };
+}
+
+function useHammingSimulation() {
+  const [simulation, setSimulation] = useState<HammingSimulation>(() => {
+    const initial = calculateHamming74(INITIAL_DATA, ZERO_ERRORS);
+    return { data: INITIAL_DATA, errors: ZERO_ERRORS, run: null, result: { ...initial, checkBits: initial.syndromeBits } };
+  });
+  const { data, errors, run } = simulation;
+
+  useEffect(() => {
+    if (run === null) return;
+    const offset = run.encoded === null ? 0 : FLOW_TIMELINE.transmit;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let encoded = run.encoded;
+    let received: HammingWord | null = null;
+    let checkBits: HammingProgress["checkBits"] = [null, null, null];
+    let syndrome: number | null = null;
+    let corrected: HammingWord | null = null;
+    const publish = (patch: Partial<HammingProgress>) => {
+      setSimulation((current) => (current.run === run ? { ...current, result: { ...current.result, ...patch } } : current));
+    };
+    const schedule = (at: number, compute: () => void) => {
+      timers.push(setTimeout(compute, at - offset));
+    };
+
+    // Each stage calculates from the preceding stage only when its delay has elapsed.
+    if (encoded === null) {
+      schedule(FLOW_TIMELINE.encoded, () => {
+        encoded = encodeHamming74(data);
+        publish({ encoded });
+      });
+    }
+    schedule(FLOW_TIMELINE.received, () => {
+      if (encoded === null) return;
+      received = transmitWord(encoded, errors);
+      publish({ received });
+    });
+    SYNDROME_GROUPS.forEach((group, index) => {
+      schedule(FLOW_TIMELINE.checkRows[index], () => {
+        if (received === null) return;
+        const next = [...checkBits] as [Bit | null, Bit | null, Bit | null];
+        next[index] = checkParity(received, group.checks);
+        checkBits = next;
+        publish({ checkBits });
+      });
+    });
+    schedule(FLOW_TIMELINE.syndrome, () => {
+      const [s4, s2, s1] = checkBits;
+      if (s4 === null || s2 === null || s1 === null) return;
+      const syndromeBits = [s4, s2, s1] as const;
+      syndrome = syndromePosition(syndromeBits);
+      publish({ syndromeBits, syndrome });
+    });
+    schedule(FLOW_TIMELINE.corrected, () => {
+      if (received === null || syndrome === null) return;
+      corrected = correctWord(received, syndrome);
+      publish({ corrected });
+    });
+    schedule(FLOW_TIMELINE.output, () => {
+      if (corrected === null) return;
+      publish({ output: extractData(corrected) });
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [data, errors, run]);
+
+  const toggleData = useCallback((index: number) => {
+    setSimulation((current) => ({
+      ...current,
+      data: current.data.map((bit, bitIndex) => (bitIndex === index ? ((bit ^ 1) as Bit) : bit)) as unknown as DataWord,
+      run: { encoded: null },
+      result: pendingComputation(null),
+    }));
+  }, []);
+
+  const toggleError = useCallback((index: number) => {
+    setSimulation((current) => ({
+      ...current,
+      errors: current.errors.map((bit, bitIndex) => (bitIndex === index ? ((bit ^ 1) as Bit) : bit)) as unknown as HammingWord,
+      // Reuse encoding only if it has already completed for the current data.
+      run: { encoded: current.result.encoded },
+      result: pendingComputation(current.result.encoded),
+    }));
+  }, []);
+
+  return { data, errors, result: simulation.result, toggleData, toggleError };
 }
 
 function bits(word: readonly Bit[]): string {
@@ -98,16 +195,12 @@ function levelLabel(level: number): string {
   return `${THEORY_LEVELS[level].short}${SUBSCRIPT_DIGITS[level]}`;
 }
 
-function inkForLevel(level: number): string {
-  return level >= 4 ? "#000" : "#fff";
-}
-
 function readableLevelColor(level: number): string {
   return READABLE_CHECK_COLORS[level] ?? THEORY_LEVELS[level].color;
 }
 
-function dataCodeSlots(data: DataWord): readonly (Bit | null)[] {
-  return [null, null, data[0], null, data[1], data[2], data[3]];
+function dataCodeSlots(data: DataWord | null): readonly (Bit | null)[] {
+  return [null, null, data?.[0] ?? null, null, data?.[1] ?? null, data?.[2] ?? null, data?.[3] ?? null];
 }
 
 function HammingBridgeCard() {
@@ -122,7 +215,7 @@ function HammingBridgeCard() {
         flexDirection: "column",
         gap: SP.md,
         width: "100%",
-        maxWidth: 560,
+        maxWidth: 700,
         padding: `${SP.lg}px ${SP.xl}px`,
         border: `1px solid ${C.borderAlt}`,
         borderRadius: R.md,
@@ -198,31 +291,73 @@ function HammingBridgeCard() {
 
 interface BitRailProps {
   slots: readonly (Bit | null)[];
-  bitString: string;
+  bitString: string | undefined;
   emphasizedPositions?: readonly number[];
   emphasisTone?: "error" | "success" | "warning";
   emphasisLabel?: string;
+  control?: "data" | "error";
+  errors?: HammingWord;
+  onToggle?: (index: number) => void;
+  onHover?: (level: number | null) => void;
+  checkPositions?: readonly number[] | undefined;
 }
 
-function BitRail({ slots, bitString, emphasizedPositions = [], emphasisTone = "error", emphasisLabel }: BitRailProps) {
+function BitRail({
+  slots,
+  bitString,
+  emphasizedPositions = [],
+  emphasisTone = "error",
+  emphasisLabel,
+  control,
+  errors,
+  onToggle,
+  onHover,
+  checkPositions,
+}: BitRailProps) {
+  const { t } = useTranslation();
   const emphasisColor = emphasisTone === "success" ? C.success : emphasisTone === "warning" ? C.warning : C.error;
   return (
     <div
       data-bit-string={bitString}
-      aria-label={bitString}
+      role={control ? "group" : undefined}
+      aria-label={
+        control
+          ? t(control === "data" ? "theory_hamming_data_controls_aria" : "theory_hamming_error_controls_aria")
+          : (bitString ?? t("theory_hamming_pending"))
+      }
+      aria-busy={bitString === undefined}
       style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: SP.xs, width: "100%" }}
     >
       {slots.map((bit, index) => {
         const position = index + 1;
         const emphasized = emphasizedPositions.includes(position);
+        const dataIndex = DATA_POSITIONS.findIndex((entry) => entry === position);
+        const interactive = !!onToggle && (control === "error" || dataIndex >= 0);
+        const Slot = interactive ? "button" : "span";
         return (
-          <span
+          <Slot
             key={`bit-slot-${position}`}
             data-code-position={position}
             data-bit-role={CODE_POSITION_ROLES[index]}
             data-empty={bit === null ? "true" : "false"}
             data-flow-emphasis={emphasized ? emphasisTone : undefined}
-            aria-hidden="true"
+            data-parity-member={checkPositions ? checkPositions.includes(position) : undefined}
+            data-testid={interactive ? `hamming-${control}-${control === "data" ? dataIndex + 1 : position}` : undefined}
+            type={interactive ? "button" : undefined}
+            aria-hidden={interactive ? undefined : true}
+            aria-pressed={interactive ? (control === "data" ? bit === 1 : errors?.[index] === 1) : undefined}
+            aria-label={
+              interactive
+                ? control === "data"
+                  ? `D${dataIndex + 1}, ${levelLabel(position)}, ${bit}`
+                  : `${t("theory_hamming_error_position")} ${position}, ${levelLabel(position)}, ${errors?.[index]}`
+                : undefined
+            }
+            onClick={interactive ? () => onToggle?.(control === "data" ? dataIndex : index) : undefined}
+            onMouseEnter={interactive ? () => onHover?.(position) : undefined}
+            onMouseLeave={interactive ? () => onHover?.(null) : undefined}
+            onFocus={interactive ? () => onHover?.(position) : undefined}
+            onBlur={interactive ? () => onHover?.(null) : undefined}
             style={{
               display: "inline-flex",
               flexDirection: "column",
@@ -230,7 +365,10 @@ function BitRail({ slots, bitString, emphasizedPositions = [], emphasisTone = "e
               justifyContent: "center",
               gap: emphasized ? 1 : 0,
               minWidth: 0,
-              minHeight: emphasized ? 30 : 22,
+              minHeight: interactive ? 44 : 30,
+              padding: "3px 0",
+              font: "inherit",
+              cursor: interactive ? "pointer" : undefined,
               border: emphasized ? `1px solid ${emphasisColor}` : bit === null ? `1px dashed ${C.border}` : `1px solid ${C.borderAlt}`,
               borderRadius: 3,
               background: bit === null ? "transparent" : C.bgSurfaceHover,
@@ -239,13 +377,16 @@ function BitRail({ slots, bitString, emphasizedPositions = [], emphasisTone = "e
               boxSizing: "border-box",
             }}
           >
-            <span>{bit ?? "–"}</span>
+            {interactive && (
+              <small style={{ fontSize: 9, color: C.textMuted }}>{control === "data" ? `D${dataIndex + 1}` : position}</small>
+            )}
+            <span data-bit-value={bit ?? undefined}>{bit ?? "–"}</span>
             {emphasized && emphasisLabel && (
               <small style={{ color: emphasisColor, fontFamily: FONT.mono, fontSize: "7px", fontWeight: FW.bold, lineHeight: 1 }}>
                 {emphasisLabel}
               </small>
             )}
-          </span>
+          </Slot>
         );
       })}
     </div>
@@ -253,19 +394,21 @@ function BitRail({ slots, bitString, emphasizedPositions = [], emphasisTone = "e
 }
 
 interface SyndromeDisplayProps {
-  syndromeBits: readonly [Bit, Bit, Bit];
+  syndromeBits: readonly [Bit, Bit, Bit] | null;
   level: string;
-  position: number;
+  position: number | null;
   positionText: string;
 }
 
 function SyndromeDisplay({ syndromeBits, level, position, positionText }: SyndromeDisplayProps) {
-  const syndrome = bits(syndromeBits);
+  const { t } = useTranslation();
+  const syndrome = syndromeBits === null ? undefined : bits(syndromeBits);
   return (
     <div
       data-syndrome-bits={syndrome}
-      data-syndrome-position={position}
-      aria-label={`${syndrome}, j=${position}, ${positionText}`}
+      data-syndrome-position={position ?? undefined}
+      aria-label={syndrome === undefined ? t("theory_hamming_pending") : `${syndrome}, j=${position}, ${positionText}`}
+      aria-busy={syndrome === undefined}
       style={{ minWidth: 0 }}
     >
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: SP.sm }}>
@@ -275,7 +418,7 @@ function SyndromeDisplay({ syndromeBits, level, position, positionText }: Syndro
             data-syndrome-channel={channel}
             style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2, minWidth: 0 }}
           >
-            <small style={{ color: C.textMuted, fontFamily: FONT.mono, fontSize: FS.xxs, lineHeight: 1 }}>{channel}</small>
+            <small style={{ color: C.textMuted, fontFamily: FONT.mono, fontSize: 10, lineHeight: 1 }}>{channel}</small>
             <strong
               aria-hidden="true"
               style={{
@@ -291,7 +434,7 @@ function SyndromeDisplay({ syndromeBits, level, position, positionText }: Syndro
                 boxSizing: "border-box",
               }}
             >
-              {syndromeBits[index]}
+              {syndromeBits?.[index] ?? "–"}
             </strong>
           </span>
         ))}
@@ -305,39 +448,24 @@ function SyndromeDisplay({ syndromeBits, level, position, positionText }: Syndro
           gap: SP.sm,
           marginTop: SP.sm,
           color: C.textMuted,
-          fontSize: FS.xs,
+          fontSize: 12,
         }}
       >
-        <strong style={{ color: C.textPrimary }}>{syndrome}₂</strong>
+        <strong style={{ color: C.textPrimary }}>{syndrome === undefined ? "–" : `${syndrome}₂`}</strong>
         <span aria-hidden="true">→</span>
-        <strong style={{ color: C.accentBright }}>j={position}</strong>
+        <strong style={{ color: C.accentBright }}>j={position ?? "–"}</strong>
         <span aria-hidden="true">→</span>
         <span>{positionText}</span>
       </div>
-      <div style={{ marginTop: 2, color: C.textDimmer, fontSize: FS.xxs, textAlign: "right" }}>
-        4×{syndromeBits[0]} + 2×{syndromeBits[1]} + {syndromeBits[2]} = {position} · {level}
+      <div style={{ marginTop: 2, color: C.textDimmer, fontSize: 10, textAlign: "right" }}>
+        4×{syndromeBits?.[0] ?? "–"} + 2×{syndromeBits?.[1] ?? "–"} + {syndromeBits?.[2] ?? "–"} = {position ?? "–"} · {level}
       </div>
     </div>
   );
 }
 
-interface ParityCheckResult {
-  parity: number;
-  channel: string;
-  checks: readonly number[];
-  failed: Bit;
-}
-
-interface ParityCheckOperationProps {
-  results: readonly ParityCheckResult[];
-  inputTraceDelayMs?: number | undefined;
-  rowTraceDelaysMs?: readonly number[];
-  outputTraceDelayMs?: number | undefined;
-}
-
-function ParityCheckOperation({ results, inputTraceDelayMs, rowTraceDelaysMs = [], outputTraceDelayMs }: ParityCheckOperationProps) {
+function ParityCheckOperation({ children }: { children: React.ReactNode }) {
   const { t } = useTranslation();
-  const orderedResults = [...results].sort((a, b) => b.parity - a.parity);
   return (
     <div
       data-testid="hamming-flow-operation-check"
@@ -349,14 +477,9 @@ function ParityCheckOperation({ results, inputTraceDelayMs, rowTraceDelaysMs = [
         minWidth: 0,
       }}
     >
-      <FlowOperation
-        label={t("theory_hamming_operation_check")}
-        testId="hamming-flow-operation-check-input"
-        traceDelayMs={inputTraceDelayMs}
-      />
+      <FlowOperation label={t("theory_hamming_operation_check")} testId="hamming-flow-operation-check-input" />
       <div
         data-testid="hamming-syndrome-identity"
-        className={inputTraceDelayMs === undefined ? undefined : "theory-hamming-syndrome-identity-tracing"}
         style={{
           display: "flex",
           flexDirection: "column",
@@ -368,7 +491,6 @@ function ParityCheckOperation({ results, inputTraceDelayMs, rowTraceDelaysMs = [
           border: `1px solid ${C.border}`,
           borderRadius: R.md,
           background: C.bgPanel,
-          animationDelay: inputTraceDelayMs === undefined ? undefined : `${inputTraceDelayMs}ms`,
           boxSizing: "border-box",
         }}
       >
@@ -381,7 +503,7 @@ function ParityCheckOperation({ results, inputTraceDelayMs, rowTraceDelaysMs = [
             gap: SP.sm,
             color: C.textMuted,
             fontFamily: FONT.mono,
-            fontSize: FS.xs,
+            fontSize: 12,
           }}
         >
           <span>r = c ⊕ e</span>
@@ -390,74 +512,12 @@ function ParityCheckOperation({ results, inputTraceDelayMs, rowTraceDelaysMs = [
           <span aria-hidden="true">⇒</span>
           <strong style={{ color: C.accentBright }}>s = Hrᵀ = Heᵀ</strong>
         </div>
-        <small style={{ color: C.textDimmer, fontFamily: FONT.sans, fontSize: FS.xxs, lineHeight: 1.4, textAlign: "center" }}>
+        <small style={{ color: C.textDimmer, fontFamily: FONT.sans, fontSize: 11, lineHeight: 1.6, textAlign: "center" }}>
           {t("theory_hamming_syndrome_identity_note")}
         </small>
       </div>
-      <div
-        data-testid="hamming-parity-check-card"
-        role="group"
-        aria-label={t("theory_hamming_parity_block_title")}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: SP.sm,
-          minWidth: 0,
-          margin: `0 ${SP.lg}px`,
-          padding: `${SP.md}px ${SP.lg}px`,
-          border: `1px solid ${C.borderAlt}`,
-          borderRadius: R.md,
-          background: C.bgSurface,
-          boxSizing: "border-box",
-        }}
-      >
-        <div style={{ color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.xs, fontWeight: FW.bold }}>
-          {t("theory_hamming_parity_block_title")}
-        </div>
-        <div style={{ display: "grid", gap: 3 }}>
-          {orderedResults.map((result, index) => {
-            const channel = `s${result.channel}`;
-            const formula = result.checks.map((position) => `r${SUBSCRIPT_DIGITS[position]}`).join("⊕");
-            const traceDelayMs = rowTraceDelaysMs[index];
-            return (
-              <div
-                key={result.parity}
-                data-parity-check-channel={channel}
-                data-parity-check-result={result.failed}
-                data-flow-delay-ms={traceDelayMs}
-                className={traceDelayMs === undefined ? undefined : "theory-hamming-parity-check-tracing"}
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "24px minmax(0, 1fr) 18px minmax(32px, auto)",
-                  alignItems: "center",
-                  gap: SP.xs,
-                  minWidth: 0,
-                  padding: "2px 4px",
-                  border: `1px solid ${result.failed ? C.error : C.border}`,
-                  borderRadius: 3,
-                  background: C.bgPanel,
-                  fontFamily: FONT.mono,
-                  animationDelay: traceDelayMs === undefined ? undefined : `${traceDelayMs}ms`,
-                }}
-              >
-                <strong style={{ color: readableLevelColor(result.parity), fontSize: FS.xs }}>{channel}</strong>
-                <span style={{ minWidth: 0, color: C.textDimmer, fontSize: FS.xxs, whiteSpace: "nowrap" }}>{formula}</span>
-                <strong style={{ color: result.failed ? C.error : C.textPrimary, fontSize: FS.xs, textAlign: "center" }}>
-                  {result.failed}
-                </strong>
-                <small style={{ color: result.failed ? C.error : C.textDimmer, fontSize: FS.xxs, textAlign: "right" }}>
-                  {t(result.failed ? "theory_hamming_check_fail" : "theory_hamming_check_pass")}
-                </small>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <FlowOperation
-        label={t("theory_hamming_checks_to_syndrome")}
-        testId="hamming-flow-operation-check-output"
-        traceDelayMs={outputTraceDelayMs}
-      />
+      {children}
+      <FlowOperation label={t("theory_hamming_checks_to_syndrome")} testId="hamming-flow-operation-check-output" />
     </div>
   );
 }
@@ -466,6 +526,7 @@ function BitRailHeader({ label }: { label: string }) {
   return (
     <div
       data-testid="hamming-flow-bit-header"
+      className="theory-hamming-header"
       style={{
         display: "grid",
         gridTemplateColumns: FLOW_ROW_COLUMNS,
@@ -474,7 +535,7 @@ function BitRailHeader({ label }: { label: string }) {
         padding: `0 ${SP.lg}px ${SP.sm}px`,
         color: C.textDimmer,
         fontFamily: FONT.mono,
-        fontSize: FS.xxs,
+        fontSize: 10,
         boxSizing: "border-box",
       }}
     >
@@ -504,21 +565,21 @@ interface StageCardProps {
   value: React.ReactNode;
   note?: string;
   testId: string;
-  traceDelayMs?: number | undefined;
+  pending?: boolean;
 }
 
-function StageCard({ number, label, value, note, testId, traceDelayMs }: StageCardProps) {
+function StageCard({ number, label, value, note, testId, pending = false }: StageCardProps) {
   return (
     <div
       data-testid={testId}
-      data-flow-delay-ms={traceDelayMs}
-      className={`theory-hamming-stage${traceDelayMs === undefined ? "" : " theory-hamming-stage-tracing"}`}
+      aria-busy={pending}
+      className="theory-hamming-stage"
       style={{
         display: "grid",
         gridTemplateColumns: FLOW_ROW_COLUMNS,
         alignItems: "center",
         columnGap: SP.md,
-        rowGap: SP.xs,
+        rowGap: 8,
         minWidth: 0,
         minHeight: 46,
         padding: `${SP.md}px ${SP.lg}px`,
@@ -526,7 +587,6 @@ function StageCard({ number, label, value, note, testId, traceDelayMs }: StageCa
         borderRadius: R.md,
         background: C.bgPanel,
         boxSizing: "border-box",
-        animationDelay: traceDelayMs === undefined ? undefined : `${traceDelayMs}ms`,
       }}
     >
       <span
@@ -547,15 +607,15 @@ function StageCard({ number, label, value, note, testId, traceDelayMs }: StageCa
       >
         {number}
       </span>
-      <div style={{ color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.xs, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ color: C.textMuted, fontFamily: FONT.mono, fontSize: 12, whiteSpace: "nowrap" }}>{label}</div>
       <div
         data-stage-value=""
-        style={{ minWidth: 0, color: C.textPrimary, fontFamily: FONT.mono, fontSize: FS.lg, fontWeight: FW.bold, letterSpacing: 1 }}
+        style={{ minWidth: 0, color: C.textPrimary, fontFamily: FONT.mono, fontSize: 14, fontWeight: FW.bold, letterSpacing: 1 }}
       >
         {value}
       </div>
       {note && (
-        <div style={{ gridColumn: "1 / -1", color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.xxs, textAlign: "right" }}>{note}</div>
+        <div style={{ gridColumn: "1 / -1", color: C.textDimmer, fontFamily: FONT.mono, fontSize: 11, textAlign: "right" }}>{note}</div>
       )}
     </div>
   );
@@ -564,15 +624,12 @@ function StageCard({ number, label, value, note, testId, traceDelayMs }: StageCa
 interface FlowOperationProps {
   label: string;
   testId: string;
-  traceDelayMs?: number | undefined;
 }
 
-function FlowOperation({ label, testId, traceDelayMs }: FlowOperationProps) {
+function FlowOperation({ label, testId }: FlowOperationProps) {
   return (
     <div
       data-testid={testId}
-      data-flow-delay-ms={traceDelayMs}
-      className={traceDelayMs === undefined ? undefined : "theory-hamming-operation-tracing"}
       style={{
         display: "grid",
         gridTemplateColumns: "24px minmax(0, 1fr)",
@@ -582,20 +639,17 @@ function FlowOperation({ label, testId, traceDelayMs }: FlowOperationProps) {
         padding: `0 ${SP.lg}px`,
         color: C.textMuted,
         fontFamily: FONT.mono,
-        fontSize: FS.xs,
+        fontSize: 11,
         boxSizing: "border-box",
-        animationDelay: traceDelayMs === undefined ? undefined : `${traceDelayMs}ms`,
       }}
     >
       <span
         aria-hidden="true"
-        className="theory-hamming-operation-arrow"
         style={{
           color: C.accentBright,
           fontSize: FS.lg,
           lineHeight: 1,
           textAlign: "center",
-          animationDelay: traceDelayMs === undefined ? undefined : `${traceDelayMs}ms`,
         }}
       >
         ↓
@@ -610,70 +664,53 @@ interface Props {
   onHover: (level: number | null) => void;
 }
 
-type FlowTraceOrigin = "data" | "error";
-
-function flowTraceDelay(origin: FlowTraceOrigin | null, absoluteDelayMs: number): number | undefined {
-  if (origin === null) return undefined;
-  if (origin === "error" && absoluteDelayMs < FLOW_TRACE_TIMELINE.transmit) return undefined;
-  return absoluteDelayMs - (origin === "error" ? FLOW_TRACE_TIMELINE.transmit : 0);
-}
-
 export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
-  const [data, setData] = useState<DataWord>(INITIAL_DATA);
-  const [errors, setErrors] = useState<HammingWord>(ZERO_ERRORS);
-  const [flowRevision, setFlowRevision] = useState(0);
-  const [flowTraceOrigin, setFlowTraceOrigin] = useState<FlowTraceOrigin | null>(null);
-  const result = calculateHamming74(data, errors);
+  const { data, errors, result, toggleData, toggleError } = useHammingSimulation();
+  const [selectedParity, setSelectedParity] = useState<number | null>(null);
   const errorCount = errors.reduce<number>((sum, bit) => sum + bit, 0);
-  const outputMatches = result.output.every((bit, index) => bit === data[index]);
-
-  const enter = useCallback((level: number) => onHover(level), [onHover]);
-  const leave = useCallback(() => onHover(null), [onHover]);
-
-  const toggleData = useCallback((index: number) => {
-    setData((current) => current.map((bit, bitIndex) => (bitIndex === index ? ((bit ^ 1) as Bit) : bit)) as unknown as DataWord);
-    setFlowTraceOrigin("data");
-    setFlowRevision((revision) => revision + 1);
-  }, []);
-
-  const toggleError = useCallback((index: number) => {
-    setErrors((current) => current.map((bit, bitIndex) => (bitIndex === index ? ((bit ^ 1) as Bit) : bit)) as unknown as HammingWord);
-    setFlowTraceOrigin("error");
-    setFlowRevision((revision) => revision + 1);
-  }, []);
+  const outputMatches = result.output?.every((bit, index) => bit === data[index]) ?? false;
+  const pending = result.output === null;
 
   const parityResults = PARITY_GROUPS.map((group) => {
-    const failed = group.checks.reduce<Bit>((parity, position) => (parity ^ result.received[position - 1]) as Bit, 0);
-    const generated = result.encoded[group.parity - 1];
+    const failed = result.checkBits[SYNDROME_GROUPS.findIndex((check) => check.parity === group.parity)];
+    const generated = result.encoded?.[group.parity - 1] ?? null;
     return { ...group, failed, generated };
   });
 
-  const statusColor = errorCount === 0 ? C.textMuted : errorCount === 1 && outputMatches ? C.success : C.error;
+  const statusColor = pending || errorCount === 0 ? C.textMuted : errorCount === 1 && outputMatches ? C.success : C.error;
   const statusText =
-    errorCount === 0
-      ? t("theory_hamming_status_none")
-      : errorCount === 1
-        ? t("theory_hamming_status_single", `${result.syndrome}`, levelLabel(result.syndrome))
-        : t("theory_hamming_status_multiple", `${errorCount}`, bits(result.syndromeBits), levelLabel(result.syndrome));
+    result.output === null || result.syndrome === null || result.syndromeBits === null
+      ? t("theory_hamming_calculating")
+      : errorCount === 0
+        ? t("theory_hamming_status_none")
+        : errorCount === 1
+          ? t("theory_hamming_status_single", `${result.syndrome}`, levelLabel(result.syndrome))
+          : t("theory_hamming_status_multiple", `${errorCount}`, bits(result.syndromeBits), levelLabel(result.syndrome));
   const transmissionOperation =
     errorCount === 0 ? t("theory_hamming_operation_transmit_clean") : t("theory_hamming_operation_transmit_errors", `${errorCount}`);
   const correctionOperation =
-    errorCount === 0
-      ? t("theory_hamming_operation_correction_none")
-      : errorCount === 1
-        ? t(
-            "theory_hamming_operation_correction_single",
-            `${result.syndrome}`,
-            `${result.syndrome}`,
-            `${result.received[result.syndrome - 1]}`,
-            `${result.corrected[result.syndrome - 1]}`,
-          )
-        : t("theory_hamming_operation_correction_multiple", `${result.syndrome}`, `${result.syndrome}`);
+    result.corrected === null || result.received === null || result.syndrome === null
+      ? t("theory_hamming_operation_correction")
+      : errorCount === 0
+        ? t("theory_hamming_operation_correction_none")
+        : errorCount === 1
+          ? t(
+              "theory_hamming_operation_correction_single",
+              `${result.syndrome}`,
+              `${result.syndrome}`,
+              `${result.received[result.syndrome - 1]}`,
+              `${result.corrected[result.syndrome - 1]}`,
+            )
+          : t("theory_hamming_operation_correction_multiple", `${result.syndrome}`, `${result.syndrome}`);
   const receivedErrorPositions = errors.flatMap((bit, index) => (bit ? [index + 1] : []));
-  const correctionPositions = result.syndrome === 0 ? [] : [result.syndrome];
+  const correctionPositions = result.corrected === null || result.syndrome === null || result.syndrome === 0 ? [] : [result.syndrome];
   const syndromePositionText =
-    result.syndrome === 0 ? t("theory_hamming_syndrome_no_position") : t("theory_hamming_syndrome_points_to", `${result.syndrome}`);
+    result.syndrome === null
+      ? t("theory_hamming_pending")
+      : result.syndrome === 0
+        ? t("theory_hamming_syndrome_no_position")
+        : t("theory_hamming_syndrome_points_to", `${result.syndrome}`);
 
   return (
     <div
@@ -689,206 +726,116 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
     >
       <HammingBridgeCard />
 
-      <div style={{ width: "100%", minWidth: 0 }}>
-        <div style={{ marginBottom: SP.md, color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-          {t("theory_hamming_data_controls")}
-        </div>
-        <div role="group" aria-label={t("theory_hamming_data_controls_aria")} style={{ display: "flex", gap: SP.md, width: "100%" }}>
-          {data.map((bit, index) => {
-            const position = DATA_POSITIONS[index];
-            return (
-              <button
-                key={`data-${index}`}
-                type="button"
-                data-testid={`hamming-data-${index + 1}`}
-                aria-pressed={bit === 1}
-                aria-label={`D${index + 1}, ${levelLabel(position)}, ${bit}`}
-                onClick={() => toggleData(index)}
-                onMouseEnter={() => enter(position)}
-                onMouseLeave={leave}
-                onFocus={() => enter(position)}
-                onBlur={leave}
-                style={{
-                  ...S_BTN_SM,
-                  flex: "1 1 0",
-                  minWidth: 0,
-                  minHeight: 38,
-                  padding: `${SP.sm}px ${SP.md}px`,
-                  borderColor: bit ? C.textWhite : C.border,
-                  color: readableLevelColor(position),
-                  background: bit ? C.bgSurfaceAlt : C.bgPanel,
-                  fontFamily: FONT.mono,
-                  fontSize: FS.sm,
-                }}
-              >
-                <span>
-                  D{index + 1} · {levelLabel(position)}
-                </span>
-                <strong style={{ marginLeft: SP.md, color: bit ? C.textWhite : C.textDimmer }}>{bit}</strong>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div style={{ width: "100%", minWidth: 0 }}>
-        <div style={{ marginBottom: SP.md, color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-          {t("theory_hamming_error_controls")}
-        </div>
-        <div style={{ width: "100%", overflowX: "auto", overscrollBehaviorInline: "contain", scrollbarWidth: "thin" }}>
-          <div
-            role="group"
-            aria-label={t("theory_hamming_error_controls_aria")}
-            style={{ display: "flex", flexWrap: "nowrap", gap: SP.sm, width: "max-content", minWidth: "100%", justifyContent: "center" }}
-          >
-            {errors.map((bit, index) => {
-              const position = index + 1;
-              return (
-                <button
-                  key={`error-${position}`}
-                  type="button"
-                  data-testid={`hamming-error-${position}`}
-                  aria-pressed={bit === 1}
-                  aria-label={`${t("theory_hamming_error_position")} ${position}, ${levelLabel(position)}, ${bit}`}
-                  onClick={() => toggleError(index)}
-                  onMouseEnter={() => enter(position)}
-                  onMouseLeave={leave}
-                  onFocus={() => enter(position)}
-                  onBlur={leave}
-                  style={{
-                    ...S_BTN_SM,
-                    flex: "0 0 auto",
-                    minWidth: 52,
-                    minHeight: 36,
-                    padding: `${SP.xs}px ${SP.md}px`,
-                    borderColor: bit ? C.textWhite : C.border,
-                    background: bit ? C.bgSurfaceAlt : C.bgPanel,
-                    color: readableLevelColor(position),
-                    fontFamily: FONT.mono,
-                    fontSize: FS.xs,
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  <span>{levelLabel(position)}</span>
-                  <strong style={{ marginLeft: SP.sm, color: bit ? C.error : C.textDimmer }}>· {bit}</strong>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
       <div
         role="group"
         aria-label={t("theory_hamming_flow_aria")}
+        aria-busy={pending}
         className="theory-hamming-flow"
-        style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: 560 }}
+        style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: 700 }}
       >
         <BitRailHeader label={t("theory_hamming_position_legend")} />
         <StageCard
-          key={`data-${flowRevision}`}
           number={1}
           label={t("theory_hamming_stage_data")}
-          value={<BitRail slots={dataCodeSlots(data)} bitString={bits(data)} />}
+          value={<BitRail slots={dataCodeSlots(data)} bitString={bits(data)} control="data" onToggle={toggleData} onHover={onHover} />}
+          note={t("theory_hamming_data_input_hint")}
           testId="hamming-stage-data"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.data)}
         />
-        <FlowOperation
-          key={`encode-${flowRevision}`}
-          label={t("theory_hamming_operation_encode")}
-          testId="hamming-flow-operation-encode"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.encode)}
-        />
+        <FlowOperation label={t("theory_hamming_operation_encode")} testId="hamming-flow-operation-encode" />
+        <div
+          className="theory-hamming-generation"
+          data-testid="hamming-parity-generation"
+          role="group"
+          aria-label={t("theory_hamming_generator_title")}
+        >
+          {parityResults.map((group) => (
+            <div key={group.parity} data-testid={`hamming-generator-${group.parity}`} aria-busy={group.generated === null}>
+              <span style={{ color: readableLevelColor(group.parity) }}>
+                P{group.parity} = {group.data.map((index) => `D${index}`).join(" ⊕ ")}
+              </span>
+              <strong>{group.generated ?? "–"}</strong>
+            </div>
+          ))}
+        </div>
         <StageCard
-          key={`encoded-${flowRevision}`}
           number={2}
           label={t("theory_hamming_stage_encoded")}
-          value={<BitRail slots={result.encoded} bitString={bits(result.encoded)} />}
+          value={<BitRail slots={result.encoded ?? EMPTY_SLOTS} bitString={result.encoded === null ? undefined : bits(result.encoded)} />}
           testId="hamming-stage-encoded"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.encoded)}
+          pending={result.encoded === null}
         />
-        <FlowOperation
-          key={`transmit-${flowRevision}`}
-          label={transmissionOperation}
-          testId="hamming-flow-operation-transmit"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.transmit)}
-        />
+        <FlowOperation label={transmissionOperation} testId="hamming-flow-operation-transmit" />
         <StageCard
-          key={`received-${flowRevision}`}
           number={3}
           label={t("theory_hamming_stage_received")}
           value={
             <BitRail
-              slots={result.received}
-              bitString={bits(result.received)}
+              slots={result.received ?? EMPTY_SLOTS}
+              bitString={result.received === null ? undefined : bits(result.received)}
               emphasizedPositions={receivedErrorPositions}
               emphasisTone="error"
               emphasisLabel={t("theory_hamming_received_error_marker")}
+              control="error"
+              errors={errors}
+              onToggle={toggleError}
+              onHover={onHover}
+              checkPositions={parityResults.find((check) => check.parity === selectedParity)?.checks}
             />
           }
           testId="hamming-stage-received"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.received)}
+          note={t("theory_hamming_error_input_hint")}
+          pending={result.received === null}
         />
-        <ParityCheckOperation
-          key={`checks-${flowRevision}`}
-          results={parityResults}
-          inputTraceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.checkInput)}
-          rowTraceDelaysMs={FLOW_TRACE_TIMELINE.checkRows
-            .map((delay) => flowTraceDelay(flowTraceOrigin, delay))
-            .filter((delay) => delay !== undefined)}
-          outputTraceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.checkOutput)}
-        />
+        <ParityCheckOperation>
+          <HammingParitySets
+            received={result.received}
+            errors={errors}
+            checks={parityResults.map((check) => ({ ...check, color: readableLevelColor(check.parity) }))}
+            selectedParity={selectedParity}
+            onSelectParity={setSelectedParity}
+            hlLevel={hlLevel}
+            onHover={onHover}
+            onToggleError={toggleError}
+          />
+        </ParityCheckOperation>
         <StageCard
-          key={`syndrome-${flowRevision}`}
           number={4}
           label={t("theory_hamming_stage_syndrome")}
           value={
             <SyndromeDisplay
               syndromeBits={result.syndromeBits}
-              level={levelLabel(result.syndrome)}
+              level={result.syndrome === null ? "–" : levelLabel(result.syndrome)}
               position={result.syndrome}
               positionText={syndromePositionText}
             />
           }
           testId="hamming-stage-syndrome"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.syndrome)}
+          pending={result.syndrome === null}
         />
-        <FlowOperation
-          key={`correction-${flowRevision}`}
-          label={correctionOperation}
-          testId="hamming-flow-operation-correction"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.correction)}
-        />
+        <FlowOperation label={correctionOperation} testId="hamming-flow-operation-correction" />
         <StageCard
-          key={`corrected-${flowRevision}`}
           number={5}
           label={t("theory_hamming_stage_corrected")}
           value={
             <BitRail
-              slots={result.corrected}
-              bitString={bits(result.corrected)}
+              slots={result.corrected ?? EMPTY_SLOTS}
+              bitString={result.corrected === null ? undefined : bits(result.corrected)}
               emphasizedPositions={correctionPositions}
               emphasisTone={errorCount === 1 ? "success" : "warning"}
               emphasisLabel={t(errorCount === 1 ? "theory_hamming_corrected_marker" : "theory_hamming_trial_marker")}
             />
           }
           testId="hamming-stage-corrected"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.corrected)}
+          pending={result.corrected === null}
         />
-        <FlowOperation
-          key={`extract-${flowRevision}`}
-          label={t("theory_hamming_operation_extract")}
-          testId="hamming-flow-operation-extract"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.extract)}
-        />
+        <FlowOperation label={t("theory_hamming_operation_extract")} testId="hamming-flow-operation-extract" />
         <StageCard
-          key={`output-${flowRevision}`}
           number={6}
           label={t("theory_hamming_stage_output")}
-          value={<BitRail slots={dataCodeSlots(result.output)} bitString={bits(result.output)} />}
-          note={t(outputMatches ? "theory_hamming_output_match" : "theory_hamming_output_mismatch")}
+          value={<BitRail slots={dataCodeSlots(result.output)} bitString={result.output === null ? undefined : bits(result.output)} />}
+          note={t(pending ? "theory_hamming_pending" : outputMatches ? "theory_hamming_output_match" : "theory_hamming_output_mismatch")}
           testId="hamming-stage-output"
-          traceDelayMs={flowTraceDelay(flowTraceOrigin, FLOW_TRACE_TIMELINE.output)}
+          pending={pending}
         />
       </div>
 
@@ -909,148 +856,6 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         }}
       >
         {statusText}
-      </div>
-
-      <div style={{ width: "100%", textAlign: "center" }}>
-        <div style={{ marginBottom: SP.md, color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-          {t("theory_hamming_venn_title")}
-        </div>
-        <svg
-          viewBox="0 0 340 260"
-          role="img"
-          aria-label={t("theory_hamming_venn_aria")}
-          style={{ display: "block", width: "100%", maxWidth: 420, margin: "0 auto", overflow: "visible" }}
-        >
-          <rect x="0" y="0" width="340" height="260" rx="6" fill={C.bgPanel} />
-          {VENN_CIRCLES.map(({ parity, cx, cy, labelX, labelY }) => {
-            const info = THEORY_LEVELS[parity];
-            const failed = parityResults.find((entry) => entry.parity === parity)?.failed === 1;
-            return (
-              <g key={`circle-${parity}`} data-testid={`hamming-parity-set-${parity}`}>
-                <circle cx={cx} cy={cy} r="86" fill={info.color} fillOpacity="0.045" stroke={info.color} strokeWidth={failed ? 2.6 : 1.5} />
-                <text
-                  x={labelX}
-                  y={labelY}
-                  textAnchor="middle"
-                  fill={readableLevelColor(parity)}
-                  fontFamily={FONT.mono}
-                  fontSize={FS.sm}
-                  fontWeight={FW.bold}
-                >
-                  {info.hamming} · s{info.short} {failed ? "=1" : "=0"}
-                </text>
-              </g>
-            );
-          })}
-
-          {CODE_POSITIONS.map((position) => {
-            const point = VENN_POSITIONS[position];
-            const info = THEORY_LEVELS[position];
-            const errored = errors[position - 1] === 1;
-            const highlighted = hlLevel === position;
-            return (
-              <g
-                key={`position-${position}`}
-                data-testid={`hamming-venn-position-${position}`}
-                opacity={hlLevel === null || highlighted ? 1 : 0.38}
-              >
-                <text
-                  x={point.x}
-                  y={point.y - 19}
-                  textAnchor="middle"
-                  fill={readableLevelColor(position)}
-                  fontFamily={FONT.mono}
-                  fontSize={FS.xxs}
-                  fontWeight={FW.bold}
-                >
-                  {info.hamming} · {levelLabel(position)}
-                </text>
-                {errored && <circle cx={point.x} cy={point.y} r="18" fill="none" stroke={C.error} strokeWidth="2.5" />}
-                <circle
-                  cx={point.x}
-                  cy={point.y}
-                  r="14"
-                  fill={info.color}
-                  stroke={highlighted ? "#fff" : C.bgSurfaceAlt}
-                  strokeWidth={highlighted ? 2.5 : 1.5}
-                />
-                <text
-                  x={point.x}
-                  y={point.y}
-                  textAnchor="middle"
-                  dominantBaseline="central"
-                  fill={inkForLevel(position)}
-                  fontFamily={FONT.mono}
-                  fontSize={FS.lg}
-                  fontWeight={900}
-                >
-                  {result.received[position - 1]}
-                </text>
-                <text x={point.x} y={point.y + 25} textAnchor="middle" fill={C.textDimmer} fontFamily={FONT.mono} fontSize={FS.xxs}>
-                  j={position}
-                </text>
-              </g>
-            );
-          })}
-        </svg>
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "stretch", gap: SP.md, width: "100%" }}>
-        <div style={{ flex: "1 1 250px", padding: SP.xl, border: `1px solid ${C.border}`, borderRadius: R.md, background: C.bgPanel }}>
-          <div style={{ marginBottom: SP.lg, color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-            {t("theory_hamming_generator_title")}
-          </div>
-          {parityResults.map((group) => {
-            const color = readableLevelColor(group.parity);
-            return (
-              <div
-                key={`generator-${group.parity}`}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: SP.md,
-                  marginTop: SP.md,
-                  color,
-                  fontFamily: FONT.mono,
-                  fontSize: FS.xs,
-                }}
-              >
-                <span>
-                  P{group.parity} = {group.data.map((index) => `D${index}`).join(" ⊕ ")}
-                </span>
-                <strong>{group.generated}</strong>
-              </div>
-            );
-          })}
-        </div>
-
-        <div style={{ flex: "1 1 250px", padding: SP.xl, border: `1px solid ${C.border}`, borderRadius: R.md, background: C.bgPanel }}>
-          <div style={{ marginBottom: SP.lg, color: C.accentBright, fontFamily: FONT.mono, fontSize: FS.sm, fontWeight: FW.bold }}>
-            {t("theory_hamming_checker_title")}
-          </div>
-          {parityResults.map((group) => {
-            const color = readableLevelColor(group.parity);
-            return (
-              <div
-                key={`checker-${group.parity}`}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  gap: SP.md,
-                  marginTop: SP.md,
-                  color,
-                  fontFamily: FONT.mono,
-                  fontSize: FS.xs,
-                }}
-              >
-                <span>
-                  s{group.channel} = {group.checks.map((position) => `r${position}`).join(" ⊕ ")}
-                </span>
-                <strong>{group.failed}</strong>
-              </div>
-            );
-          })}
-        </div>
       </div>
     </div>
   );

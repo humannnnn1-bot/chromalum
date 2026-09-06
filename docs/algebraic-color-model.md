@@ -546,6 +546,18 @@ N_d = 8*C(3,d)/2
 
 であり、`N_1=12`, `N_2=12`, `N_3=4`、したがって `12+12+4=28=C(8,2)` を得る。
 
+さらに、非零反転マスク `m` ごとに `F_m={{x,x xor m}:x in A}` を取る。反転 `x -> x xor m` は固定点を持たない対合なので、`F_m` は8頂点を一度ずつ使う4辺の完全マッチングである。各辺 `{x,y}` のマスクは `m=x xor y` に一意に決まり、七つの `F_m` はK8の全28辺を重複なく分割する。G/R/Bの三マスク、M/C/Yの三マスク、Wの一マスクにまとめると、上の距離1/2/3分解が得られる。Theoryでは同じ立方体配置を保ち、距離1ではG/R/B、距離2ではM/C/Yのマスクで4辺を強調する。同じマスクの再選択でその距離の12辺へ戻り、Wだけの距離3には追加のマスク操作を設けない。
+
+Hamming距離 `d_H(a,b)=wt(a xor b)` と順位差 `|L(b)-L(a)|` は別の量である。
+
+| 色の組 | Hamming距離 | 順位差 |
+| :--- | ---: | ---: |
+| K `000` / B `001` | 1 | 1 |
+| B `001` / R `010` | 2 | 1 |
+| M `011` / G `100` | 3 | 1 |
+
+逆に、距離1でもK/Bの順位差は1、K/Gの順位差は4となる。Theoryの比較表は組を選ぶとK8上の一辺を強調し、任意の二頂点を選ぶ操作でも両方の値を表示する。どちらも一般の知覚的色差を意味しない。
+
 立方体の面とテトラの頂点集合に共通する四点XOR、多数決によるテトラの面–頂点双対、八面体の混色・Fano対応、およびHamming検査面の導出は、[多面体の面と3ビット演算](./polyhedral-face-algebra.md)にまとめる。同ノート後半の14アフィン平面と拡張Hamming符号は研究上の発展として扱う。
 
 ## Historical and Continuous Representation Layer
@@ -1564,7 +1576,7 @@ lambda(gamma_i(u)) = (1-u)L(c_i) + u L(c_(i+1))
 Delta L = (+4,-2,+1,-4,+2,-1)
 ```
 
-となる。符号は Boolean 包含の向き、絶対値はその辺で切り替わる一原色ビットの重みを表す。したがって同じ六辺差分表が、区分線形な Tone Zigzag と、次節の符号保存格子実現の両方を支える。
+となる。符号は Boolean 包含の向き、絶対値はその辺で切り替わる一原色ビットの重みを表す。この六辺差分表は、区分線形な Tone Zigzag の各区間を離散的な反転と順位差へ対応させる。
 
 二値補色は、立方体上のアフィン写像
 
@@ -1607,58 +1619,21 @@ T(h+1/2) = 1-T(h)
 
 となる。この二つを同じ「純色相環の候補数」と呼ばない。
 
-### Derived Representation 4: Chromatic C6, Hue-Order Net, and the Folded Die
+### Derived Representation 4: Color Die and Its Hue-Order Net
 
-有彩6-cycle
+六つの有彩色を立方体の六面に対応させ、補色対 R/C、Y/B、G/M を対面へ置く。この面配置を Color Die と呼ぶ。立方体の採用は、色相順と補色関係を面の接続として表すためのモデルの選択である。
 
-```text
-R -> Y -> G -> C -> B -> M -> R
-```
+この面配置では、色相順 R→Y→G→C→B→M→R の隣接色はすべて立方体上でも隣接する。五つの面接続 R–Y、Y–G、G–C、C–B、B–M を残し、それ以外の面境界を切り開くと、六面を一度ずつ通る一本の鎖として平面へ開ける。閉路を閉じる M–R の接続も切断され、折り戻すと再びつながる。
 
-の閉辺 `M--R` を切ると、六色を一度ずつ通る色相路
+得られる展開図は六つの正方形の内部が重ならない2-2-2階段形である。画面座標で右と下を正に取ると、各正方形の左上隅の単位格子座標は、色相順に (0,0)、(1,0)、(1,1)、(2,1)、(2,2)、(3,2) と書ける。
 
-```text
-R -> Y -> G -> C -> B -> M
-```
+    R2  Y6
+        G4  C5
+            B1  M3
 
-が得られる。ここで離散代数から自動的に従うのは、差分の符号と絶対値がそれぞれ包含方向と切替チャネルを記録するところまでである。平面上の進行方向を得るには、次の追加規則を明示する。
+Theory の図は、この展開図全体を約45度回転して左から右へ読めるようにしたものである。面の接続と折り畳みは変わらない。
 
-**定義（符号保存格子実現）。** 色相路の各頂点を、整数格子上の単位正方形面へ対応させる。連続する面は一辺全体を共有し、正の level 差を固定した一方の格子方向 `e_+=(1,0)`、負の level 差をそれと直交する固定方向 `e_-=(0,1)` へ対応させる。各ステップの絶対値 `4,2,1` は移動距離ではなく、共有辺に付随する切替チャネル `G,R,B` のラベルとして保存する。
-
-`M -> R` を切り、`R` 面の左下隅を原点に取ると、この規則は六面の左下隅を順に
-
-```text
-R₂:(0,0), Y₆:(1,0), G₄:(1,1),
-C₅:(2,1), B₁:(2,2), M₃:(3,2)
-```
-
-へ置く。したがって次の2-2-2型階段状展開図になる。
-
-```text
-R2  Y6
-    G4  C5
-        B1  M3
-```
-
-Theory 図では同じ面集合を横長に読むため、画面座標の下向きを正の `y` として、全体へ約45度の剛体回転を施す。正差分方向と負差分方向はそれぞれ
-
-```text
-d_+ = (1,-1)/sqrt(2)   // 右上
-d_- = (1, 1)/sqrt(2)   // 右下
-```
-
-へ写り、共通の尺度 `1/sqrt(2)` を省けば面の基準点は
-
-```text
-R₂:(0,0), Y₆:(1,-1), G₄:(2,0),
-C₅:(3,-1), B₁:(4,0), M₃:(5,-1)
-```
-
-と左から右へ進むジグザグになる。これは研究用座標で与えた2-2-2展開図全体の平面回転であり、面隣接、折り畳み、handedness を変えた別の cube net ではない。
-
-符号だけがこの二つの平面方向を強制するわけではない。上の座標は、正負それぞれへ固定方向を割り当てること、二方向を非退化に直交させること、単位正方形の内部を重ねずに一辺共有だけで単純な連結面集合を作ること、という条件を加えた実現である。その条件の下では、回転・鏡映・軸交換で同一視される、追加の折れや余分な格子長を持たない自然な最小実現として2-2-2階段形を選ぶ。これは符号列だけから全ての平面埋め込みが一意に決まるという主張ではない。
-
-五つの共有辺に沿って折り畳むと立方体になり、閉路上で三歩隔たる `R/C`, `Y/B`, `G/M` が三組の対面になる。したがって構成の論理順は、完成済みのダイスを展開して色相順を読み取る向きではなく、離散 `C6` の包含・切替データに符号保存格子実現を追加し、その展開図から立方体を折り、面へ順位を記して Color Die を得る向きである。
+ここで注目する対応は、六色の色相順を五つの共有辺として保った平面展開と、折り戻したときの補色対面とが両立することである。差分の符号から平面方向を定義する追加規則は用いない。色相路と補色対が固定されていれば、この展開は順位の重み 4:2:1 に依存せず成立する。順位差の符号・包含方向・切替チャネルは Tone Zigzag の差分表で扱う。
 
 有彩色 6 色を tone の昇順に 1 から 6 として並べる。
 
@@ -1682,33 +1657,33 @@ L(kappa(c)) = 7-L(c)
 
 なので、各対面の番号和は自動的に7になる。これは標準的な六面サイコロの対面規則と一致する。したがってサイコロ表示は、標準面番号を先に仮定しただけではなく、「補色を対面へ置く幾何配置」と「補色 rank 反転」が標準ダイスの対面和へ一致する直接的な系である。三補色軸の配置は立方体回転で同一視でき、左右の handedness まで区別する場合は鏡映を追加して比較する。
 
-立方体には8頂点があり、各頂点からは、その頂点に接する三面が一つの局所 view として見える。Color Die の8 view はこの全頂点を尽くす。二つの view は三原色 `R,G,B` と三二次色 `C,M,Y` がそれぞれ会する頂点を示し、残る六つは、異なる二原色とその join、または異なる二次色とその meet を一組として示す。ここで演算の一致は全域の規則ではなく、次の前提を満たす組に限られる。
+Theory では色相順の展開図と Color Die を一つの節にまとめ、色相順を保つ展開、面番号、補色対と対面和の関係を示す。続く「有彩六色の八面体」では、各面を頂点へ対応させる双対関係を短い補足で残す。
 
-```text
-distinct a,b in {R,G,B}:  a∧b=K  =>  a∨b=a⊕b
-distinct a,b in {C,M,Y}:  a∨b=W  =>  a∧b=XNOR(a,b)
-```
-
-したがって各 view 上の矢印は、一般的な「XOR混色」や「AND混色」を主張するものではなく、支持が互いに素な原色対と、全ビットを覆う二次色対における限定的一致を可視化する。三入力 view も、`R∨G∨B=R⊕G⊕B=W` と `C∧M∧Y=K` を別々に示し、二入力の XNOR 条件を三入力へ拡張しない。
+GRB の join と YCM の meet による混色は専用のグラフで扱う。Color Cube は1ビット反転・補色・包含関係、Color Die は色相順・順位・対面の関係を説明する。専用の混色節では、互いに素な原色対での OR=XOR と、全ビットを覆う二次色対での AND=XNOR が条件付きの一致であることも明示する。
 
 #### Appendix detail: Classification boundary for the hue-order net
 
-前節で Theory 表示に用いた色相路をサイコロの面隣接木として要求すると、6面の隣接5本がすべて使われるため、面隣接木全体はこの Hamilton path に固定される。しかし、その抽象的な面隣接木だけから平面格子上の向きは決まらない。2-2-2階段形は、前節の符号保存格子実現、すなわち正負ごとの固定方向、直交する非退化な二方向、内部の重ならない単位正方形連結を追加したときの自然な最小代表である。
+補色対を対面に置いた立方体の面配置を固定した上で、色相路 R–Y–G–C–B–M の五つの面接続をすべて残すと、面隣接木はこの Hamilton path に固定される。立方体の各面の向きを使ってこの木を平面へ開けば、平面内の剛体移動・鏡映を除いて上の階段形が得られる。抽象的な六頂点の経路だけから平面配置が定まる、という主張ではない。立方体の面配置を先に指定していることが条件である。
 
-Theory タブに必要なのは、符号と絶対値の代数的意味、追加した格子規則、研究用階段座標と横長ジグザグ表示が同じ net の平面回転であること、`C6 -> path -> net -> folded die` という構成方向である。11種類の自由立方体展開図の列挙、切断辺を変えた場合の分類、回転・鏡映・軸交換を除く同値関係、上の追加条件の下での最小性・一意性の厳密な証明は研究層の補題として分離し、機械検証で支える。
+データテストでは、立方体の面隣接木384個を列挙し、平面展開の内部に重なりがなく、自由展開図の同値類が11種類になることを検査する。そのうち五つの色相接続を残す木は一つであり、その展開が表示用の階段座標と同じ形であることを確かめる。これは既定の面配置と切断条件に対する検証であり、色相や順位から立方体の採用自体が強制されることや、新規性の主張を意味しない。
 
-### Derived Representation 5: Parity Tetrahedra and the Color Star
+Theory タブでは、選んだ立方体モデル、色相順を保つ展開、補色対面と番号和7を簡潔に示す。展開図には色面・色名・順位・3ビット表記を残し、矢印、順位差のバッジ、折り畳みを促す案内文は置かない。展開図と補色対・番号の一覧を広い画面では横、狭い画面では縦にまとめる。列挙や一意性の詳しい条件は研究層と機械検証に残す。
 
-距離分解そのものと辺数の証明は中核部の `K8 Distance Partition` に置く。ここで追加するのはその表示である。`T0` モードは偶数パリティ部分群 `ker(pi) ~= V4` の4頂点・6辺・4面だけを、`T1` モードはその奇剰余類の4頂点・6辺・4面だけを示す。両者を同じ立方体投影で重ねると、距離2の12辺からなる stella octangula、すなわち Color Star が得られる。
+### Derived Representation 5: Distance 2 and the Two Color Tetrahedra
+
+距離分解と辺数の証明は中核部の `K8 Distance Partition` に置く。Theory の「距離2と二つのカラーテトラ」では、偶奇分割 `T0=ker(pi)={K,M,C,Y}` と `T1=B xor T0={B,R,G,W}` が距離2の二つのK4になることを主題にする。立方体の8頂点から取れる正四面体はこの二つだけであり、同じ配置での複合を Color Star（星形八面体）と呼ぶ。
+
+`pi(c xor m)=pi(c) xor pi(m)` より、M/C/Yの二チャンネル反転は同じテトラ内、G/R/Bの一チャンネル反転とWの全ビット反転は相手テトラへ移る。補色を各頂点へ作用させると `not(T0)=T1`、`not(T1)=T0` となる。この反転の区別を既存の距離切替図で示す。
 
 ```text
-T0 mode -> even-parity tetrahedron
-T1 mode -> odd-parity coset tetrahedron
-compound -> Tet(T0) union Tet(T1) = distance-2 layer
-K8 mode -> distance 1 union distance 2 union distance 3
+nodes only -> eight binary states
+one-channel toggles -> distance 1, cube edges between T0 and T1
+two-channel toggles -> distance 2, K4(T0) disjoint union K4(T1)
+all-bit complement -> distance 3, four complement pairs between T0 and T1
+all -> K8 = Q3(12) + 2K4(12) + M4(4)
 ```
 
-この分離により、「二四面体である」という代数的分解と、「星形八面体に見える」という複合表示を同一視せず、前者から後者を構成できる。
+距離2ではT0の6辺を黄、T1の6辺を青で区別し、星形の表面やT0/T1専用モードを追加しない。XORによる残る頂点の復元は図の後の短い補足に残す。多数決による補色頂点への対応と面重心の導出は研究ノートで扱い、面選択図・GRB表は本文から外す。共通部分の正八面体は八面体節の短い幾何補足に置く。星形の外観から新たな色状態、明るさ順位、混色則を導くとは扱わない。
 
 ### Derived Representation 6: Color Die--Octahedron Duality
 
@@ -1720,7 +1695,7 @@ Color Die では補色対 `R/C`, `G/M`, `B/Y` が対向面なので、双対八�
 K_(2,2,2) = K6 minus {R-C, G-M, B-Y}
 ```
 
-であり、これは八面体グラフである。
+であり、これは八面体グラフである。12辺は、色相順 `R→Y→G→C→B→M→R` の距離1の6辺と、`GRB`・`CMY` の二つの三角形を作る距離2の6辺に分かれる。距離3の三補色対は対頂点であり、辺で結ばれない。Theory ではこの接続分解を、既存の色相順・補色・Hamming距離を見渡す補足として示す。
 
 ダイスの各頂点には三補色対から一面ずつ選ばれた三面が接する。選択は `2^3=8` 通りあり、双対八面体の8三角形面に対応する。各軸で原色側を選んだかを三ビットとして面へラベル付けすると、隣接する三角形面は一軸だけが異なるので、
 
@@ -1728,7 +1703,11 @@ K_(2,2,2) = K6 minus {R-C, G-M, B-Y}
 face-adjacency(D*) ~= Q3
 ```
 
-となる。標準 RGB cube から `K/W` を除いた6頂点の凸包も、中心化すれば独立な三ベクトルの反対対 `{±v_B,±v_R,±v_G}` となるため、同じ面束を持つアフィン八面体である。ただし標準 RGB 計量では非補色辺の長さが `1` と `sqrt(2)` に分かれ、正則ではない。Theory 図は面頂双対を読みやすくする正則 cross-polytope 実現を用い、二つのユークリッド埋め込みを同一視せず、6面と6頂点、12辺と12辺、8頂点と8面、補色軸、面隣接 `Q3` の対応を表示する。
+となる。これは三つの二択で面をラベル付けした構成の帰結であり、八状態代数の独立な根拠とは扱わない。
+
+標準 RGB cube から `K/W` を除いた6頂点の凸包も、中心化すれば独立な三ベクトルの反対対 `{±v_B,±v_R,±v_G}` となるため、同じ面束を持つアフィン八面体である。ただし標準 RGB 計量では非補色辺の長さが `1` と `sqrt(2)` に分かれ、正則ではない。Theory 図は正立方体の六面の中心から正則 cross-polytope を構成し、正八面体だけを一つ表示する。剛体回転で上をR、下をCとし、上段M/Y・下段B/Gを配置する。正八面体の等しい辺長はビット距離の値を表さず、二つのユークリッド埋め込みは同一視しない。
+
+Theory 本文と辺選択では、有彩色の二色a,bを結ぶ一辺から、第三頂点 `a⊕b` と `¬(a⊕b)` を持つ二つの三角形を読み取る。XORが000となる四つのFano面は12辺を一回ずつ被覆し、各辺のもう一方の面のXORは111になる。ダイスの図、面・頂点の切替、頂点の位置ビットは表示せず、ダイスの面との双対は短い補足にする。六面の中心がT0・T1それぞれの辺の中点であり、二つのテトラが囲む領域の共通部分がこの正八面体になることも添える。八面の混色・XORの全表、面隣接 `Q3` の導出、RGB凸包との計量の違いは研究上の補足として扱う。混色表は[多面体の面と3ビット演算](./polyhedral-face-algebra.md)に保持する。
 
 ## Derived Theorems for the Continuous Representation
 
@@ -1893,7 +1872,7 @@ Important invariants currently tested include:
 11. The Color Die and octahedron data realize combinatorial duality: six die faces correspond to six octahedral vertices, twelve die edges to twelve octahedral edges, eight die vertices to eight triangular faces, complement pairs to antipodal axes, and octahedral face adjacency to `Q3`.
 12. In fixed `[G,R,B]` order, `M=011` and `Y=110` give `M AND Y = R = 010` and also `XNOR(M,Y)=R`; over all 64 ordered pairs, `OR=XOR iff AND=K` and `AND=XNOR iff OR=W`, while enumeration of all 16 channelwise binary Boolean functions leaves exactly XOR/OR for the distinct RGB-primary pairs and AND/XNOR for the distinct CMY-primary pairs.
 13. The seven colored nonzero vectors are the columns of a rank-three parity-check matrix `H`; `dim ker H=4`, Fano triples give minimum distance three, and therefore `ker H` is Hamming `[7,4,3]`. Hamming labels are coordinate positions, not color codewords; for `r=c xor e`, syndrome `s=Hr^T=He^T=(s_G,s_R,s_B)` selects position `j=4s_G+2s_R+s_B` for a single error.
-14. The sign-preserving lattice rule maps positive and negative level differences to fixed orthogonal unit-grid directions. Cutting `M->R` then places the six faces at `(0,0),(1,0),(1,1),(2,1),(2,2),(3,2)`, producing the displayed 2-2-2 staircase. In screen coordinates, the Theory figure rigidly rotates the same net so the two directions become upper-right and lower-right and the path reads left-to-right; this is not a different cube net. The staircase is the natural minimal representative under fixed-direction, nondegeneracy, and simple unit-square-connectivity conditions, up to rotation, reflection, and axis exchange; the sign sequence alone does not force a planar direction. Cube-face spanning trees separately enumerate the 11 free cube nets.
+14. Fix a cube with complementary colors on opposite faces. Retaining the five hue-order adjacencies R–Y–G–C–B–M fixes its face-adjacency spanning tree. Unfolding that tree gives the nonoverlapping 2-2-2 staircase at (0,0),(1,0),(1,1),(2,1),(2,2),(3,2); the Theory view rotates this net in the plane. This correspondence depends on the chosen cube model and retained connections, not on the numerical weights 4:2:1. Enumeration of 384 cube-face spanning trees yields the 11 free cube nets and exactly one tree with all five specified hue connections.
 
 `src/__tests__/research-note-invariants.test.ts` は、81 個の full section と 9 個の補色 section、等 tone 三角形の計量、M/G 長方形の座標・直交性・共通単位円、Tone Zigzag の統計量と Fourier 係数を数値許容差つきで回帰検査する。これは導出を実装から独立に再計算する保護層だが、形式証明ではない。検証課題に下げた M/G の大域的一意性は、依然として機械検証済みの主張ではない。将来は symbolic / exact-arithmetic 検査を併設すれば、長い幾何恒等式に対する浮動小数点許容差への依存をさらに減らせる。
 

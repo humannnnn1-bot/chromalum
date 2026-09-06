@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LanguageProvider } from "../../../i18n";
 import { calculateHamming74, encodeHamming74, HammingDiagram, type Bit, type DataWord, type HammingWord } from "../HammingDiagram";
 
@@ -34,11 +34,23 @@ function renderedSyndromeBits(): string | null {
   return screen.getByTestId("hamming-stage-syndrome").querySelector("[data-syndrome-bits]")?.getAttribute("data-syndrome-bits") ?? null;
 }
 
-function flowDelay(testId: string): string | null {
-  return screen.getByTestId(testId).getAttribute("data-flow-delay-ms");
+function advance(ms: number) {
+  act(() => vi.advanceTimersByTime(ms));
+}
+
+function parityBits() {
+  return Array.from(screen.getByTestId("hamming-parity-check-card").querySelectorAll("[data-parity-check-channel]")).map((row) =>
+    row.getAttribute("data-parity-check-result"),
+  );
 }
 
 describe("HammingDiagram", () => {
+  beforeEach(() => vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] }));
+  afterEach(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
   it("encodes the initial data word with even parity", () => {
     expect(encodeHamming74([1, 0, 1, 1])).toEqual([0, 1, 1, 0, 0, 1, 1]);
   });
@@ -102,13 +114,15 @@ describe("HammingDiagram", () => {
     ).toEqual(["001", "010", "011", "100", "101", "110", "111"]);
     expect(stageSlot("hamming-stage-data", 1).dataset.empty).toBe("true");
     expect(stageSlot("hamming-stage-data", 2).dataset.empty).toBe("true");
-    expect(stageSlot("hamming-stage-data", 3).textContent).toBe("1");
+    expect(stageSlot("hamming-stage-data", 3).querySelector("[data-bit-value]")?.textContent).toBe("1");
     expect(stageSlot("hamming-stage-data", 4).dataset.empty).toBe("true");
-    expect(stageSlot("hamming-stage-data", 5).textContent).toBe("0");
-    expect(stageSlot("hamming-stage-data", 6).textContent).toBe("1");
-    expect(stageSlot("hamming-stage-data", 7).textContent).toBe("1");
+    expect(stageSlot("hamming-stage-data", 5).querySelector("[data-bit-value]")?.textContent).toBe("0");
+    expect(stageSlot("hamming-stage-data", 6).querySelector("[data-bit-value]")?.textContent).toBe("1");
+    expect(stageSlot("hamming-stage-data", 7).querySelector("[data-bit-value]")?.textContent).toBe("1");
     for (const position of [3, 5, 6, 7]) {
-      expect(stageSlot("hamming-stage-output", position).textContent).toBe(stageSlot("hamming-stage-data", position).textContent);
+      expect(stageSlot("hamming-stage-output", position).textContent).toBe(
+        stageSlot("hamming-stage-data", position).querySelector("[data-bit-value]")?.textContent,
+      );
     }
 
     const flow = screen.getByRole("group", { name: "Hamming encode, transmit, syndrome, correction, and output flow" });
@@ -116,6 +130,7 @@ describe("HammingDiagram", () => {
       "hamming-flow-bit-header",
       "hamming-stage-data",
       "hamming-flow-operation-encode",
+      "hamming-parity-generation",
       "hamming-stage-encoded",
       "hamming-flow-operation-transmit",
       "hamming-stage-received",
@@ -133,7 +148,7 @@ describe("HammingDiagram", () => {
     expect(screen.getByTestId("hamming-syndrome-identity").textContent).toContain("s = Hrᵀ = Heᵀ");
     expect(screen.getByTestId("hamming-syndrome-identity").textContent).toContain("valid-codeword contribution becomes 000");
     expect(screen.getByTestId("hamming-flow-operation-check").textContent).toContain("Read the three results in [sG, sR, sB] order");
-    expect(screen.getByTestId("hamming-parity-check-card").textContent).toContain("PARITY CHECK · computation");
+    expect(screen.getByTestId("hamming-parity-sets").closest('[data-testid="hamming-flow-operation-check"]')).not.toBeNull();
     expect(screen.getByTestId("hamming-flow-operation-check-input")).toBeTruthy();
     expect(screen.getByTestId("hamming-flow-operation-check-output")).toBeTruthy();
     expect(screen.getByTestId("hamming-flow-operation-check").querySelectorAll("[data-parity-check-channel]")).toHaveLength(3);
@@ -149,58 +164,205 @@ describe("HammingDiagram", () => {
     const dataTwo = screen.getByTestId("hamming-data-2");
     const errorOne = screen.getByTestId("hamming-error-1");
     const errorTwo = screen.getByTestId("hamming-error-2");
-    expect(dataOne.style.borderColor).not.toBe(dataTwo.style.borderColor);
+    expect(dataOne.getAttribute("aria-pressed")).toBe("true");
+    expect(dataTwo.getAttribute("aria-pressed")).toBe("false");
     expect(errorOne.style.borderColor).toBe(errorTwo.style.borderColor);
-    expect(errorOne.style.color).not.toBe(errorTwo.style.color);
+    expect(errorOne.closest('[data-testid="hamming-stage-received"]')).not.toBeNull();
   });
 
-  it("re-encodes immediately when a data bit changes", () => {
+  it("connects a selected check to its four Venn positions and received-bit calculation", () => {
     renderWithLanguage();
+    const greenCheck = screen.getByTestId("hamming-venn-check-4");
+    fireEvent.click(greenCheck);
 
+    expect(greenCheck.getAttribute("aria-pressed")).toBe("true");
+    expect(
+      [...screen.getByTestId("hamming-stage-received").querySelectorAll('[data-parity-member="true"]')].map((slot) =>
+        slot.getAttribute("data-code-position"),
+      ),
+    ).toEqual(["4", "5", "6", "7"]);
+    expect(
+      screen
+        .getAllByTestId(/hamming-venn-position-/)
+        .filter((node) => node.dataset.checkMember === "true")
+        .map((node) => node.dataset.testid),
+    ).toEqual(["hamming-venn-position-4", "hamming-venn-position-5", "hamming-venn-position-6", "hamming-venn-position-7"]);
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("r₄ ⊕ r₅ ⊕ r₆ ⊕ r₇");
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 0 ⊕ 1 ⊕ 1 = 0");
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("even number");
+
+    fireEvent.click(greenCheck);
+    expect(greenCheck.getAttribute("aria-pressed")).toBe("false");
+    expect(screen.getAllByTestId(/hamming-venn-position-/).every((node) => node.dataset.checkMember === "true")).toBe(true);
+  });
+
+  it("toggles errors from keyboard-accessible Venn nodes while preserving delayed results", () => {
+    const { onHover } = renderWithLanguage();
+    const node = screen.getByTestId("hamming-venn-position-5");
+    fireEvent.click(screen.getByTestId("hamming-venn-check-1"));
+    fireEvent.focus(node);
+    expect(onHover).toHaveBeenLastCalledWith(5);
+    expect(node.getAttribute("role")).toBe("button");
+    expect(node.getAttribute("tabindex")).toBe("0");
+    fireEvent.keyDown(node, { key: "Enter" });
+    expect(node.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("hamming-error-5").getAttribute("aria-pressed")).toBe("true");
+    expect(node.dataset.receivedBit).toBeUndefined();
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("Waiting for this check");
+    advance(180);
+    expect(node.dataset.receivedBit).toBe("1");
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 1 ⊕ 1 ⊕ 1 = –");
+    advance(420);
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 1 ⊕ 1 ⊕ 1 = 1");
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("odd number");
+    expect(screen.getByTestId("hamming-parity-set-1").querySelector("circle")?.getAttribute("stroke-dasharray")).toBe("6 4");
+
+    fireEvent.keyDown(node, { key: " ", repeat: true });
+    expect(node.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.keyDown(node, { key: " " });
+    expect(node.getAttribute("aria-pressed")).toBe("false");
+    advance(1260);
+    expect(node.dataset.receivedBit).toBe("0");
+    expect(screen.getByTestId("hamming-venn-detail").textContent).toContain("0 ⊕ 1 ⊕ 0 ⊕ 1 = 0");
+    fireEvent.blur(node);
+    expect(onHover).toHaveBeenLastCalledWith(null);
+  });
+
+  it("distinguishes injected errors from checks that still pass with two errors", () => {
+    renderWithLanguage();
+    fireEvent.click(screen.getByTestId("hamming-venn-position-6"));
+    fireEvent.click(screen.getByTestId("hamming-venn-position-7"));
+    advance(1260);
+    expect(screen.getByTestId("hamming-venn-check-4").textContent).toContain("pass");
+    expect(screen.getByTestId("hamming-venn-check-2").textContent).toContain("pass");
+    expect(screen.getByTestId("hamming-venn-check-1").textContent).toContain("fail");
+    expect(screen.getByTestId("hamming-venn-position-1").dataset.errorInjected).toBe("false");
+    expect(screen.getByTestId("hamming-venn-position-6").dataset.errorInjected).toBe("true");
+    expect(screen.getByTestId("hamming-venn-position-7").dataset.errorInjected).toBe("true");
+    expect(screen.getByTestId("hamming-status").textContent).toContain("2 errors");
+  });
+
+  it("calculates and reveals each stage in order after a data change", () => {
+    renderWithLanguage();
     fireEvent.click(screen.getByTestId("hamming-data-2"));
 
     expect(stageBits("hamming-stage-data")).toBe("1111");
+    for (const stage of ["encoded", "received", "corrected", "output"]) {
+      expect(stageBits("hamming-stage-" + stage)).toBeNull();
+      expect(screen.getByTestId("hamming-stage-" + stage).getAttribute("aria-busy")).toBe("true");
+    }
+    expect(renderedSyndromeBits()).toBeNull();
+    expect(parityBits()).toEqual([null, null, null]);
+    expect(screen.getByTestId("hamming-generator-1").querySelector("strong")?.textContent).toBe("–");
+    expect(screen.getByTestId("hamming-venn-check-4").getAttribute("data-parity-check-result")).toBeNull();
+    expect(screen.getByTestId("hamming-status").textContent).toContain("Calculating");
+    expect(screen.getByTestId("hamming-stage-output").textContent).not.toContain("DATA IN = DATA OUT");
+
+    advance(359);
+    expect(stageBits("hamming-stage-encoded")).toBeNull();
+    advance(1);
     expect(stageBits("hamming-stage-encoded")).toBe("1111111");
+    expect(screen.getByTestId("hamming-generator-1").querySelector("strong")?.textContent).toBe("1");
+    expect(stageBits("hamming-stage-received")).toBeNull();
+    advance(360);
+    expect(stageBits("hamming-stage-received")).toBe("1111111");
+    expect(parityBits()).toEqual([null, null, null]);
+    advance(180);
+    expect(parityBits()).toEqual(["0", null, null]);
+    expect(screen.getByTestId("hamming-venn-check-4").getAttribute("data-parity-check-result")).toBe("0");
+    advance(120);
+    expect(parityBits()).toEqual(["0", "0", null]);
+    advance(120);
+    expect(parityBits()).toEqual(["0", "0", "0"]);
+    advance(119);
+    expect(renderedSyndromeBits()).toBeNull();
+    advance(1);
+    expect(renderedSyndromeBits()).toBe("000");
+    expect(stageBits("hamming-stage-corrected")).toBeNull();
+    expect(screen.getByTestId("hamming-status").textContent).toContain("Calculating");
+    advance(360);
+    expect(stageBits("hamming-stage-corrected")).toBe("1111111");
+    expect(stageBits("hamming-stage-output")).toBeNull();
+    advance(180);
     expect(stageBits("hamming-stage-output")).toBe("1111");
-    expect(screen.getByTestId("hamming-stage-data").className).toContain("theory-hamming-stage-tracing");
-    expect(flowDelay("hamming-stage-data")).toBe("0");
-    expect(flowDelay("hamming-flow-operation-encode")).toBe("180");
-    expect(flowDelay("hamming-stage-encoded")).toBe("360");
-    expect(flowDelay("hamming-flow-operation-transmit")).toBe("540");
-    expect(flowDelay("hamming-stage-received")).toBe("720");
-    expect(
-      Array.from(screen.getByTestId("hamming-parity-check-card").querySelectorAll("[data-parity-check-channel]")).map((row) =>
-        row.getAttribute("data-flow-delay-ms"),
-      ),
-    ).toEqual(["900", "1020", "1140"]);
-    expect(flowDelay("hamming-stage-syndrome")).toBe("1260");
-    expect(flowDelay("hamming-flow-operation-correction")).toBe("1440");
-    expect(flowDelay("hamming-stage-corrected")).toBe("1620");
-    expect(flowDelay("hamming-stage-output")).toBe("1800");
+    expect(screen.getByTestId("hamming-stage-output").getAttribute("aria-busy")).toBe("false");
+    expect(screen.getByTestId("hamming-stage-output").textContent).toContain("DATA IN = DATA OUT");
+    expect(screen.getByTestId("hamming-status").textContent).toContain("No channel error");
   });
 
-  it("starts an error trace at transmission instead of replaying unchanged encoding stages", () => {
+  it("keeps completed encoding and delays reception onward when an error changes", () => {
     renderWithLanguage();
-
     fireEvent.click(screen.getByTestId("hamming-error-3"));
 
-    expect(flowDelay("hamming-stage-data")).toBeNull();
-    expect(flowDelay("hamming-flow-operation-encode")).toBeNull();
-    expect(flowDelay("hamming-stage-encoded")).toBeNull();
-    expect(flowDelay("hamming-flow-operation-transmit")).toBe("0");
-    expect(flowDelay("hamming-stage-received")).toBe("180");
-    expect(flowDelay("hamming-flow-operation-check-input")).toBe("300");
-    expect(
-      Array.from(screen.getByTestId("hamming-parity-check-card").querySelectorAll("[data-parity-check-channel]")).map((row) =>
-        row.getAttribute("data-flow-delay-ms"),
-      ),
-    ).toEqual(["360", "480", "600"]);
-    expect(flowDelay("hamming-flow-operation-check-output")).toBe("660");
-    expect(flowDelay("hamming-stage-syndrome")).toBe("720");
-    expect(flowDelay("hamming-flow-operation-correction")).toBe("900");
-    expect(flowDelay("hamming-stage-corrected")).toBe("1080");
-    expect(flowDelay("hamming-flow-operation-extract")).toBe("1170");
-    expect(flowDelay("hamming-stage-output")).toBe("1260");
+    expect(stageBits("hamming-stage-data")).toBe("1011");
+    expect(stageBits("hamming-stage-encoded")).toBe("0110011");
+    expect(stageBits("hamming-stage-received")).toBeNull();
+    expect(stageBits("hamming-stage-output")).toBeNull();
+    expect(screen.getByTestId("hamming-flow-operation-correction").textContent).not.toContain("Flip position 3");
+    advance(179);
+    expect(stageBits("hamming-stage-received")).toBeNull();
+    advance(1);
+    expect(stageBits("hamming-stage-received")).toBe("0100011");
+    advance(180);
+    expect(parityBits()).toEqual(["0", null, null]);
+    advance(120);
+    expect(parityBits()).toEqual(["0", "1", null]);
+    advance(120);
+    expect(parityBits()).toEqual(["0", "1", "1"]);
+    expect(renderedSyndromeBits()).toBeNull();
+    advance(120);
+    expect(renderedSyndromeBits()).toBe("011");
+    expect(stageBits("hamming-stage-corrected")).toBeNull();
+    advance(360);
+    expect(stageBits("hamming-stage-corrected")).toBe("0110011");
+    expect(screen.getByTestId("hamming-flow-operation-correction").textContent).toContain("Flip position 3");
+    expect(stageBits("hamming-stage-output")).toBeNull();
+    advance(180);
+    expect(stageBits("hamming-stage-output")).toBe("1011");
+  });
+
+  it("finishes encoding before transmission when an error changes during pending encoding", () => {
+    renderWithLanguage();
+    fireEvent.click(screen.getByTestId("hamming-data-2"));
+    advance(200);
+    fireEvent.click(screen.getByTestId("hamming-error-5"));
+    advance(160);
+    expect(stageBits("hamming-stage-encoded")).toBeNull();
+    expect(stageBits("hamming-stage-received")).toBeNull();
+    advance(200);
+    expect(stageBits("hamming-stage-encoded")).toBe("1111111");
+    expect(stageBits("hamming-stage-received")).toBeNull();
+    advance(360);
+    expect(stageBits("hamming-stage-received")).toBe("1111011");
+    advance(1080);
+    expect(renderedSyndromeBits()).toBe("101");
+    expect(stageBits("hamming-stage-output")).toBe("1111");
+  });
+
+  it("cancels obsolete downstream results when the data changes again", () => {
+    renderWithLanguage();
+    fireEvent.click(screen.getByTestId("hamming-data-2"));
+    advance(1500);
+    fireEvent.click(screen.getByTestId("hamming-data-1"));
+    expect(stageBits("hamming-stage-data")).toBe("0111");
+    expect(renderedSyndromeBits()).toBeNull();
+    advance(300);
+    expect(stageBits("hamming-stage-encoded")).toBeNull();
+    expect(stageBits("hamming-stage-corrected")).toBeNull();
+    expect(stageBits("hamming-stage-output")).toBeNull();
+    advance(1500);
+    expect(stageBits("hamming-stage-output")).toBe("0111");
+    expect(screen.getByTestId("hamming-status").textContent).toContain("No channel error");
+  });
+
+  it("clears pending stage calculations on unmount", () => {
+    const { unmount } = renderWithLanguage();
+    // Flush the renderer's initial task before counting the calculation timers.
+    advance(0);
+    fireEvent.click(screen.getByTestId("hamming-data-2"));
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it.each([
@@ -215,6 +377,7 @@ describe("HammingDiagram", () => {
     renderWithLanguage();
 
     fireEvent.click(screen.getByTestId(`hamming-error-${position}`));
+    advance(1260);
 
     expect(stageBits("hamming-stage-received")).toBe(received);
     expect(renderedSyndromeBits()).toBe(syndromeBits);
@@ -241,6 +404,7 @@ describe("HammingDiagram", () => {
 
     fireEvent.click(screen.getByTestId("hamming-error-1"));
     fireEvent.click(screen.getByTestId("hamming-error-2"));
+    advance(1260);
 
     expect(stageBits("hamming-stage-received")).toBe("1010011");
     expect(renderedSyndromeBits()).toBe("011");
@@ -267,6 +431,7 @@ describe("HammingDiagram", () => {
 
     fireEvent.click(errorFive);
     fireEvent.click(screen.getByTestId("hamming-error-5"));
+    advance(1260);
     expect(renderedSyndromeBits()).toBe("000");
     expect(screen.getByTestId("hamming-stage-syndrome").textContent).toContain("000₂");
     expect(screen.getByTestId("hamming-status").textContent).toContain("No channel error");
