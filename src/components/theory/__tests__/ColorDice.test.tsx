@@ -31,7 +31,7 @@ describe("ColorDice", () => {
     const structureText = structure.textContent ?? "";
 
     expect(structureText).toContain("L(c) = 1…6");
-    expect(structureText).toContain("⚀ ⚁ ⚂ ⚃ ⚄ ⚅");
+    expect(structureText).toContain("⚀⚁⚂⚃⚄⚅");
     expect(structureText).toContain("B₁↔Y₆");
     expect(structureText).toContain("R₂↔C₅");
     expect(structureText).toContain("G₄↔M₃");
@@ -89,7 +89,7 @@ describe("ColorDice", () => {
       expect(shared).toHaveLength(2);
     }
     const cut = container.querySelector('[data-hue-net-cut="3-2"]');
-    expect(cut?.textContent).toContain("The M₃–R₂ connection is cut and rejoins when folded back");
+    expect(cut?.textContent).toContain("Cut M₃–R₂; fold to join");
     expect(net.querySelector("path, marker")).toBeNull();
     expect(container.textContent).not.toContain("ΔL");
     expect(screen.queryByTestId("hue-net-fold")).toBeNull();

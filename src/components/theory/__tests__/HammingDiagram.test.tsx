@@ -75,14 +75,8 @@ describe("HammingDiagram", () => {
   it("renders a standard three-set diagram and the complete six-stage flow", () => {
     renderWithLanguage();
 
-    expect(screen.getByTestId("hamming-fano-bridge").textContent).toContain("ker H = Hamming [7,4,3]");
-    expect(screen.getByTestId("hamming-fano-bridge").textContent).toContain("dim ker H = 4");
-    expect(screen.getByTestId("hamming-fano-bridge").textContent).toContain("dₘᵢₙ = 3");
-    expect(
-      Array.from(screen.getByTestId("hamming-fano-columns").querySelectorAll("[data-h-column-bits]")).map((column) =>
-        column.getAttribute("data-h-column-bits"),
-      ),
-    ).toEqual(["001", "010", "011", "100", "101", "110", "111"]);
+    expect(screen.queryByTestId("hamming-fano-bridge")).toBeNull();
+
     expect(screen.getAllByTestId(/hamming-parity-set-/)).toHaveLength(3);
     expect(screen.getAllByTestId(/hamming-venn-position-/)).toHaveLength(7);
     expect(screen.getByTestId("hamming-parity-set-2").querySelector("circle")?.getAttribute("cy")).toBe("94");

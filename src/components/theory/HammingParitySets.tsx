@@ -60,12 +60,14 @@ export const HammingParitySets = React.memo(function HammingParitySets({
   return (
     <section className="theory-hamming-sets" data-testid="hamming-parity-sets" aria-labelledby={titleId}>
       <header className="theory-hamming-sets-heading">
-        <h4 id={titleId}>{t("theory_hamming_venn_title")}</h4>
+        <div id={titleId} className="theory-diagram-label">
+          {t("theory_hamming_venn_title")}
+        </div>
         <p id={helpId}>{t("theory_hamming_venn_help")}</p>
       </header>
       <div className="theory-hamming-sets-layout">
         <figure className="theory-hamming-sets-figure">
-          <svg viewBox="0 -20 340 296" role="group" aria-label={t("theory_hamming_venn_aria")} aria-describedby={helpId}>
+          <svg viewBox="22 -20 296 296" role="group" aria-label={t("theory_hamming_venn_aria")} aria-describedby={helpId}>
             {CIRCLES.map(({ parity, cx, cy, labelX, labelY }) => {
               const check = checks.find((entry) => entry.parity === parity)!;
               const active = selectedParity === parity;
@@ -222,6 +224,7 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                 data-parity-check-result={check.failed ?? undefined}
                 aria-busy={check.failed === null}
                 aria-pressed={selectedParity === check.parity}
+                aria-label={`${t("theory_hamming_venn_check_label", check.channel)} P${check.parity}, ${checkState(check.failed)}, ${t("theory_hamming_venn_positions")} ${check.checks.join(" · ")}, s${check.channel} = ${check.failed ?? "–"}`}
                 onClick={() => onSelectParity(selectedParity === check.parity ? null : check.parity)}
               >
                 <span className="theory-hamming-check-heading">
@@ -233,8 +236,11 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                   </span>
                 </span>
                 <span className="theory-hamming-check-members">
-                  <span>
+                  <span className="theory-hamming-check-positions-full">
                     {t("theory_hamming_venn_positions")} {check.checks.join(" · ")}
+                  </span>
+                  <span className="theory-hamming-check-positions-short" aria-hidden="true">
+                    {check.checks.join("·")}
                   </span>
                   <b>
                     s{check.channel} = {check.failed ?? "–"}

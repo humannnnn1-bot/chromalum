@@ -1,10 +1,8 @@
-import React, { useCallback, useState } from "react";
-import { FS, FW, SP } from "../../styles/tokens";
+import React, { useCallback, useId, useState } from "react";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
 
-const W = 300;
-const H = 220;
+const VIEWBOX = { x: 26, y: 0, width: 248, height: 220 };
 const RAD = 60;
 
 // 3 circles in equilateral arrangement: R on top, G bottom-right, B bottom-left.
@@ -12,6 +10,11 @@ const RAD = 60;
 const R_CENTER = { x: 150, y: 93 };
 const G_CENTER = { x: 182, y: 148 };
 const B_CENTER = { x: 118, y: 148 };
+const CIRCLES = [
+  { channel: "R", bit: 2, center: R_CENTER, color: "#ff0000" },
+  { channel: "G", bit: 4, center: G_CENTER, color: "#00ff00" },
+  { channel: "B", bit: 1, center: B_CENTER, color: "#0000ff" },
+] as const;
 
 interface RegionInfo {
   lv: number;
@@ -43,10 +46,13 @@ function regionOf(x: number, y: number): number {
 interface Props {
   hlLevel: number | null;
   onHover: (lv: number | null) => void;
+  selectedLevel?: number;
+  onSelect?: (level: number) => void;
 }
 
-export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover }: Props) {
+export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover, selectedLevel, onSelect }: Props) {
   const { t } = useTranslation();
+  const id = useId();
   const [pinned, setPinned] = useState<number | null>(null);
   usePinReset(setPinned);
 
@@ -56,9 +62,10 @@ export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover }:
   const svgCoords = (e: React.MouseEvent<SVGSVGElement>) => {
     const svg = e.currentTarget;
     const rect = svg.getBoundingClientRect();
+    if (!rect.width || !rect.height) return { x: VIEWBOX.x, y: VIEWBOX.y };
     return {
-      x: ((e.clientX - rect.left) / rect.width) * W,
-      y: ((e.clientY - rect.top) / rect.height) * H,
+      x: VIEWBOX.x + ((e.clientX - rect.left) / rect.width) * VIEWBOX.width,
+      y: VIEWBOX.y + ((e.clientY - rect.top) / rect.height) * VIEWBOX.height,
     };
   };
 
@@ -74,73 +81,138 @@ export const VennDiagram = React.memo(function VennDiagram({ hlLevel, onHover }:
     (e: React.MouseEvent<SVGSVGElement>) => {
       const { x, y } = svgCoords(e);
       const lv = regionOf(x, y);
-      setPinned((prev) => {
-        const next = prev === lv ? null : lv;
-        queueMicrotask(() => onHover(next));
-        return next;
-      });
+      if (onSelect) {
+        onSelect(lv);
+        onHover(lv);
+      } else {
+        const next = pinned === lv ? null : lv;
+        setPinned(next);
+        onHover(next);
+      }
     },
-    [onHover],
+    [onHover, onSelect, pinned],
   );
 
   const hl = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : pinned;
+  const activePrimaries = selectedLevel ?? 7;
+
+  const regionOutline = (level: number, color: string, className: string) => (
+    <g className={className} data-level={level} pointerEvents="none">
+      <g mask={`url(#${id}-region-${level})`}>
+        {CIRCLES.map(({ bit, center }) => (
+          <g key={bit}>
+            <circle cx={center.x} cy={center.y} r={RAD} fill="none" stroke="#0a0a12" strokeWidth={5} />
+            <circle cx={center.x} cy={center.y} r={RAD} fill="none" stroke={color} strokeWidth={2.4} />
+          </g>
+        ))}
+      </g>
+      {level === 0 && (
+        <rect
+          x={VIEWBOX.x + 2}
+          y={VIEWBOX.y + 2}
+          width={VIEWBOX.width - 4}
+          height={VIEWBOX.height - 4}
+          rx={5}
+          fill="none"
+          stroke={color}
+          strokeDasharray="4,3"
+          strokeWidth={1.2}
+        />
+      )}
+    </g>
+  );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
+    <div className="theory-venn">
       <svg
-        viewBox={`0 0 ${W} ${H}`}
-        style={{ width: "100%", maxWidth: W, cursor: "pointer" }}
+        className="theory-venn-svg"
+        viewBox={`${VIEWBOX.x} ${VIEWBOX.y} ${VIEWBOX.width} ${VIEWBOX.height}`}
+        data-selected-level={selectedLevel}
+        data-highlighted-level={hl ?? undefined}
         role="img"
         aria-label={t("theory_venn_title")}
         onMouseMove={onMove}
         onMouseLeave={leave}
         onClick={onTap}
       >
-        {/* 3 additive circles with screen blend — produces exact GF(2)³ colors at overlaps */}
-        <g style={{ isolation: "isolate" }}>
-          <circle cx={R_CENTER.x} cy={R_CENTER.y} r={RAD} fill="#ff0000" style={{ mixBlendMode: "screen" }} />
-          <circle cx={G_CENTER.x} cy={G_CENTER.y} r={RAD} fill="#00ff00" style={{ mixBlendMode: "screen" }} />
-          <circle cx={B_CENTER.x} cy={B_CENTER.y} r={RAD} fill="#0000ff" style={{ mixBlendMode: "screen" }} />
+        <defs>
+          {CIRCLES.map(({ bit, center }) => (
+            <clipPath key={bit} id={`${id}-circle-${bit}`}>
+              <circle cx={center.x} cy={center.y} r={RAD} />
+            </clipPath>
+          ))}
+          {REGIONS.map(({ lv }) => (
+            <mask key={lv} id={`${id}-region-${lv}`} maskUnits="userSpaceOnUse" {...VIEWBOX}>
+              {CIRCLES.filter(({ bit }) => (lv & bit) !== 0).reduce<React.ReactNode>(
+                (content, { bit }) => (
+                  <g clipPath={`url(#${id}-circle-${bit})`}>{content}</g>
+                ),
+                <g>
+                  <rect {...VIEWBOX} fill="#fff" />
+                  {CIRCLES.filter(({ bit }) => (lv & bit) === 0).map(({ bit, center }) => (
+                    <circle key={bit} cx={center.x} cy={center.y} r={RAD} fill="#000" />
+                  ))}
+                </g>,
+              )}
+            </mask>
+          ))}
+          {hl !== null && (
+            <mask id={`${id}-outside-highlight`} maskUnits="userSpaceOnUse" {...VIEWBOX}>
+              <rect {...VIEWBOX} fill="#fff" />
+              <rect {...VIEWBOX} fill="#000" mask={`url(#${id}-region-${hl})`} />
+            </mask>
+          )}
+        </defs>
+        {/* Only enabled primaries emit color; their screen blend gives the binary RGB overlaps. */}
+        <g style={{ isolation: "isolate" }} pointerEvents="none">
+          {CIRCLES.map(({ channel, bit, center, color }) => {
+            const active = (activePrimaries & bit) !== 0;
+            return (
+              <circle
+                key={bit}
+                data-venn-primary={channel}
+                data-active={active}
+                cx={center.x}
+                cy={center.y}
+                r={RAD}
+                fill={active ? color : "none"}
+                style={{ mixBlendMode: "screen" }}
+              />
+            );
+          })}
         </g>
-
-        {/* Circle outlines */}
-        {[
-          { c: R_CENTER, color: "#ff4040" },
-          { c: G_CENTER, color: "#40ff40" },
-          { c: B_CENTER, color: "#4060ff" },
-        ].map(({ c, color }, i) => (
-          <circle key={`out${i}`} cx={c.x} cy={c.y} r={RAD} fill="none" stroke={color} strokeOpacity={0.25} strokeWidth={1} />
-        ))}
-
-        {/* Outer bounds indicator for ∅ region when active */}
-        {hl === 0 && (
-          <rect
-            x={2}
-            y={2}
-            width={W - 4}
-            height={H - 4}
+        {hl !== null && <rect {...VIEWBOX} fill="#0a0a12" opacity={0.55} mask={`url(#${id}-outside-highlight)`} pointerEvents="none" />}
+        {selectedLevel !== undefined && selectedLevel !== 0 && regionOutline(selectedLevel, "#80a0ff", "theory-venn-selection")}
+        {hl !== null && regionOutline(hl, "#fff", "theory-venn-highlight")}
+        {CIRCLES.filter(({ bit }) => (activePrimaries & bit) === 0).map(({ channel, bit, center, color }) => (
+          <circle
+            key={bit}
+            data-venn-outline={channel}
+            cx={center.x}
+            cy={center.y}
+            r={RAD}
             fill="none"
-            stroke="#fff"
-            strokeOpacity={0.6}
-            strokeDasharray="5,3"
-            strokeWidth={1}
+            stroke={color}
+            strokeWidth={1.4}
+            strokeOpacity={0.85}
             pointerEvents="none"
           />
-        )}
+        ))}
 
         {/* Region labels (set notation) */}
         {REGIONS.map(({ lv, x, y, setLabel }) => {
           const dim = hl !== null && hl !== lv;
-          const textColor = lv >= 4 ? "#000" : "#fff";
+          const visibleLevel = lv & activePrimaries;
+          const textColor = dim ? "#e1e7f5" : visibleLevel >= 4 ? "#000" : visibleLevel === 0 ? "#aeb7ca" : "#fff";
           return (
-            <g key={`r${lv}`} opacity={dim ? 0.3 : 1} pointerEvents="none" data-testid={`venn-region-${lv}`}>
+            <g key={`r${lv}`} opacity={dim ? 0.8 : 1} pointerEvents="none" data-testid={`venn-region-${lv}`}>
               <text
                 x={x}
                 y={y}
                 textAnchor="middle"
                 dominantBaseline="central"
-                fontSize={FS.sm}
-                fontWeight={FW.bold}
+                fontSize={10.5}
+                fontWeight={700}
                 fontFamily="var(--font-mono)"
                 fill={textColor}
               >

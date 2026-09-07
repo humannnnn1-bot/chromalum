@@ -35,10 +35,10 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Theory" }));
 
     expect(await screen.findByRole("heading", { name: "Discrete Algebraic Color Theory" }, { timeout: 15000 })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Color Order Meets Binary Rank" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Binary Levels" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "Seven Nonzero Toggle Patterns" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Binary Levels" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Color Order and Binary Rank" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Rank and Boolean Operations" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Geometry and Codes of Nonzero Vectors" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Binary Levels" })).toBeTruthy();
     expect(window.location.hash).toBe("#theory");
 
     fireEvent.click(screen.getByRole("tab", { name: "Source" }));

@@ -3,6 +3,7 @@ import { GRB_TONE_B, GRB_TONE_G, GRB_TONE_R } from "../../color-engine";
 import {
   COMPLEMENT_EDGES,
   CUBE_EDGES,
+  CUBE_FACES,
   DICE_NET_FACES,
   FANO_LINES,
   GRAY_PATH,
@@ -378,10 +379,15 @@ describe("theory-data invariants", () => {
   });
 
   it("recovers every missing cube-face vertex by XOR and keeps face meets and joins inside the face", () => {
+    expect(CUBE_FACES).toHaveLength(6);
     for (const channel of [0, 1, 2]) {
       for (const bit of [0, 1]) {
-        const face = THEORY_LEVELS.filter((level) => level.bits[channel] === bit).map((level) => level.lv);
+        const face = CUBE_FACES.find((item) => item.bitIndex === channel && item.fixed === bit)!.vertices;
+        expect([...face].sort((a, b) => a - b)).toEqual(
+          THEORY_LEVELS.filter((level) => level.bits[channel] === bit).map((level) => level.lv),
+        );
         expect(face).toHaveLength(4);
+        face.forEach((level, i) => expect(hammingDist(level, face[(i + 1) % 4])).toBe(1));
         expect(face.reduce((result, level) => result ^ level, 0)).toBe(0);
         for (const missing of face) {
           expect(face.filter((level) => level !== missing).reduce((result, level) => result ^ level, 0)).toBe(missing);
@@ -394,6 +400,9 @@ describe("theory-data invariants", () => {
         }
       }
     }
+    for (const level of THEORY_LEVELS) expect(CUBE_FACES.filter((face) => face.vertices.includes(level.lv))).toHaveLength(3);
+    for (const [a, b] of CUBE_EDGES)
+      expect(CUBE_FACES.filter((face) => face.vertices.includes(a) && face.vertices.includes(b))).toHaveLength(2);
   });
 
   it("matches XOR recovery and Boolean majority to all eight tetrahedral faces and their geometric dual vertices", () => {

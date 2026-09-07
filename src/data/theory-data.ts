@@ -4,6 +4,7 @@
 
 import {
   CANONICAL_CHROMATIC_LEVEL_CYCLE,
+  CHROMALUM_GRB_WEIGHTS,
   CHROMALUM_HUE_TOGGLE_CYCLE,
   CHROMALUM_LEVEL_BITS,
   CHROMALUM_LEVEL_HEX,
@@ -79,6 +80,25 @@ export const CUBE_EDGES: readonly (readonly [number, number])[] = [
   [5, 7],
   [6, 7],
 ];
+
+interface CubeFace {
+  readonly id: string;
+  readonly channel: "G" | "R" | "B";
+  readonly bitIndex: number;
+  readonly fixed: 0 | 1;
+  /** Cyclic order: 00, 10, 11, 01 in the two free coordinates. */
+  readonly vertices: readonly [number, number, number, number];
+}
+
+/** Three pairs of opposite faces, obtained by fixing one GRB coordinate. */
+export const CUBE_FACES: readonly CubeFace[] = (["G", "R", "B"] as const).flatMap((channel, bitIndex) => {
+  const weight = CHROMALUM_GRB_WEIGHTS[channel];
+  const [a, b] = Object.values(CHROMALUM_GRB_WEIGHTS).filter((bit) => bit !== weight);
+  return ([0, 1] as const).map((fixed) => {
+    const base = fixed === 0 ? 0 : weight;
+    return { id: `${channel}-${fixed}`, channel, bitIndex, fixed, vertices: [base, base | a, base | a | b, base | b] };
+  });
+});
 
 /** Channel name for a cube edge (which bit differs) */
 export function edgeChannel(a: number, b: number): "G" | "R" | "B" {

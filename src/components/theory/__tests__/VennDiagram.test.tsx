@@ -17,8 +17,41 @@ function renderWithLanguage(onHover = vi.fn(), hlLevel: number | null = null) {
 describe("VennDiagram", () => {
   it("renders 8 region labels matching P({G,R,B})", () => {
     const { container } = renderWithLanguage();
+    expect(container.querySelectorAll('[data-venn-primary][data-active="true"]')).toHaveLength(3);
     for (let lv = 0; lv <= 7; lv++) {
       expect(container.querySelector(`[data-testid="venn-region-${lv}"]`)).toBeTruthy();
+    }
+  });
+
+  it("fills enabled primaries and leaves disabled channels as colored outlines for all eight states", () => {
+    const view = (selectedLevel: number) => (
+      <LanguageProvider>
+        <VennDiagram hlLevel={null} onHover={vi.fn()} selectedLevel={selectedLevel} />
+      </LanguageProvider>
+    );
+    const { container, rerender } = render(view(0));
+    const states = [[], ["B"], ["R"], ["R", "B"], ["G"], ["G", "B"], ["R", "G"], ["R", "G", "B"]];
+    const colors = { R: "#ff0000", G: "#00ff00", B: "#0000ff" };
+    for (const [level, enabled] of states.entries()) {
+      rerender(view(level));
+      expect(
+        [...container.querySelectorAll('[data-venn-primary][data-active="true"]')].map((node) => node.getAttribute("data-venn-primary")),
+      ).toEqual(enabled);
+      for (const [channel, color] of Object.entries(colors)) {
+        const fill = container.querySelector(`[data-venn-primary="${channel}"]`)!;
+        const outline = container.querySelector(`[data-venn-outline="${channel}"]`);
+        if (enabled.includes(channel)) {
+          expect(fill.getAttribute("fill")).toBe(color);
+          expect(outline).toBeNull();
+        } else {
+          expect(fill.getAttribute("fill")).toBe("none");
+          expect(outline?.getAttribute("fill")).toBe("none");
+          expect(outline?.getAttribute("stroke")).toBe(color);
+          for (const dimension of ["cx", "cy", "r"]) {
+            expect(outline?.getAttribute(dimension)).toBe(fill.getAttribute(dimension));
+          }
+        }
+      }
     }
   });
 

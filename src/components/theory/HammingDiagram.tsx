@@ -203,92 +203,6 @@ function dataCodeSlots(data: DataWord | null): readonly (Bit | null)[] {
   return [null, null, data?.[0] ?? null, null, data?.[1] ?? null, data?.[2] ?? null, data?.[3] ?? null];
 }
 
-function HammingBridgeCard() {
-  const { t } = useTranslation();
-  return (
-    <div
-      data-testid="hamming-fano-bridge"
-      role="group"
-      aria-label={t("theory_hamming_bridge_card_aria")}
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: SP.md,
-        width: "100%",
-        maxWidth: 700,
-        padding: `${SP.lg}px ${SP.xl}px`,
-        border: `1px solid ${C.borderAlt}`,
-        borderRadius: R.md,
-        background: C.bgSurfaceAlt,
-        boxSizing: "border-box",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          flexWrap: "wrap",
-          gap: SP.sm,
-          fontFamily: FONT.mono,
-        }}
-      >
-        <strong style={{ color: C.accentBright, fontSize: FS.xs }}>{t("theory_hamming_bridge_card_title")}</strong>
-        <strong style={{ color: C.textPrimary, fontSize: FS.sm }}>ker H = Hamming [7,4,3]</strong>
-      </div>
-      <div>
-        <div style={{ marginBottom: SP.xs, color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.xxs }}>H = [B₁ R₂ M₃ G₄ C₅ Y₆ W₇]</div>
-        <div data-testid="hamming-fano-columns" style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", gap: SP.xs }}>
-          {CODE_POSITIONS.map((position, index) => (
-            <span
-              key={`bridge-column-${position}`}
-              data-h-column={position}
-              data-h-column-bits={HAMMING_COLUMN_BITS[index]}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 2,
-                minWidth: 0,
-                padding: `${SP.xs}px 1px`,
-                border: `1px solid ${C.border}`,
-                borderRadius: 3,
-                background: C.bgPanel,
-                fontFamily: FONT.mono,
-                boxSizing: "border-box",
-              }}
-            >
-              <strong style={{ color: readableLevelColor(position), fontSize: FS.xs, lineHeight: 1 }}>{levelLabel(position)}</strong>
-              <small style={{ color: C.textMuted, fontSize: "7px", lineHeight: 1 }}>{HAMMING_COLUMN_BITS[index]}</small>
-            </span>
-          ))}
-        </div>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexWrap: "wrap",
-          gap: SP.sm,
-          color: C.textMuted,
-          fontFamily: FONT.mono,
-          fontSize: FS.xs,
-          textAlign: "center",
-        }}
-      >
-        <span>rank H = 3</span>
-        <span aria-hidden="true">→</span>
-        <span>dim ker H = 4</span>
-        <span aria-hidden="true">·</span>
-        <span>Fano line → wt = 3</span>
-        <span aria-hidden="true">·</span>
-        <strong style={{ color: C.textPrimary }}>dₘᵢₙ = 3</strong>
-      </div>
-    </div>
-  );
-}
-
 interface BitRailProps {
   slots: readonly (Bit | null)[];
   bitString: string | undefined;
@@ -365,9 +279,10 @@ function BitRail({
               justifyContent: "center",
               gap: emphasized ? 1 : 0,
               minWidth: 0,
-              minHeight: interactive ? 44 : 30,
-              padding: "3px 0",
+              minHeight: interactive ? 32 : 24,
+              padding: "2px 0",
               font: "inherit",
+              lineHeight: 1.15,
               cursor: interactive ? "pointer" : undefined,
               border: emphasized ? `1px solid ${emphasisColor}` : bit === null ? `1px dashed ${C.border}` : `1px solid ${C.borderAlt}`,
               borderRadius: 3,
@@ -378,10 +293,25 @@ function BitRail({
             }}
           >
             {interactive && (
-              <small style={{ fontSize: 9, color: C.textMuted }}>{control === "data" ? `D${dataIndex + 1}` : position}</small>
+              <small
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                  fontSize: 9,
+                  lineHeight: 1,
+                  color: C.textMuted,
+                  whiteSpace: "nowrap",
+                }}
+              >
+                <span>{control === "data" ? `D${dataIndex + 1}` : position}</span>
+                {emphasized && emphasisLabel && (
+                  <span style={{ color: emphasisColor, fontSize: 7, fontWeight: FW.bold }}>{emphasisLabel}</span>
+                )}
+              </small>
             )}
             <span data-bit-value={bit ?? undefined}>{bit ?? "–"}</span>
-            {emphasized && emphasisLabel && (
+            {!interactive && emphasized && emphasisLabel && (
               <small style={{ color: emphasisColor, fontFamily: FONT.mono, fontSize: "7px", fontWeight: FW.bold, lineHeight: 1 }}>
                 {emphasisLabel}
               </small>
@@ -426,7 +356,7 @@ function SyndromeDisplay({ syndromeBits, level, position, positionText }: Syndro
                 alignItems: "center",
                 justifyContent: "center",
                 width: "100%",
-                minHeight: 22,
+                minHeight: 20,
                 border: `1px solid ${C.borderAlt}`,
                 borderRadius: 3,
                 background: C.bgSurfaceHover,
@@ -472,8 +402,8 @@ function ParityCheckOperation({ children }: { children: React.ReactNode }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: SP.sm,
-        margin: `${SP.sm}px 0`,
+        gap: SP.xs,
+        margin: `${SP.xs}px 0`,
         minWidth: 0,
       }}
     >
@@ -549,8 +479,10 @@ function BitRailHeader({ label }: { label: string }) {
             data-h-column-bits={HAMMING_COLUMN_BITS[index]}
             style={{ display: "flex", flexDirection: "column", alignItems: "center", minWidth: 0, lineHeight: 1.15 }}
           >
-            <span style={{ color: C.textSubtle }}>{index + 1}</span>
-            <strong style={{ color: C.textMuted, fontSize: "inherit" }}>{role}</strong>
+            <span style={{ whiteSpace: "nowrap" }}>
+              <span style={{ color: C.textSubtle }}>{index + 1}</span>{" "}
+              <strong style={{ color: C.textMuted, fontSize: "inherit" }}>{role}</strong>
+            </span>
             <span style={{ marginTop: 2, color: readableLevelColor(index + 1), fontSize: "7px" }}>{HAMMING_COLUMN_BITS[index]}</span>
           </span>
         ))}
@@ -579,10 +511,10 @@ function StageCard({ number, label, value, note, testId, pending = false }: Stag
         gridTemplateColumns: FLOW_ROW_COLUMNS,
         alignItems: "center",
         columnGap: SP.md,
-        rowGap: 8,
+        rowGap: 3,
         minWidth: 0,
-        minHeight: 46,
-        padding: `${SP.md}px ${SP.lg}px`,
+        minHeight: 34,
+        padding: `${SP.sm}px ${SP.lg}px`,
         border: `1px solid ${C.border}`,
         borderRadius: R.md,
         background: C.bgPanel,
@@ -635,7 +567,7 @@ function FlowOperation({ label, testId }: FlowOperationProps) {
         gridTemplateColumns: "24px minmax(0, 1fr)",
         alignItems: "center",
         columnGap: SP.md,
-        minHeight: 28,
+        minHeight: 20,
         padding: `0 ${SP.lg}px`,
         color: C.textMuted,
         fontFamily: FONT.mono,
@@ -718,20 +650,17 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: SP["3xl"],
+        gap: SP.xl,
         width: "100%",
-        maxWidth: 700,
         minWidth: 0,
       }}
     >
-      <HammingBridgeCard />
-
       <div
         role="group"
         aria-label={t("theory_hamming_flow_aria")}
         aria-busy={pending}
         className="theory-hamming-flow"
-        style={{ display: "flex", flexDirection: "column", width: "100%", maxWidth: 700 }}
+        style={{ display: "flex", flexDirection: "column", width: "100%" }}
       >
         <BitRailHeader label={t("theory_hamming_position_legend")} />
         <StageCard
@@ -844,7 +773,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
         role="status"
         style={{
           width: "100%",
-          padding: `${SP.lg}px ${SP.xl}px`,
+          padding: `${SP.md}px ${SP.xl}px`,
           border: `1px solid ${statusColor}`,
           borderRadius: R.md,
           background: C.bgSurfaceAlt,

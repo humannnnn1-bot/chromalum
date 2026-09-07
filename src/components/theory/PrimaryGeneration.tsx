@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useId, useState } from "react";
 import { CHROMALUM_GRB_WEIGHTS, type ChromalumChannel } from "../../chromalum-color-model";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
@@ -47,10 +47,12 @@ interface Props {
   hlLevel: number | null;
   onHover: (lv: number | null) => void;
   mode?: "all" | "generation" | "toggle";
+  diagram?: (selection: { selectedLevel: number; onSelect: (level: number) => void }) => React.ReactNode;
 }
 
-export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel, onHover, mode = "all" }: Props) {
+export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel, onHover, mode = "all", diagram }: Props) {
   const { t } = useTranslation();
+  const resultId = useId();
   const [selected, setSelected] = useState(G | R_WEIGHT);
   const [state, setState] = useState(R_WEIGHT);
   const [toggleChannel, setToggleChannel] = useState<ChromalumChannel>("G");
@@ -64,16 +66,19 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
   const fromBit = stateInfo.bits[toggle.bitIndex];
   const delta = result - state;
 
+  const selectState = useCallback((level: number) => setSelected(level), []);
   const toggleGenerator = (channel: ChromalumChannel) => {
     const weight = CHROMALUM_GRB_WEIGHTS[channel];
-    setSelected((current) => ((current & weight) !== 0 ? current & ~weight : current | weight));
+    const next = (selected & weight) !== 0 ? selected & ~weight : selected | weight;
+    selectState(next);
+    onHover(next);
   };
 
   return (
     <div
+      className="theory-generation-surface"
       style={{
         width: "100%",
-        maxWidth: mode === "generation" ? 760 : 620,
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
@@ -81,9 +86,9 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
       }}
     >
       {mode !== "toggle" && (
-        <div className="theory-generation" data-testid="primary-generation">
+        <div className={`theory-generation${diagram ? " theory-generation-with-diagram" : ""}`} data-testid="primary-generation">
           <div className="theory-generation-builder">
-            <h4 className="theory-generation-heading">{t("theory_generation_select")}</h4>
+            <div className="theory-generation-heading">{t("theory_generation_select")}</div>
             <div role="group" aria-label={t("theory_generation_select_aria")} className="theory-generation-inputs">
               {CHANNELS.map(({ channel }) => {
                 const level = CHROMALUM_GRB_WEIGHTS[channel];
@@ -94,7 +99,9 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
                     key={channel}
                     type="button"
                     className="theory-generation-primary"
+                    data-highlighted={hlLevel === level}
                     aria-pressed={active}
+                    aria-controls={resultId}
                     aria-label={t("theory_generation_primary_aria", channel, info.bits.join(""), level)}
                     onClick={() => toggleGenerator(channel)}
                     onMouseEnter={() => onHover(level)}
@@ -110,20 +117,23 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
                       </span>
                     </span>
                     <span className="theory-generation-primary-bits">
-                      {info.bits.join("")} · {level}
+                      {info.bits.join("")}·{level}
                     </span>
                   </button>
                 );
               })}
             </div>
-            <div data-testid="generation-equation" className="theory-generation-result" role="status" aria-live="polite" aria-atomic="true">
-              <span
-                className="theory-generation-preview"
-                style={{ background: selectedInfo.color }}
-                onMouseEnter={() => onHover(selected)}
-                onMouseLeave={() => onHover(null)}
-                aria-hidden="true"
-              />
+            <div
+              id={resultId}
+              data-testid="generation-equation"
+              className="theory-generation-result"
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              onMouseEnter={() => onHover(selected)}
+              onMouseLeave={() => onHover(null)}
+            >
+              <span className="theory-generation-preview" style={{ background: selectedInfo.color }} aria-hidden="true" />
               <div>
                 <div className="theory-generation-result-label">{t("theory_generation_result")}</div>
                 <div className="theory-generation-result-value" data-generation-result={selected}>
@@ -142,8 +152,9 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
               </div>
             </div>
           </div>
+          {diagram && <div className="theory-generation-diagram">{diagram({ selectedLevel: selected, onSelect: selectState })}</div>}
           <div className="theory-generation-states">
-            <h5 className="theory-generation-heading">{t("theory_generation_states_title")}</h5>
+            <div className="theory-generation-heading">{t("theory_generation_states_title")}</div>
             <p className="theory-generation-state-hint">{t("theory_generation_states_hint")}</p>
             <div
               data-testid="generation-layers"
@@ -152,8 +163,7 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
               className="theory-generation-layers"
             >
               {GENERATION_LAYERS.map(({ count, levels }) => (
-                <div key={count} className="theory-generation-layer">
-                  <span className="theory-generation-count">{t(`theory_generation_layer_${count}`)}</span>
+                <div key={count} className="theory-generation-layer" role="group" aria-label={t(`theory_generation_layer_${count}`)}>
                   <div className="theory-generation-layer-states">
                     {levels.map((level) => {
                       const info = THEORY_LEVELS[level];
@@ -165,9 +175,13 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
                           data-level={level}
                           data-highlighted={hlLevel === level}
                           aria-pressed={selected === level}
+                          aria-controls={resultId}
                           aria-label={t("theory_generation_state_aria", info.short, info.bits.join(""))}
                           style={{ gridColumn: levels.length === 1 ? 2 : undefined }}
-                          onClick={() => setSelected(level)}
+                          onClick={() => {
+                            selectState(level);
+                            onHover(level);
+                          }}
                           onMouseEnter={() => onHover(level)}
                           onMouseLeave={() => onHover(null)}
                           onFocus={() => onHover(level)}
@@ -191,7 +205,7 @@ export const PrimaryGeneration = React.memo(function PrimaryGeneration({ hlLevel
 
       {mode !== "generation" && (
         <div style={S_CARD}>
-          <h4 style={S_LABEL}>{t("theory_toggle_title")}</h4>
+          <div style={S_LABEL}>{t("theory_toggle_title")}</div>
 
           <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md }}>
             <div style={{ color: C.textDimmer, fontFamily: FONT.mono, fontSize: FS.xs }}>{t("theory_toggle_state")}</div>

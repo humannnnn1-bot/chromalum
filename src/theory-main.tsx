@@ -12,11 +12,7 @@ const S_DEV_HEADER: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   justifyContent: "space-between",
-  width: "100%",
-  maxWidth: 560,
-  boxSizing: "border-box",
-  margin: "0 auto",
-  padding: "10px 12px 4px",
+  padding: "10px 6px 4px",
   color: C.textDimmer,
   fontFamily: FONT.mono,
   fontSize: FS.sm,
@@ -58,7 +54,7 @@ function TheoryDevelopmentApp() {
 
   return (
     <main>
-      <header style={S_DEV_HEADER}>
+      <header className="theory-dev-header" style={S_DEV_HEADER}>
         <span>THEORY DEVELOPMENT</span>
         <LanguageSwitcher />
       </header>

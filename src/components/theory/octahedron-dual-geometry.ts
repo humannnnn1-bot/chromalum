@@ -2,18 +2,12 @@ import { CUBE_EDGES, OCTA_COMPLEMENT_AXES, OCTA_EDGES, OCTA_FACES, THEORY_LEVELS
 
 type Point3D = readonly [number, number, number];
 
-// A rigid rotation puts R above C, with M/Y above B/G around that axis.
-// The slight tilt keeps all eight triangles readable.
-const YAW = (40 * Math.PI) / 180;
-const PITCH = (28 * Math.PI) / 180;
+// Look straight at the CMY face, with the opposite GRB face behind it.
+// Their projections are two equilateral triangles, with R above C and
+// M/Y and B/G mirrored across that vertical axis.
 export const DUAL_CUBE_VERTICES: readonly Point3D[] = THEORY_LEVELS.map(({ bits }) => {
   const [g, r, b] = bits.map((bit) => bit - 0.5);
-  const [vertical, horizontal, depth] = [r, -b, -g];
-  return [
-    Math.cos(YAW) * horizontal - Math.sin(YAW) * depth,
-    -Math.cos(PITCH) * vertical - Math.sin(PITCH) * (Math.sin(YAW) * horizontal + Math.cos(YAW) * depth),
-    -Math.sin(PITCH) * vertical + Math.cos(PITCH) * (Math.sin(YAW) * horizontal + Math.cos(YAW) * depth),
-  ];
+  return [(g - b) / Math.SQRT2, (g + b - 2 * r) / Math.sqrt(6), -(g + r + b) / Math.sqrt(3)];
 });
 
 function centroid(points: readonly Point3D[]): Point3D {

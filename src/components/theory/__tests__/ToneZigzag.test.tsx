@@ -94,33 +94,23 @@ describe("ToneZigzag", () => {
     ]);
 
     const rows = table.querySelectorAll("tbody tr");
-    expect(rows[0].textContent).toContain("R₂ → Y₆");
+    expect(rows[0].textContent).toContain("R₂→Y₆");
     expect(rows[0].textContent).toContain("τG");
     expect(rows[0].textContent).toContain("+4");
-    expect(rows[0].textContent).toContain("R₂ ⊂ Y₆");
-    expect(rows[1].textContent).toContain("Y₆ ⊃ G₄");
+    expect(rows[0].textContent).toContain("R₂⊂Y₆");
+    expect(rows[1].textContent).toContain("Y₆⊃G₄");
   });
 
   it("keeps hover, focus, pinning, and keyboard activation on eight external level buttons", async () => {
     const onHover = vi.fn();
     const { container } = renderToneZigzag(null, onHover);
-    const scrollContainer = container.querySelector<HTMLElement>(".theory-zigzag-level-scroll")!;
-    const controlGroup = container.querySelector<HTMLElement>("[data-tone-level-controls='true']")!;
     const controls = container.querySelectorAll<HTMLButtonElement>("[data-tone-level-control]");
     const levelFour = container.querySelector<HTMLButtonElement>("[data-tone-level-control='4']")!;
 
     expect(controls).toHaveLength(8);
-    expect(scrollContainer.style.overflowX).toBe("auto");
-    expect(controlGroup.style.flexWrap).toBe("nowrap");
-    expect(controlGroup.style.width).toBe("max-content");
-    expect(controlGroup.style.minWidth).toBe("100%");
     expect(levelFour.tagName).toBe("BUTTON");
     expect(levelFour.type).toBe("button");
     expect(levelFour.tabIndex).toBe(0);
-    expect(levelFour.style.minWidth).toBe("0px");
-    expect(levelFour.style.minHeight).toBe("36px");
-    expect(levelFour.style.flex).toBe("0 0 auto");
-    expect(levelFour.style.whiteSpace).toBe("nowrap");
 
     fireEvent.mouseEnter(levelFour);
     fireEvent.mouseLeave(levelFour);

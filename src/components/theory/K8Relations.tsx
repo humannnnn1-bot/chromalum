@@ -1,93 +1,139 @@
 import React from "react";
 import { THEORY_LEVELS, hammingDist } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
+import { toggleFactorLabel } from "./CayleyTable";
+import { targetMask, targetState, type K8Target } from "./k8-selection";
 
-function ColorLabel({ level }: { level: number }) {
-  const color = THEORY_LEVELS[level];
+function StateValue({ level }: { level: number | null }) {
+  const color = level === null ? null : THEORY_LEVELS[level];
   return (
-    <span className="theory-k8-color-label">
-      <i style={{ background: color.color }} aria-hidden="true" />
-      <span>
-        {color.short} <code>{color.bits.join("")}</code>
-      </span>
-    </span>
+    <dd>
+      <strong>{color === null ? "—" : color.bits.join("")}</strong>
+      <small>
+        {color === null ? (
+          "—"
+        ) : (
+          <>
+            <i style={{ background: color.color }} aria-hidden="true" />
+            {color.short} · L{level}
+          </>
+        )}
+      </small>
+    </dd>
   );
 }
 
-export const K8MaskControls = React.memo(function K8MaskControls({
-  distance,
-  selectedMask,
-  onSelect,
+export const K8PairComparison = React.memo(function K8PairComparison({
+  target,
+  hasEdges,
+  pinned,
 }: {
-  distance: 1 | 2;
-  selectedMask: number | null;
-  onSelect: (mask: number) => void;
+  target: K8Target | null;
+  hasEdges: boolean;
+  pinned: boolean;
 }) {
   const { t } = useTranslation();
-  const masks = distance === 1 ? [4, 2, 1] : [3, 5, 6];
+  const a = targetState(target);
+  const mask = targetMask(target);
+  const b = target?.kind === "transition" ? target.state ^ target.mask : null;
+  const distance = mask === null ? null : hammingDist(0, mask);
+  const pair = a !== null && b !== null ? { a, b, mask: a ^ b, distance: hammingDist(a, b), gap: Math.abs(b - a) } : null;
 
   return (
-    <div className="theory-k8-masks">
-      <span id="theory-k8-mask-label">{t("theory_k8_mask_title")}</span>
-      <div role="group" aria-labelledby="theory-k8-mask-label" className="theory-k8-mask-buttons">
-        {masks.map((mask) => (
-          <button
-            key={mask}
-            type="button"
-            data-k8-mask-control={mask}
-            aria-controls="theory-stella-view"
-            aria-pressed={selectedMask === mask}
-            aria-label={t("theory_k8_mask_aria", THEORY_LEVELS[mask].short, THEORY_LEVELS[mask].bits.join(""))}
-            onClick={() => onSelect(mask)}
-          >
-            <ColorLabel level={mask} />
-          </button>
-        ))}
+    <div
+      className="theory-k8-comparison theory-toggle-readout"
+      data-testid="toggle-action-readout"
+      data-state={a ?? ""}
+      data-mask={mask ?? ""}
+      data-result={b ?? ""}
+      data-pinned={pinned}
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      <dl className="theory-toggle-values">
+        <div>
+          <dt>{t("theory_toggle_table_state_label")}</dt>
+          <StateValue level={a} />
+        </div>
+        <div>
+          <dt>{t("theory_toggle_table_mask_label")}</dt>
+          <dd>
+            <strong>{mask === null ? "—" : THEORY_LEVELS[mask].bits.join("")}</strong>
+            <small>{mask === null ? "—" : toggleFactorLabel(mask)}</small>
+          </dd>
+        </div>
+        <div>
+          <dt>{t("theory_toggle_table_result_label")}</dt>
+          <StateValue level={b} />
+        </div>
+      </dl>
+      <div className="theory-k8-comparison-status" data-testid="stella-comparison-status">
+        <dl className="theory-k8-comparison-metrics">
+          <div>
+            <dt>
+              {t("theory_k8_comparison_distance")}{" "}
+              <code>
+                d<sub>H</sub>
+              </code>
+            </dt>
+            <dd>
+              <strong data-pair-distance={distance ?? undefined}>{distance ?? "—"}</strong>
+              <code>{mask !== null ? `wt(${THEORY_LEVELS[mask].bits.join("")}) = ${distance}` : "\u00a0"}</code>
+            </dd>
+          </div>
+          <div>
+            <dt>
+              {t("theory_k8_comparison_gap")} <code>|ΔL|</code>
+            </dt>
+            <dd>
+              <strong data-pair-gap={pair?.gap}>{pair?.gap ?? "—"}</strong>
+              <code>{pair ? `|${pair.b} − ${pair.a}| = ${pair.gap}` : "\u00a0"}</code>
+            </dd>
+          </div>
+        </dl>
+        <p className={pair ? "theory-k8-comparison-relation" : "theory-k8-comparison-prompt"}>
+          {target?.kind === "mask"
+            ? t(mask === 0 ? "theory_toggle_table_identity" : "theory_toggle_table_matching")
+            : pair
+              ? t(`theory_stella_compare_distance_${pair.distance}`)
+              : !hasEdges
+                ? t("theory_stella_compare_select_distance")
+                : a === null
+                  ? t("theory_stella_compare_select_first")
+                  : t("theory_stella_compare_select_second", THEORY_LEVELS[a].short)}
+        </p>
       </div>
-    </div>
-  );
-});
-
-const COMPARISONS = [
-  [0, 1],
-  [1, 2],
-  [3, 4],
-] as const;
-
-export const K8DistanceComparison = React.memo(function K8DistanceComparison() {
-  const { t } = useTranslation();
-  return (
-    <div className="theory-k8-comparison" data-testid="k8-distance-comparison">
-      <table>
-        <caption>{t("theory_k8_comparison_title")}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{t("theory_k8_comparison_pair")}</th>
-            <th scope="col">
-              {t("theory_k8_comparison_distance")}
-              <code>d_H</code>
-            </th>
-            <th scope="col">
-              {t("theory_k8_comparison_gap")}
-              <code>|ΔL|</code>
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {COMPARISONS.map(([a, b]) => (
-            <tr key={a} data-k8-comparison-pair={`${a}-${b}`}>
-              <th scope="row">
-                <span className="theory-k8-comparison-pair">
-                  <ColorLabel level={a} /> ↔ <ColorLabel level={b} />
+      <div className="theory-k8-comparison-details" role="group" aria-label={t("theory_stella_compare_details")}>
+        <dl>
+          <div>
+            <dt>XOR</dt>
+            <dd>
+              <code>
+                {pair
+                  ? `${THEORY_LEVELS[pair.a].bits.join("")} ⊕ ${THEORY_LEVELS[pair.b].bits.join("")} = ${THEORY_LEVELS[pair.mask].bits.join("")}`
+                  : "—"}
+              </code>
+              {pair && (
+                <span className="theory-k8-xor-color">
+                  <i style={{ background: THEORY_LEVELS[pair.mask].color }} aria-hidden="true" />
+                  {THEORY_LEVELS[pair.mask].short}
                 </span>
-              </th>
-              <td data-pair-distance={hammingDist(a, b)}>{hammingDist(a, b)}</td>
-              <td data-pair-gap={Math.abs(a - b)}>{Math.abs(a - b)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <p className="theory-k8-note">{t("theory_k8_comparison_note")}</p>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt>{t("theory_stella_compare_parity")}</dt>
+            <dd className="theory-k8-parity-values">
+              {[a, b].map((level, index) => {
+                const parity = level === null ? null : hammingDist(0, level) % 2;
+                return <code key={index}>{level === null ? "—" : `π(${THEORY_LEVELS[level].short})=${parity} · T${parity}`}</code>;
+              })}
+            </dd>
+          </div>
+        </dl>
+        <p>{t("theory_stella_compare_parity_note")}</p>
+      </div>
     </div>
   );
 });

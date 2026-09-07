@@ -4,23 +4,23 @@ import { ja } from "../ja";
 
 describe("Theory copy", () => {
   it("states the exact structures carried by the same eight-state set", () => {
-    expect(en.theory_intro).toContain("A=𝒫(E)");
-    expect(en.theory_intro).toContain("S∨T=S∪T");
-    expect(en.theory_intro).toContain("S⊕T=S△T");
-    expect(en.theory_intro).toContain("reduct (A,⊕)");
-    expect(en.theory_intro).toContain("(𝔽₂³,+)");
-    expect(en.theory_intro).toContain("(A,⊕,∧)≅𝔽₂×𝔽₂×𝔽₂");
-    expect(en.theory_intro).toContain("not the field GF(8)");
-    expect(en.theory_intro).toContain("G∧R=K");
+    expect(en.theory_algebra_definition).toContain("A=𝒫(E)");
+    expect(en.theory_algebra_definition).toContain("S∨T=S∪T");
+    expect(en.theory_algebra_definition).toContain("S⊕T=S△T");
+    expect(en.theory_algebra_structures).toContain("reduct (A,⊕)");
+    expect(en.theory_algebra_structures).toContain("(𝔽₂³,+)");
+    expect(en.theory_algebra_structures).toContain("(A,⊕,∧)≅𝔽₂×𝔽₂×𝔽₂");
+    expect(en.theory_algebra_structures).toContain("not the field GF(8)");
+    expect(en.theory_algebra_structures).toContain("e_c∧e_d=K");
 
-    expect(ja.theory_intro).toContain("A=𝒫(E)");
-    expect(ja.theory_intro).toContain("S∨T=S∪T");
-    expect(ja.theory_intro).toContain("S⊕T=S△T");
-    expect(ja.theory_intro).toContain("reduct (A,⊕)");
-    expect(ja.theory_intro).toContain("(𝔽₂³,+)");
-    expect(ja.theory_intro).toContain("(A,⊕,∧) はブール環 𝔽₂×𝔽₂×𝔽₂");
-    expect(ja.theory_intro).toContain("体 GF(8) ではありません");
-    expect(ja.theory_intro).toContain("G∧R=K");
+    expect(ja.theory_algebra_definition).toContain("A=𝒫(E)");
+    expect(ja.theory_algebra_definition).toContain("S∨T=S∪T");
+    expect(ja.theory_algebra_definition).toContain("S⊕T=S△T");
+    expect(ja.theory_algebra_structures).toContain("reduct (A,⊕)");
+    expect(ja.theory_algebra_structures).toContain("(𝔽₂³,+)");
+    expect(ja.theory_algebra_structures).toContain("(A,⊕,∧) はブール環 𝔽₂×𝔽₂×𝔽₂");
+    expect(ja.theory_algebra_structures).toContain("体 GF(8) ではありません");
+    expect(ja.theory_algebra_structures).toContain("e_c∧e_d=K");
   });
 
   it("keeps mathematical weights and conditional color rank distinct in the combined panel", () => {
@@ -40,26 +40,17 @@ describe("Theory copy", () => {
     expect(ja.theory_derivation_convergence_note).toContain("B=1、R=2、G=4という名前付き順位");
   });
 
-  it("makes valuation, XOR correction, and complement mainline consequences", () => {
-    expect(en.theory_valuation_desc).toContain("L(a∨b)+L(a∧b)=L(a)+L(b)");
-    expect(en.theory_valuation_desc).toContain("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
-    expect(en.theory_valuation_desc).toContain("L(b)−L(a)=Σ_{c∈b∖a}w_c>0");
-    expect(en.theory_valuation_desc).toContain("linear extension of Boolean inclusion");
-    expect(en.theory_valuation_desc).toContain("Ω=Σ_{c∈E}w_c=7");
-    expect(en.theory_valuation_desc).toContain("L(¬a)=Ω−L(a)=7−L(a)");
-    expect(en.theory_valuation_xor_note).toContain("doubled intersection");
-    expect(en.theory_valuation_xor_note).toContain("not a homomorphism");
-    expect(en.theory_valuation_complement_note).toContain("K/W, B/Y, R/C, and M/G");
-
-    expect(ja.theory_valuation_desc).toContain("L(a∨b)+L(a∧b)=L(a)+L(b)");
-    expect(ja.theory_valuation_desc).toContain("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
-    expect(ja.theory_valuation_desc).toContain("L(b)−L(a)=Σ_{c∈b∖a}w_c>0");
-    expect(ja.theory_valuation_desc).toContain("linear extension");
-    expect(ja.theory_valuation_desc).toContain("Ω=Σ_{c∈E}w_c=7");
-    expect(ja.theory_valuation_desc).toContain("L(¬a)=Ω−L(a)=7−L(a)");
-    expect(ja.theory_valuation_xor_note).toContain("共通部分の二倍");
-    expect(ja.theory_valuation_xor_note).toContain("群準同型ではありません");
-    expect(ja.theory_valuation_complement_note).toContain("K/W、B/Y、R/C、M/G");
+  it("explains rank correction and complement beside the binary table", () => {
+    expect(en.theory_valuation_modular_note).toContain("L(a)<L(b)");
+    expect(en.theory_valuation_xor_note).toContain("For any two colors a and b");
+    expect(en.theory_valuation_xor_note).toContain("once for OR and twice for XOR");
+    expect(en.theory_valuation_complement_note).toContain("κ=τ_W");
+    expect(en.theory_valuation_complement_note).toContain("7−L");
+    expect(ja.theory_valuation_modular_note).toContain("L(a)<L(b)");
+    expect(ja.theory_valuation_xor_note).toContain("任意の二色a,b");
+    expect(ja.theory_valuation_xor_note).toContain("ORでは一度、XORでは二度");
+    expect(ja.theory_valuation_complement_note).toContain("κ=τ_W");
+    expect(ja.theory_valuation_complement_note).toContain("7−L");
   });
 
   it("states the exact Fano-Hamming incidence correspondence", () => {
@@ -103,9 +94,8 @@ describe("Theory copy", () => {
     expect(ja.theory_dice_net_desc).toContain("五つの接続を保って");
     expect(ja.theory_dice_net_desc).toContain("正方形を重ねずに");
     for (const copy of [en, ja]) {
-      expect(copy.theory_dice_net_desc).toContain("R→Y→G→C→B→M");
       expect(copy.theory_dice_net_desc).not.toContain("ΔL");
-      for (const formula of ["L(κ(c))=7−L(c)", "(R₂,C₅)", "(Y₆,B₁)", "(G₄,M₃)"]) {
+      for (const formula of ["L(κ(c))=7−L(c)", "L(c)+L(κ(c))=7"]) {
         expect(copy.theory_dice_desc2).toContain(formula);
       }
     }
@@ -120,12 +110,12 @@ describe("Theory copy", () => {
     expect(en.theory_zigzag_desc).toContain("κ̄(x)=1−x");
     expect(en.theory_zigzag_desc).toContain("T(h+1/2)=1−T(h)");
     expect(en.theory_zigzag_desc).toContain("1,3,3,3,3,1");
-    expect(en.theory_zigzag_desc).toContain("23456545432123");
+    expect(en.theory_zigzag_desc).toContain("N(7−ℓ)=N(ℓ)");
     expect(en.theory_zigzag_desc).toContain("four preimages");
     expect(en.theory_zigzag_desc).toContain("|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}");
-    expect(en.theory_zigzag_desc).toContain("(4,2,1,4,2,1)");
+    expect(en.theory_zigzag_desc).toContain("ΣᵢΔLᵢ=0");
     expect(en.theory_zigzag_desc).toContain("The sign gives the direction of inclusion");
-    expect(en.theory_zigzag_desc).toContain("absolute-value sequence");
+    expect(en.theory_zigzag_desc).toContain("weight of the toggled primary");
 
     expect(ja.theory_zigzag_desc).toContain("ι:A→{0,1}³⊂ℝ³");
     expect(ja.theory_zigzag_desc).toContain("γᵢ(u)=(1−u)ι(cᵢ)+uι(cᵢ₊₁)");
@@ -133,19 +123,20 @@ describe("Theory copy", () => {
     expect(ja.theory_zigzag_desc).toContain("κ̄(x)=1−x");
     expect(ja.theory_zigzag_desc).toContain("T(h+1/2)=1−T(h)");
     expect(ja.theory_zigzag_desc).toContain("1,3,3,3,3,1");
-    expect(ja.theory_zigzag_desc).toContain("23456545432123");
+    expect(ja.theory_zigzag_desc).toContain("N(7−ℓ)=N(ℓ)");
     expect(ja.theory_zigzag_desc).toContain("交点数が4");
     expect(ja.theory_zigzag_desc).toContain("|ΔLᵢ|=|L(cᵢ₊₁)−L(cᵢ)|=L(cᵢ⊕cᵢ₊₁)∈{4,2,1}");
-    expect(ja.theory_zigzag_desc).toContain("(4,2,1,4,2,1)");
+    expect(ja.theory_zigzag_desc).toContain("ΣᵢΔLᵢ=0");
     expect(ja.theory_zigzag_desc).toContain("符号は包含の向き");
-    expect(ja.theory_zigzag_desc).toContain("絶対値列");
+    expect(ja.theory_zigzag_desc).toContain("絶対値は反転する原色の重み");
   });
 
   it("states the subgroup, coset, and dual-octahedron structures exactly", () => {
     expect(en.theory_stella_desc).toContain("T0=ker π={K,M,C,Y}");
     expect(en.theory_stella_desc).toContain("Klein four-group V₄");
-    expect(en.theory_stella_desc).toContain("T1=B⊕T0={B,R,G,W}");
+    expect(en.theory_stella_desc).toContain("T1={x∈A | π(x)=1}={B,R,G,W}");
     expect(en.theory_stella_desc).toContain("unique nontrivial coset");
+    expect(en.theory_stella_desc).toContain("T1=t⊕T0 for every t∈T1");
     expect(en.theory_stella_desc).toContain("Their compound in the same cube arrangement is called the Color Star (Stella Octangula)");
     expect(en.theory_stella_toggle_desc).toContain("preserve parity and move within the same tetrahedron");
     expect(en.theory_stella_toggle_desc).toContain("¬T0=T1");
@@ -158,8 +149,9 @@ describe("Theory copy", () => {
 
     expect(ja.theory_stella_desc).toContain("T0=ker π={K,M,C,Y}");
     expect(ja.theory_stella_desc).toContain("クライン四群V₄");
-    expect(ja.theory_stella_desc).toContain("T1=B⊕T0={B,R,G,W}");
+    expect(ja.theory_stella_desc).toContain("T1={x∈A | π(x)=1}={B,R,G,W}");
     expect(ja.theory_stella_desc).toContain("剰余類");
+    expect(ja.theory_stella_desc).toContain("任意のt∈T1に対してT1=t⊕T0");
     expect(ja.theory_stella_desc).toContain("同じ立方体配置で二つを重ねたものを、カラースター（星形八面体）と呼びます");
     expect(ja.theory_stella_toggle_desc).toContain("偶奇を保ち、同じテトラの中を移動");
     expect(ja.theory_stella_toggle_desc).toContain("¬T0=T1");
@@ -204,6 +196,7 @@ describe("Theory copy", () => {
       "theory_dice_desc3",
       "theory_dice_hint",
       "theory_scope_desc",
+      "theory_conn_boundary_title",
     ];
     for (const key of removedKeys) {
       expect(key in en).toBe(false);

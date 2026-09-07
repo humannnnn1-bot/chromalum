@@ -1,272 +1,193 @@
-import React, { useState, useCallback } from "react";
+import React, { useState } from "react";
 import { THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, FW, FONT } from "../../styles/tokens";
-import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
+import { targetMask, targetState, type K8Selection, type K8Target } from "./k8-selection";
 
-const CELL = 42;
-const HDR = 48;
-const GAP = 1;
-const DOT_R = 12;
-const N = 8;
-const SVG_W = HDR + N * (CELL + GAP);
-const SVG_H = HDR + N * (CELL + GAP);
-
-function bitLabel(lv: number): string {
-  return THEORY_LEVELS[lv].bits.join("");
+export function toggleFactorLabel(mask: number): string {
+  return mask === 0
+    ? "id"
+    : ["G", "R", "B"]
+        .filter((_, index) => THEORY_LEVELS[mask].bits[index] === 1)
+        .map((channel) => `τ${channel}`)
+        .join("");
 }
 
-function toggleFactorLabel(lv: number): string {
-  if (lv === 0) return "id";
-  return ["G", "R", "B"]
-    .filter((_, index) => THEORY_LEVELS[lv].bits[index] === 1)
-    .map((channel) => `τ${channel}`)
-    .join("");
+function matchesCell(target: K8Target | null, state: number, mask: number) {
+  if (target?.kind === "mask") return target.mask === mask;
+  return target?.kind === "transition" && target.mask === mask && (target.state === state || (target.state ^ mask) === state);
 }
 
-interface Props {
-  hlLevel: number | null;
-  onHover: (lv: number | null) => void;
-}
-
-export const CayleyTable = React.memo(function CayleyTable({ hlLevel, onHover }: Props) {
+export const CayleyTable = React.memo(function CayleyTable({ link, hlLevel }: { link: K8Selection; hlLevel: number | null }) {
   const { t } = useTranslation();
-  const [hoverCell, setHoverCell] = useState<{ r: number; c: number } | null>(null);
+  const [tabCell, setTabCell] = useState({ row: 0, mask: 0 });
+  const activeRow = targetState(link.readout);
+  const activeMask = targetMask(link.readout);
+  const activeResult = link.readout?.kind === "transition" ? link.readout.state ^ link.readout.mask : null;
+  const selectedRow = targetState(link.selection);
+  const enabledMasks = THEORY_LEVELS.map((info) => info.lv).filter(link.canSelectMask);
+  const tabMask = enabledMasks.includes(tabCell.mask) ? tabCell.mask : enabledMasks[0];
 
-  const onCellEnter = useCallback(
-    (r: number, c: number) => {
-      setHoverCell({ r, c });
-      onHover(r ^ c);
+  const previewHandlers = (target: K8Target) => ({
+    onPointerEnter: (event: React.PointerEvent) => {
+      if (event.pointerType !== "touch") link.onPreview(target, "table", "hover");
     },
-    [onHover],
-  );
-  const onCellLeave = useCallback(() => {
-    setHoverCell(null);
-    onHover(null);
-  }, [onHover]);
+    onPointerLeave: (event: React.PointerEvent) => {
+      if (event.pointerType !== "touch") link.onPreview(null, "table", "hover");
+    },
+    onFocus: () => link.onPreview(target, "table", "focus"),
+    onBlur: () => link.onPreview(null, "table", "focus"),
+  });
 
-  // External highlight: find cells whose result matches hlLevel
-  const hlResult = hlLevel !== null && hlLevel >= 0 && hlLevel <= 7 ? hlLevel : null;
-
-  const cellX = (col: number) => HDR + col * (CELL + GAP);
-  const cellY = (row: number) => HDR + row * (CELL + GAP);
+  const moveFocus = (event: React.KeyboardEvent<HTMLButtonElement>, row: number, mask: number) => {
+    let nextRow = row;
+    let nextMask = mask;
+    const index = enabledMasks.indexOf(mask);
+    switch (event.key) {
+      case "ArrowUp":
+        nextRow = Math.max(0, row - 1);
+        break;
+      case "ArrowDown":
+        nextRow = Math.min(7, row + 1);
+        break;
+      case "ArrowLeft":
+        nextMask = enabledMasks[Math.max(0, index - 1)];
+        break;
+      case "ArrowRight":
+        nextMask = enabledMasks[Math.min(enabledMasks.length - 1, index + 1)];
+        break;
+      case "Home":
+        nextMask = enabledMasks[0];
+        if (event.ctrlKey) nextRow = 0;
+        break;
+      case "End":
+        nextMask = enabledMasks[enabledMasks.length - 1];
+        if (event.ctrlKey) nextRow = 7;
+        break;
+      default:
+        return;
+    }
+    event.preventDefault();
+    event.currentTarget.closest("table")?.querySelector<HTMLButtonElement>(`[data-row="${nextRow}"][data-mask="${nextMask}"]`)?.focus();
+  };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-      <div style={{ width: "100%", overflowX: "auto", paddingBottom: 2 }}>
-        <div style={{ width: SVG_W + 18, margin: "0 auto" }}>
-          <div style={{ marginLeft: HDR + 18, fontSize: FS.sm, fontFamily: FONT.mono, color: C.accentBright, textAlign: "center" }}>
-            {t("theory_toggle_table_mask_axis")}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: `18px ${SVG_W}px`, alignItems: "center" }}>
-            <div
-              style={{
-                writingMode: "vertical-rl",
-                transform: "rotate(180deg)",
-                fontSize: FS.sm,
-                fontFamily: FONT.mono,
-                color: C.accentBright,
-                textAlign: "center",
-              }}
-            >
-              {t("theory_toggle_table_state_axis")}
-            </div>
-            <svg
-              viewBox={`0 0 ${SVG_W} ${SVG_H}`}
-              style={{ width: SVG_W, height: SVG_H, display: "block" }}
-              role="img"
-              aria-label={t("theory_toggle_table_aria")}
-            >
-              {/* XOR symbol in corner */}
-              <text
-                x={HDR / 2}
-                y={HDR / 2}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={FS.lg}
-                fontFamily="var(--font-mono)"
-                fontWeight={FW.bold}
-                fill={C.textMuted}
-              >
-                {"\u2295"}
-              </text>
-
-              {/* Column headers are toggle masks, not color-state operands. */}
-              {THEORY_LEVELS.map((lv, ci) => {
-                const x = cellX(ci) + CELL / 2;
-                const isHlCol = hoverCell?.c === ci;
+    <div className="theory-cayley">
+      <div className="theory-cayley-axes">
+        <span>{t("theory_toggle_table_state_axis")} ↓</span>
+        <span>{t("theory_toggle_table_mask_axis")} →</span>
+      </div>
+      <table id="theory-cayley-table" className="theory-cayley-table" aria-label={t("theory_toggle_table_aria")}>
+        <thead>
+          <tr>
+            <th scope="col" className="theory-cayley-corner">
+              ⊕
+            </th>
+            {THEORY_LEVELS.map((info) => {
+              const enabled = link.canSelectMask(info.lv);
+              return (
+                <th
+                  key={info.lv}
+                  scope="col"
+                  data-column-mask={info.lv}
+                  data-active={activeMask === info.lv}
+                  data-enabled={enabled}
+                  style={{ "--theory-mask-color": info.lv === 0 ? "#a3aec5" : info.color } as React.CSSProperties}
+                  aria-label={t("theory_toggle_table_mask_aria", info.bits.join(""), toggleFactorLabel(info.lv))}
+                >
+                  <button
+                    type="button"
+                    data-toggle-mask={info.lv}
+                    data-active={activeMask === info.lv}
+                    aria-label={t("theory_toggle_table_mask_aria", info.bits.join(""), toggleFactorLabel(info.lv))}
+                    aria-pressed={link.selection?.kind === "mask" && link.selection.mask === info.lv}
+                    aria-disabled={!enabled || undefined}
+                    tabIndex={enabled ? 0 : -1}
+                    title={`${info.bits.join("")} · ${toggleFactorLabel(info.lv)}`}
+                    {...previewHandlers({ kind: "mask", mask: info.lv })}
+                    onClick={() => link.select({ kind: "mask", mask: info.lv })}
+                  >
+                    <span>{info.bits.join("")}</span>
+                    <i style={{ background: info.lv === 0 ? "#78819b" : info.color }} aria-hidden="true" />
+                  </button>
+                </th>
+              );
+            })}
+          </tr>
+        </thead>
+        <tbody>
+          {THEORY_LEVELS.map((rowInfo) => (
+            <tr key={rowInfo.lv} data-row-state={rowInfo.lv}>
+              <th scope="row">
+                <button
+                  type="button"
+                  data-toggle-state={rowInfo.lv}
+                  data-active={activeRow === rowInfo.lv || activeResult === rowInfo.lv}
+                  aria-pressed={selectedRow === rowInfo.lv}
+                  aria-disabled={enabledMasks.length === 0 || undefined}
+                  tabIndex={enabledMasks.length ? 0 : -1}
+                  aria-label={t("theory_toggle_table_state_aria", rowInfo.short, rowInfo.bits.join(""), rowInfo.lv)}
+                  {...previewHandlers({ kind: "state", state: rowInfo.lv })}
+                  onClick={() => link.select({ kind: "state", state: rowInfo.lv })}
+                >
+                  <span>{rowInfo.bits.join("")}</span>
+                  <small>
+                    <i style={{ background: rowInfo.color }} aria-hidden="true" />
+                    {rowInfo.short}
+                    <sub>{rowInfo.lv}</sub>
+                  </small>
+                </button>
+              </th>
+              {THEORY_LEVELS.map((maskInfo) => {
+                const row = rowInfo.lv;
+                const mask = maskInfo.lv;
+                const result = row ^ mask;
+                const info = THEORY_LEVELS[result];
+                const enabled = link.canSelectMask(mask);
+                const active = matchesCell(link.readout, row, mask);
+                const selected = link.selection?.kind === "transition" && link.selection.state === row && link.selection.mask === mask;
+                const onAxis = enabled && (activeRow === row || activeResult === row || activeMask === mask);
+                const dim = !enabled || (link.readout !== null ? !onAxis : hlLevel !== null && result !== hlLevel);
                 return (
-                  <g key={"ch" + ci} data-column-mask={ci}>
-                    <circle
-                      cx={x}
-                      cy={17}
-                      r={DOT_R + 2}
-                      fill={C.bgInput}
-                      fillOpacity={isHlCol ? 0.9 : 0.6}
-                      stroke={isHlCol ? "#fff" : lv.color}
-                      strokeWidth={isHlCol ? 2 : 1}
-                    />
-                    <text
-                      x={x}
-                      y={17}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fontSize={FS.xs}
-                      fontWeight={FW.bold}
-                      fontFamily="var(--font-mono)"
-                      fill={lv.lv === 0 ? C.textDimmer : lv.color}
-                    >
-                      {bitLabel(lv.lv)}
-                    </text>
-                    <text x={x} y={39} textAnchor="middle" fontSize={FS.xxs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-                      {toggleFactorLabel(lv.lv)}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Row headers are the current color states. */}
-              {THEORY_LEVELS.map((lv, ri) => {
-                const y = cellY(ri) + CELL / 2;
-                const isHlRow = hoverCell?.r === ri;
-                return (
-                  <g key={"rh" + ri} data-row-state={ri}>
-                    <circle
-                      cx={17}
-                      cy={y}
-                      r={DOT_R + 2}
-                      fill={lv.lv === 0 ? C.bgRoot : lv.color}
-                      fillOpacity={isHlRow ? 0.9 : 0.6}
-                      stroke={isHlRow ? "#fff" : lv.color}
-                      strokeWidth={isHlRow ? 2 : 1}
-                    />
-                    <text
-                      x={17}
-                      y={y}
-                      textAnchor="middle"
-                      dominantBaseline="central"
-                      fontSize={FS.xs}
-                      fontWeight={FW.bold}
-                      fontFamily="var(--font-mono)"
-                      fill={lv.lv >= 4 ? "#000" : "#fff"}
-                    >
-                      {bitLabel(lv.lv)}
-                    </text>
-                    <text x={40} y={y + 2} textAnchor="middle" fontSize={FS.xxs} fontFamily="var(--font-mono)" fill={C.textDimmer}>
-                      {lv.short}·L{lv.lv}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Cells */}
-              {THEORY_LEVELS.map((_, ri) =>
-                THEORY_LEVELS.map((__, ci) => {
-                  const result = ri ^ ci;
-                  const info = THEORY_LEVELS[result];
-                  const x = cellX(ci);
-                  const y = cellY(ri);
-                  const cx = x + CELL / 2;
-                  const cy = y + CELL / 2;
-
-                  const isHoverRow = hoverCell?.r === ri;
-                  const isHoverCol = hoverCell?.c === ci;
-                  const isHoverCell = isHoverRow && isHoverCol;
-                  const isRowOrCol = isHoverRow || isHoverCol;
-                  const isDiag = ri === ci; // a⊕a=0
-                  const isHlMatch = hlResult !== null && result === hlResult;
-
-                  // Dim cells not in the hovered row/col
-                  const anyHover = hoverCell !== null;
-                  const anyHl = hlResult !== null;
-                  const dim = (anyHover && !isRowOrCol) || (anyHl && !anyHover && !isHlMatch);
-
-                  const bgOpacity = isHoverCell ? 0.25 : isRowOrCol ? 0.1 : isDiag ? 0.04 : 0.03;
-
-                  const dotOpacity = dim ? 0.12 : isHoverCell ? 1 : isRowOrCol || isHlMatch ? 0.85 : 0.55;
-                  const dotR = isHoverCell ? DOT_R + 2 : DOT_R - 2;
-
-                  return (
-                    <g
-                      key={`c${ri}_${ci}`}
-                      data-row={ri}
-                      data-mask={ci}
+                  <td key={mask} style={{ "--theory-mask-color": mask === 0 ? "#a3aec5" : maskInfo.color } as React.CSSProperties}>
+                    <button
+                      type="button"
+                      data-row={row}
+                      data-mask={mask}
                       data-result={result}
+                      data-active={active}
+                      data-axis={onAxis}
+                      data-preview={enabled && !active && matchesCell(link.preview, row, mask)}
+                      data-dimmed={dim}
+                      aria-pressed={selected}
+                      aria-disabled={!enabled || undefined}
                       aria-label={t(
                         "theory_toggle_table_cell",
-                        THEORY_LEVELS[ri].name,
-                        bitLabel(ri),
-                        bitLabel(ci),
-                        toggleFactorLabel(ci),
+                        rowInfo.name,
+                        rowInfo.bits.join(""),
+                        maskInfo.bits.join(""),
+                        toggleFactorLabel(mask),
                         info.name,
-                        bitLabel(result),
+                        info.bits.join(""),
                       )}
-                      onMouseEnter={() => onCellEnter(ri, ci)}
-                      onMouseLeave={onCellLeave}
-                      style={S_CURSOR_POINTER}
+                      tabIndex={tabCell.row === row && tabMask === mask ? 0 : -1}
+                      {...previewHandlers({ kind: "transition", state: row, mask })}
+                      onFocus={() => {
+                        setTabCell({ row, mask });
+                        link.onPreview({ kind: "transition", state: row, mask }, "table", "focus");
+                      }}
+                      onClick={() => link.select({ kind: "transition", state: row, mask })}
+                      onKeyDown={(event) => moveFocus(event, row, mask)}
                     >
-                      {/* Cell background */}
-                      <rect
-                        x={x}
-                        y={y}
-                        width={CELL}
-                        height={CELL}
-                        rx={3}
-                        fill={isDiag ? "rgba(255,255,255,0.03)" : info.color}
-                        fillOpacity={bgOpacity}
-                        stroke={isHoverCell ? "rgba(255,255,255,0.5)" : isDiag ? "rgba(255,255,255,0.06)" : "transparent"}
-                        strokeWidth={isHoverCell ? 1.5 : 0.5}
-                      />
-                      {/* Result dot */}
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={dotR}
-                        fill={result === 0 ? C.bgRoot : info.color}
-                        fillOpacity={dotOpacity}
-                        stroke={result === 0 ? C.textDimmer : info.color}
-                        strokeWidth={result === 0 ? 0.8 : 0}
-                      />
-                      <text
-                        x={cx}
-                        y={cy}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize={FS.xs}
-                        fontWeight={FW.bold}
-                        fontFamily="var(--font-mono)"
-                        fill={result === 0 ? C.textDimmer : result >= 4 ? "#000" : "#fff"}
-                        opacity={dotOpacity}
-                      >
-                        {bitLabel(result)}
-                      </text>
-                    </g>
-                  );
-                }),
-              )}
-            </svg>
-          </div>
-        </div>
-      </div>
-      <div style={{ fontSize: FS.sm, fontFamily: FONT.mono, color: C.textMuted, textAlign: "center", minHeight: "1.2em", marginTop: 2 }}>
-        {hoverCell
-          ? (() => {
-              const row = THEORY_LEVELS[hoverCell.r];
-              const col = THEORY_LEVELS[hoverCell.c];
-              const resultLv = hoverCell.r ^ hoverCell.c;
-              const result = THEORY_LEVELS[resultLv];
-              return (
-                <>
-                  {row.name} {bitLabel(row.lv)}{" "}
-                  <span style={{ color: C.accentBright }}>
-                    ── {bitLabel(col.lv)} ({toggleFactorLabel(col.lv)}) ──▶
-                  </span>{" "}
-                  {result.name} {bitLabel(result.lv)}
-                </>
-              );
-            })()
-          : t("theory_toggle_table_hint")}
-      </div>
+                      <span>{info.bits.join("")}</span>
+                      <i style={{ background: info.color }} aria-hidden="true" />
+                    </button>
+                  </td>
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 });

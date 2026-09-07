@@ -14,6 +14,39 @@ function renderWithLanguage(hlLevel: number | null = null) {
 }
 
 describe("ColorCube", () => {
+  it("previews each complete face and retains a selected face across previews and projections", () => {
+    const { container } = renderWithLanguage();
+    const surface = container.querySelector(".theory-cube")!;
+    const cube = screen.getByRole("group", { name: "Color Cube" });
+    const faces = [...container.querySelectorAll<HTMLButtonElement>("[data-cube-face]")];
+    expect(faces.map((face) => face.dataset.cubeFace)).toEqual(["G-0", "G-1", "R-0", "R-1", "B-0", "B-1"]);
+    for (const [index, face] of faces.entries()) {
+      fireEvent.mouseEnter(face);
+      const weight = [4, 2, 1][Math.floor(index / 2)];
+      const expectedVertices = Array.from({ length: 8 }, (_, lv) => lv).filter((lv) => Number((lv & weight) !== 0) === index % 2);
+      expect([...cube.querySelectorAll('[data-cube-vertex-active="true"]')].map((node) => Number(node.getAttribute("data-level")))).toEqual(
+        expectedVertices,
+      );
+      expect(cube.querySelectorAll('[data-cube-active="true"]')).toHaveLength(4);
+      fireEvent.mouseLeave(face);
+      expect(cube.querySelectorAll('[data-cube-active="true"]')).toHaveLength(0);
+    }
+    fireEvent.click(faces[0]);
+    fireEvent.mouseLeave(faces[0]);
+    expect(surface.getAttribute("data-selected-face")).toBe("G-0");
+    fireEvent.mouseEnter(faces[5]);
+    expect(surface.getAttribute("data-active-face")).toBe("B-1");
+    expect(surface.getAttribute("data-selected-face")).toBe("G-0");
+    fireEvent.mouseLeave(faces[5]);
+    expect(surface.getAttribute("data-active-face")).toBe("G-0");
+    fireEvent.click(screen.getByRole("button", { name: "Hasse" }));
+    expect(surface.getAttribute("data-active-face")).toBe("G-0");
+    expect(cube.querySelectorAll('[data-cube-active="true"]')).toHaveLength(4);
+    fireEvent.keyDown(faces[0], { key: "Escape" });
+    expect(surface.getAttribute("data-selected-face")).toBeNull();
+    expect(cube.querySelectorAll('[data-cube-active="true"]')).toHaveLength(0);
+  });
+
   it("shows the whole cube by default and toggles the three incident edges across projections", () => {
     const { container } = renderWithLanguage();
     const cube = screen.getByRole("group", { name: "Color Cube" });

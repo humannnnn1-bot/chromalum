@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from "react";
 import { DICE_NET_FACES, THEORY_LEVELS } from "../../data/theory-data";
-import { C, FS, SP, FONT } from "../../styles/tokens";
+import { C, FONT } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { usePinReset } from "./pin-reset";
 import { useTranslation } from "../../i18n";
@@ -31,6 +31,17 @@ function rotateNetPoint(x: number, y: number): { x: number; y: number } {
     y: NET_Y_OFFSET + (-x + y) / Math.SQRT2,
   };
 }
+
+const NET_FACES = DICE_NET_FACES.map(({ lv, col, row }) => {
+  const center = rotateNetPoint((col + 0.5) * NET_CELL, (row + 0.5) * NET_CELL);
+  const points = [
+    `${center.x},${center.y - NET_DIAMOND_HALF}`,
+    `${center.x + NET_DIAMOND_HALF},${center.y}`,
+    `${center.x},${center.y + NET_DIAMOND_HALF}`,
+    `${center.x - NET_DIAMOND_HALF},${center.y}`,
+  ].join(" ");
+  return { lv, center, points };
+});
 
 // Color abbreviations
 const ABBR: Record<number, string> = { 0: "K", 1: "B", 2: "R", 3: "M", 4: "G", 5: "C", 6: "Y", 7: "W" };
@@ -71,10 +82,16 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
   const hl = hlLevel !== null && hlLevel >= 1 && hlLevel <= 6 ? hlLevel : pinned;
 
   return (
-    <div data-testid="hue-order-net" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SP.md, width: "100%" }}>
+    <div data-testid="hue-order-net" className="theory-die-net">
       <p
-        className="theory-annotation"
-        style={{ margin: 0, fontFamily: FONT.mono, fontSize: FS.md, color: C.textMuted, textAlign: "center" }}
+        className="theory-annotation theory-die-net-sequence"
+        style={{
+          margin: 0,
+          fontFamily: FONT.mono,
+          fontSize: "var(--theory-net-caption-size, 11px)",
+          color: C.textMuted,
+          textAlign: "center",
+        }}
       >
         {t("theory_dice_net_cut")}
       </p>
@@ -82,17 +99,10 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
         viewBox={`0 0 ${NET_W} ${NET_H}`}
         role="group"
         aria-label={t("theory_dice_net_aria")}
-        style={{ width: "min(100%, 360px)", overflow: "visible" }}
+        style={{ display: "block", width: "min(100%, 360px)", overflow: "visible" }}
       >
-        {DICE_NET_FACES.map(({ lv, col, row }, index) => {
+        {NET_FACES.map(({ lv, center, points }, index) => {
           const info = THEORY_LEVELS[lv];
-          const center = rotateNetPoint((col + 0.5) * NET_CELL, (row + 0.5) * NET_CELL);
-          const points = [
-            `${center.x},${center.y - NET_DIAMOND_HALF}`,
-            `${center.x + NET_DIAMOND_HALF},${center.y}`,
-            `${center.x},${center.y + NET_DIAMOND_HALF}`,
-            `${center.x - NET_DIAMOND_HALF},${center.y}`,
-          ].join(" ");
           const isComplement = hl !== null && (hl ^ 7) === lv;
           const active = hl === lv;
           const dim = hl !== null && !active && !isComplement;
@@ -102,8 +112,9 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
               role="button"
               tabIndex={0}
               aria-label={`${ABBR[lv]} · ${lv} · ${bitsOf(lv)}`}
-              aria-pressed={active}
+              aria-pressed={pinned === lv}
               data-hue-net-face={lv}
+              data-hue-net-active={active}
               data-hue-order={index + 1}
               onMouseEnter={() => enter(lv)}
               onMouseLeave={leave}
@@ -117,34 +128,39 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
               <polygon
                 points={points}
                 fill={info.color}
-                fillOpacity={dim ? 0.16 : active || isComplement ? 0.95 : 0.72}
-                stroke={active ? "#fff" : isComplement ? C.accentBright : "#080810"}
-                strokeWidth={active || isComplement ? 2 : 1.4}
+                fillOpacity={dim ? 0.45 : active ? 1 : 0.9}
+                stroke="#151522"
+                strokeWidth={1.2}
+                strokeLinejoin="round"
+                vectorEffect="non-scaling-stroke"
               />
               <text
+                className="theory-die-net-name"
                 x={center.x}
-                y={center.y - 6}
+                y={center.y - 7}
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontFamily="var(--font-mono)"
-                fontSize={FS["2xl"]}
-                fontWeight={900}
-                fill={faceTextColor(lv)}
-                opacity={dim ? 0.35 : 1}
+                fontSize={16}
+                fontWeight={700}
+                fill={dim ? "#fff" : faceTextColor(lv)}
+                opacity={dim ? 0.9 : 1}
                 pointerEvents="none"
               >
                 {RANKED_ABBR[lv]}
               </text>
               <text
+                className="theory-die-net-bits"
                 x={center.x}
                 y={center.y + 10}
                 textAnchor="middle"
                 dominantBaseline="central"
                 fontFamily="var(--font-mono)"
-                fontSize={FS.sm}
-                fontWeight={700}
-                fill={faceTextColor(lv)}
-                opacity={dim ? 0.3 : 0.78}
+                fontSize={11}
+                fontWeight={500}
+                letterSpacing={0.5}
+                fill={dim ? "#fff" : faceTextColor(lv)}
+                opacity={0.85}
                 pointerEvents="none"
               >
                 {bitsOf(lv)}
@@ -152,9 +168,22 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
             </g>
           );
         })}
+        <g aria-hidden="true" pointerEvents="none">
+          {NET_FACES.filter(({ lv }) => hl !== null && (lv === hl || lv === (hl ^ 7))).map(({ lv, points }) => (
+            <polygon
+              key={`hue-net-outline-${lv}`}
+              points={points}
+              fill="none"
+              stroke={lv === hl ? "#fff" : C.accentBright}
+              strokeWidth={2}
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+        </g>
       </svg>
       <p
-        className="theory-annotation"
+        className="theory-annotation theory-die-net-cut"
         data-hue-net-cut="3-2"
         data-from-level="3"
         data-to-level="2"
@@ -162,7 +191,7 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
         style={{
           margin: 0,
           fontFamily: FONT.mono,
-          fontSize: FS.sm,
+          fontSize: "var(--theory-net-caption-size, 10px)",
           color: C.textDimmer,
           textAlign: "center",
         }}
@@ -178,8 +207,8 @@ export const ColorDice = React.memo(function ColorDice() {
 
   return (
     <div role="group" aria-label={t("theory_dice_desc2")} data-testid="color-die-rank-structure" className="theory-die-ranks">
-      <h5>{t("theory_dice_pairs_title")}</h5>
-      <div className="theory-die-numbering">L(c) = 1…6 &nbsp;↔&nbsp; ⚀ ⚁ ⚂ ⚃ ⚄ ⚅</div>
+      <div className="theory-diagram-label">{t("theory_dice_pairs_title")}</div>
+      <div className="theory-die-numbering">L(c) = 1…6 ↔ ⚀⚁⚂⚃⚄⚅</div>
       <div className="theory-die-pairs">
         {PAIRS.map(([a, b]) => (
           <div key={a} data-complement-pair={ABBR[a] + a + "-" + ABBR[b] + b} className="theory-die-pair">

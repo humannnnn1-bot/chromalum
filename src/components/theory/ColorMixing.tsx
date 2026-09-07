@@ -13,17 +13,22 @@ const INPUT_YS = [44, 102, 160];
 const OPERATOR_X = 152;
 const RESULT_X = 276;
 const CENTER_Y = 102;
-const NODE_R = 12;
+const NODE_R = 13;
 const GATE_HALF = 19;
 // Both gates fit the former 38 × 38 operator box.
 const OR_GATE = "M -19 -19 Q 6 -19 19 0 Q 6 19 -19 19 Q -7 0 -19 -19 Z";
 const AND_GATE = "M -19 -19 H 0 A 19 19 0 0 1 0 19 H -19 Z";
 
 export const ColorMixing = React.memo(function ColorMixing() {
+  const { t } = useTranslation();
   return (
     <div id="theory-mixing" className="theory-mixing-pair">
       <MixingFigure family="rgb" inputs={GRB_INPUTS} />
       <MixingFigure family="cmy" inputs={YCM_INPUTS} />
+      <p className="theory-mixing-hint">
+        <span>{t("theory_mixing_input_hint")}</span>
+        <span>{t("theory_mixing_bus_legend")}</span>
+      </p>
     </div>
   );
 });
@@ -54,7 +59,9 @@ function MixingFigure({ family, inputs }: { family: MixingFamily; inputs: readon
   return (
     <figure className="theory-mixing-figure" aria-labelledby={headingId} data-mixing-family={family}>
       <figcaption>
-        <h5 id={headingId}>{title}</h5>
+        <div id={headingId} className="theory-diagram-label">
+          {title}
+        </div>
         <p>{t(family === "rgb" ? "theory_mixing_join_rule" : "theory_mixing_meet_rule")}</p>
       </figcaption>
       <svg
@@ -105,7 +112,7 @@ function MixingFigure({ family, inputs }: { family: MixingFamily; inputs: readon
                   }
                 }}
               >
-                <circle data-mixing-hit cx={INPUT_X} cy={INPUT_YS[index]} r={26} fill="transparent" />
+                <circle data-mixing-hit cx={INPUT_X} cy={INPUT_YS[index]} r={28.5} fill="transparent" />
                 <circle className="theory-mixing-focus-ring" cx={INPUT_X} cy={INPUT_YS[index]} r={NODE_R + 4} />
                 <ColorNode level={level} x={INPUT_X} y={INPUT_YS[index]} />
               </g>
@@ -145,7 +152,7 @@ function MixingFigure({ family, inputs }: { family: MixingFamily; inputs: readon
           )}
         </g>
       </svg>
-      <p className="theory-mixing-equation" role="status" aria-live="polite">
+      <p className="theory-mixing-equation" data-mixing-pending={result === null} role="status" aria-live="polite">
         {equation}
       </p>
       <table className="theory-mixing-bits" aria-label={t("theory_mixing_bits_aria", title)}>

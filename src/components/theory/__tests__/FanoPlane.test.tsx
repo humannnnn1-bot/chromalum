@@ -15,14 +15,9 @@ function renderFano() {
   return { ...rendered, onHover };
 }
 
-function enableCompletionMode() {
-  fireEvent.click(screen.getByRole("button", { name: "Complete a line from two points" }));
-}
-
 describe("FanoPlane", () => {
   it("completes the unique Fano line from two directly selected points", () => {
     const { container } = renderFano();
-    enableCompletionMode();
 
     fireEvent.click(screen.getByRole("button", { name: "B, level 1, bits 001" }));
     expect(screen.getByTestId("fano-completion-status").textContent).toContain("B is fixed as the anchor");
@@ -39,7 +34,6 @@ describe("FanoPlane", () => {
 
   it("keeps the anchor while replacing the second point and completes the circular CMY line", () => {
     const { container } = renderFano();
-    enableCompletionMode();
 
     fireEvent.click(screen.getByRole("button", { name: "M, level 3, bits 011" }));
     fireEvent.click(screen.getByRole("button", { name: "C, level 5, bits 101" }));
@@ -55,7 +49,6 @@ describe("FanoPlane", () => {
 
   it("supports keyboard selection and clears an invalid repeated point", () => {
     renderFano();
-    enableCompletionMode();
     const blue = screen.getByRole("button", { name: "B, level 1, bits 001" });
 
     fireEvent.keyDown(blue, { key: "Enter" });
@@ -63,6 +56,24 @@ describe("FanoPlane", () => {
 
     fireEvent.keyDown(blue, { key: " " });
     expect(blue.getAttribute("aria-pressed")).toBe("false");
-    expect(screen.getByTestId("fano-completion-status").textContent).toBe("Select the first Fano point");
+    expect(screen.getByTestId("fano-completion-status").textContent).toBe("Select two points to find their line and third point");
+  });
+
+  it("clears point and line selections from the empty diagram background", () => {
+    const { container } = renderFano();
+    const diagram = container.querySelector(".theory-fano-plot")!;
+    const checks = screen.getByTestId("fano-hamming-checks");
+    fireEvent.click(container.querySelector('[data-fano-point="1"]')!);
+    fireEvent.click(container.querySelector('[data-fano-point="2"]')!);
+    expect(checks.getAttribute("data-word")).toBe("1110000");
+
+    fireEvent.click(diagram);
+    expect(checks.getAttribute("data-word")).toBe("");
+    expect(container.querySelectorAll('[data-fano-point][aria-pressed="true"]')).toHaveLength(0);
+
+    fireEvent.click(container.querySelector('[data-fano-line-hit="3-5-6"] circle')!);
+    expect(checks.getAttribute("data-word")).toBe("0010110");
+    fireEvent.click(diagram);
+    expect(checks.getAttribute("data-word")).toBe("");
   });
 });

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { GRAY_PATH, GRAY_TOGGLES, THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { GrayCodeHex } from "./GrayCodeHex";
@@ -11,19 +11,24 @@ interface Props {
 
 export const HueTraversal = React.memo(function HueTraversal({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
-  const [selectedEdge, setSelectedEdge] = useState(0);
-  const [direction, setDirection] = useState<1 | -1>(1);
-  const [playing, setPlaying] = useState(false);
-
-  useEffect(() => {
-    if (!playing) return;
-    const timer = setInterval(() => setSelectedEdge((edge) => (edge + direction + 6) % 6), 900);
-    return () => clearInterval(timer);
-  }, [playing, direction]);
+  const [{ selectedEdge, direction }, setTraversal] = useState<{ selectedEdge: number; direction: 1 | -1 }>({
+    selectedEdge: 0,
+    direction: 1,
+  });
 
   const selectEdge = (edge: number) => {
-    setPlaying(false);
-    setSelectedEdge(edge);
+    setTraversal((current) => ({ ...current, selectedEdge: edge }));
+    onHover(null);
+  };
+  const step = (nextDirection: 1 | -1) => {
+    setTraversal((current) => {
+      // Continue from the selected edge's destination, including when changing direction.
+      const start = current.direction === 1 ? current.selectedEdge + 1 : current.selectedEdge;
+      return {
+        selectedEdge: (start + (nextDirection === 1 ? 0 : -1) + GRAY_PATH.length) % GRAY_PATH.length,
+        direction: nextDirection,
+      };
+    });
     onHover(null);
   };
   const from = GRAY_PATH[direction === 1 ? selectedEdge : (selectedEdge + 1) % 6];
@@ -38,41 +43,45 @@ export const HueTraversal = React.memo(function HueTraversal({ hlLevel, onHover 
       direction={direction}
       onSelectEdge={selectEdge}
       companion={
-        <GrayCodeHex hlLevel={hlLevel} onHover={onHover} selectedEdge={selectedEdge} direction={direction} onSelectEdge={selectEdge} />
-      }
-      controls={
-        <div className="theory-hue-transport">
-          <div className="theory-hue-controls">
-            <button type="button" onClick={() => selectEdge((selectedEdge - direction + 6) % 6)}>
-              {t("theory_hue_previous")}
-            </button>
-            <button type="button" onClick={() => setPlaying((value) => !value)}>
-              {t(playing ? "theory_gray_pause" : "theory_hue_play")}
-            </button>
-            <button type="button" onClick={() => selectEdge((selectedEdge + direction + 6) % 6)}>
-              {t("theory_hue_next")}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPlaying(false);
-                setDirection((value) => (value === 1 ? -1 : 1));
-              }}
-            >
-              {t("theory_hue_reverse")}
-            </button>
-          </div>
-          <p role="status" aria-live={playing ? "off" : "polite"} data-hue-transition={`${from}-${to}`}>
-            {t(
-              "theory_hue_transition",
-              `${THEORY_LEVELS[from].short} ${THEORY_LEVELS[from].bits.join("")}`,
-              `${THEORY_LEVELS[to].short} ${THEORY_LEVELS[to].bits.join("")}`,
-              GRAY_TOGGLES[selectedEdge],
-              delta > 0 ? `+${delta}` : `−${-delta}`,
-            )}
-          </p>
-          <p className="theory-hue-hint">{t("theory_hue_link_hint")}</p>
+        <div className="theory-hue-cycle-panel">
+          <GrayCodeHex
+            hlLevel={hlLevel}
+            onHover={onHover}
+            selectedEdge={selectedEdge}
+            direction={direction}
+            onSelectEdge={selectEdge}
+            controls={
+              <div className="theory-hue-controls">
+                <button
+                  type="button"
+                  onClick={() => step(-1)}
+                  aria-label={t("theory_hue_counterclockwise")}
+                  title={t("theory_hue_counterclockwise")}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 10a9 9 0 1 1 2.64 8.36M3 4v6h6" />
+                  </svg>
+                </button>
+                <button type="button" onClick={() => step(1)} aria-label={t("theory_hue_clockwise")} title={t("theory_hue_clockwise")}>
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M3 10a9 9 0 1 1 2.64 8.36M3 4v6h6" transform="translate(24 0) scale(-1 1)" />
+                  </svg>
+                </button>
+              </div>
+            }
+          />
         </div>
+      }
+      status={
+        <p className="theory-hue-status" role="status" aria-live="polite" data-hue-transition={`${from}-${to}`}>
+          {t(
+            "theory_hue_transition",
+            `${THEORY_LEVELS[from].short} ${THEORY_LEVELS[from].bits.join("")}`,
+            `${THEORY_LEVELS[to].short} ${THEORY_LEVELS[to].bits.join("")}`,
+            GRAY_TOGGLES[selectedEdge],
+            delta > 0 ? `+${delta}` : `−${-delta}`,
+          )}
+        </p>
       }
     />
   );

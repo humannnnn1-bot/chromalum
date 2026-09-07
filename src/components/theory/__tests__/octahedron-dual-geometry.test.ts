@@ -22,6 +22,40 @@ describe("regular cube and octahedron dual geometry", () => {
     }
   });
 
+  it("projects GRB and CMY as equal equilateral triangles with vertical mirror symmetry", () => {
+    const points = Object.fromEntries(Object.entries(DUAL_OCTA_VERTICES).map(([lv, point]) => [lv, projectDualPoint(point)]));
+    const center = { x: points[2].x, y: (points[2].y + points[5].y) / 2 };
+    const radius = center.y - points[2].y;
+    for (const point of Object.values(points)) {
+      expect(Math.hypot(point.x - center.x, point.y - center.y)).toBeCloseTo(radius, 12);
+    }
+    for (const [left, right] of [
+      [3, 6],
+      [1, 4],
+    ]) {
+      expect(points[left].y).toBeCloseTo(points[right].y, 12);
+      expect(center.x - points[left].x).toBeCloseTo(points[right].x - center.x, 12);
+    }
+    const lengths = [
+      [2, 4, 1],
+      [5, 3, 6],
+    ].flatMap((triangle) =>
+      triangle.map((lv, i) => {
+        const next = points[triangle[(i + 1) % 3]];
+        return Math.hypot(points[lv].x - next.x, points[lv].y - next.y);
+      }),
+    );
+    for (const length of lengths) expect(length).toBeCloseTo(lengths[0], 12);
+  });
+
+  it("marks only the three edges of the rear GRB triangle as hidden", () => {
+    expect(DUAL_OCTA_EDGES.filter((edge) => edge.hidden).map(({ a, b }) => [a, b])).toEqual([
+      [1, 2],
+      [1, 4],
+      [2, 4],
+    ]);
+  });
+
   it("shares all six face centers with the edge midpoints of each color tetrahedron", () => {
     for (const tetra of [TETRA_T0, TETRA_T0.map((lv) => lv ^ 7)]) {
       const members = new Set<number>(tetra);
@@ -74,13 +108,13 @@ describe("regular cube and octahedron dual geometry", () => {
     }
   });
 
-  it("keeps every projected triangle open and cube vertex labels apart", () => {
+  it("keeps every projected triangle open and all six chromatic vertex labels apart", () => {
     for (const face of DUAL_OCTA_FACES) {
       const [a, b, c] = face.verts.map((lv) => projectDualPoint(DUAL_OCTA_VERTICES[lv]));
       const area = Math.abs((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) / 2;
       expect(area).toBeGreaterThan(2000);
     }
-    const points = DUAL_CUBE_VERTICES.map(projectDualPoint);
+    const points = Object.values(DUAL_OCTA_VERTICES).map(projectDualPoint);
     points.forEach((point, index) => {
       for (const other of points.slice(index + 1)) {
         expect(Math.hypot(point.x - other.x, point.y - other.y)).toBeGreaterThan(44);

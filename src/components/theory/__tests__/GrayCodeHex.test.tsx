@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { LanguageProvider } from "../../../i18n";
 import { HueTraversal } from "../HueTraversal";
 
@@ -19,8 +19,6 @@ function selectedEdges(container: HTMLElement) {
   );
 }
 
-afterEach(() => vi.useRealTimers());
-
 describe("Shared hue traversal", () => {
   it("selects the same edge in the six-cycle, zigzag, and table, with signed direction", () => {
     const { container } = renderTraversal();
@@ -30,11 +28,11 @@ describe("Shared hue traversal", () => {
     fireEvent.click(within(row as HTMLElement).getByRole("button"));
     expect(selectedEdges(container)).toEqual([["3"], ["3"], ["3"]]);
     expect(screen.getByRole("status").textContent).toContain("C 101 → B 001 · toggle G · ΔL=−4");
-    fireEvent.click(screen.getByRole("button", { name: "Reverse direction" }));
+    fireEvent.click(screen.getByRole("button", { name: "Counter-clockwise" }));
     expect(selectedEdges(container)).toEqual([["3"], ["3"], ["3"]]);
     expect(screen.getByRole("status").textContent).toContain("B 001 → C 101 · toggle G · ΔL=+4");
-    expect(row.textContent).toContain("B₁ → C₅");
-    expect(row.textContent).toContain("B₁ ⊂ C₅");
+    expect(row.textContent).toContain("B₁→C₅");
+    expect(row.textContent).toContain("B₁⊂C₅");
     expect(container.querySelector('[data-hue-edge="3"]')?.textContent).toContain("+4");
   });
 
@@ -49,21 +47,37 @@ describe("Shared hue traversal", () => {
     expect(container.querySelector('[data-active-fiber="2"]')).not.toBeNull();
   });
 
-  it("wraps playback in either direction and cancels its timer on manual selection and unmount", () => {
-    vi.useFakeTimers();
-    const { container, unmount } = renderTraversal();
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
-    act(() => vi.advanceTimersByTime(900));
-    expect(selectedEdges(container)).toEqual([["1"], ["1"], ["1"]]);
-    fireEvent.click(screen.getByRole("button", { name: "Previous edge" }));
-    act(() => vi.advanceTimersByTime(1800));
-    expect(selectedEdges(container)).toEqual([["0"], ["0"], ["0"]]);
-    fireEvent.click(screen.getByRole("button", { name: "Reverse direction" }));
-    fireEvent.click(screen.getByRole("button", { name: "Play" }));
-    act(() => vi.advanceTimersByTime(900));
-    expect(selectedEdges(container)).toEqual([["5"], ["5"], ["5"]]);
-    expect(screen.getByRole("status").textContent).toContain("R 010 → M 011");
-    unmount();
-    expect(vi.getTimerCount()).toBe(0);
+  it("advances one edge per press and wraps a complete cycle in either direction", () => {
+    const { container } = renderTraversal();
+    const clockwise = screen.getByRole("button", { name: "Clockwise" });
+    const counterclockwise = screen.getByRole("button", { name: "Counter-clockwise" });
+    expect(container.querySelectorAll(".theory-hue-controls button")).toHaveLength(2);
+
+    for (const [edge, transition] of [
+      [1, "6-4"],
+      [2, "4-5"],
+      [3, "5-1"],
+      [4, "1-3"],
+      [5, "3-2"],
+      [0, "2-6"],
+    ] as const) {
+      fireEvent.click(clockwise);
+      expect(selectedEdges(container)).toEqual([[`${edge}`], [`${edge}`], [`${edge}`]]);
+      expect(screen.getByRole("status").getAttribute("data-hue-transition")).toBe(transition);
+    }
+    for (const [edge, transition] of [
+      [0, "6-2"],
+      [5, "2-3"],
+      [4, "3-1"],
+      [3, "1-5"],
+      [2, "5-4"],
+      [1, "4-6"],
+    ] as const) {
+      fireEvent.click(counterclockwise);
+      expect(selectedEdges(container)).toEqual([[`${edge}`], [`${edge}`], [`${edge}`]]);
+      expect(screen.getByRole("status").getAttribute("data-hue-transition")).toBe(transition);
+    }
+    fireEvent.click(clockwise);
+    expect(screen.getByRole("status").getAttribute("data-hue-transition")).toBe("6-4");
   });
 });

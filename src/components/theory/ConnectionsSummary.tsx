@@ -18,7 +18,6 @@ export const ConnectionsSummary = React.memo(function ConnectionsSummary() {
     <ol
       style={{
         width: "100%",
-        maxWidth: 620,
         margin: 0,
         paddingLeft: SP["2xl"],
         display: "flex",
@@ -44,7 +43,6 @@ export const ScopeSummary = React.memo(function ScopeSummary() {
     <ul
       style={{
         width: "100%",
-        maxWidth: 620,
         margin: 0,
         paddingLeft: SP["2xl"],
         display: "flex",
