@@ -50,6 +50,13 @@ than additional parts of _Tractatus Chromaticus_.
    Surveys related sonification, color-to-sound, tone/brightness, hue, and accessibility
    references, and records design guidance for the Music tab.
 
+## Figures
+
+- **Symmetric color graph, edges only:** [SVG](./assets/chromalum-symmetric-edges.svg) · [PNG, 2048 × 2048](./assets/chromalum-symmetric-edges.png).
+  The 24 Hamming-distance 1 and 2 edges, viewed with 111 nearest, red above,
+  and cyan below. Vertex markers and labels are omitted; the XOR edge colors,
+  opacity, depth order, and dark background match the Theory diagram.
+
 ## Suggested Reading Order
 
 For the theory model, read Pars I first, then Pars II, then Pars III. For the
