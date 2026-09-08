@@ -1,19 +1,18 @@
-import React from "react";
-import { THEORY_LEVELS, CUBE_EDGES, STELLA_EDGES, K8_EXPLORER_POINTS, COMPLEMENT_EDGES, hammingDist } from "../../data/theory-data";
+import React, { useMemo } from "react";
+import { THEORY_LEVELS, hammingDist } from "../../data/theory-data";
 import { C, FW } from "../../styles/tokens";
 import { S_CURSOR_POINTER } from "../../styles/shared";
 import { useTranslation } from "../../i18n";
 import { ToggleActionTable } from "./ToggleActionTable";
 import { targetState, useK8Selection, type K8Target } from "./k8-selection";
+import { stellaView } from "./stella-view";
+import { useStellaView } from "./useStellaView";
 
 const VR = 5.7;
 const HIT_R = 14;
 
-// Color identifies the XOR mask; only the odd-parity tetrahedron uses dashes.
-const TETRA_T1_DASH = "5,3";
-
+// Color identifies the XOR mask; all distances share the same solid line style.
 const edgeColor = (mask: number) => THEORY_LEVELS[mask].color;
-const tetraDash = (a: number, b: number) => (hammingDist(a, b) === 2 && hammingDist(0, a) % 2 === 1 ? TETRA_T1_DASH : undefined);
 
 const DISTANCES = [1, 2, 3] as const;
 const DISTANCE_TERMS = ["", "Q₃(12)", "2K₄(12)", "M₄(4)"];
@@ -26,6 +25,8 @@ interface Props {
 export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, onHover }: Props) {
   const { t } = useTranslation();
   const link = useK8Selection(onHover);
+  const camera = useStellaView(link.selection, link.restoreSelection);
+  const view = useMemo(() => stellaView(camera.progress), [camera.progress]);
   const { visibleDistances, selectDistances } = link;
   const distances = DISTANCES.filter((distance) => visibleDistances.has(distance));
   const nodesOnly = distances.length === 0;
@@ -55,25 +56,10 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
     selectDistances(next);
   };
 
-  const hlQ3 = new Set<number>();
-  const hlStella = new Set<number>();
-  const hlM4 = new Set<number>();
-  if (hl !== null) {
-    CUBE_EDGES.forEach(([a, b], i) => {
-      if (a === hl || b === hl) hlQ3.add(i);
-    });
-    STELLA_EDGES.forEach(([a, b], i) => {
-      if (a === hl || b === hl) hlStella.add(i);
-    });
-    COMPLEMENT_EDGES.forEach(([a, b], i) => {
-      if (a === hl || b === hl) hlM4.add(i);
-    });
-  }
-
   const renderVertices = () =>
-    THEORY_LEVELS.map((info) => {
+    view.orderedLevels.map((info) => {
       const lv = info.lv;
-      const p = K8_EXPLORER_POINTS[lv];
+      const p = view.points[lv];
       const comparisonRole = comparisonA === lv ? "a" : comparisonB === lv ? "b" : null;
       const disabled = nodesOnly || (comparisonA !== null && lv !== comparisonA && !visibleDistances.has(hammingDist(comparisonA, lv)));
       const previewVertex =
@@ -98,6 +84,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           key={`v-${lv}`}
           className="theory-stella-node"
           data-stella-vertex={lv}
+          data-stella-depth={view.vertices[lv][2]}
           data-stella-dimmed={dim}
           data-stella-hovered={hovered}
           data-stella-preview={previewVertex}
@@ -130,6 +117,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
         >
           <title>{`${info.short} · L${lv} · ${info.bits.join("")}`}</title>
           <circle data-stella-hit cx={p.x} cy={p.y} r={HIT_R} fill="transparent" />
+          <circle cx={p.x} cy={p.y} r={r} fill={C.bgRoot} />
           <circle
             className="theory-stella-focus-ring"
             cx={p.x}
@@ -165,8 +153,8 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           </text>
           {comparisonRole && (
             <text
-              x={p.x + r + 4}
-              y={p.y - r - 3}
+              x={Math.min(161, p.x + r + 4)}
+              y={Math.max(-9, p.y - r - 3)}
               textAnchor="middle"
               fontSize={5.6}
               fontFamily="var(--font-mono)"
@@ -199,92 +187,34 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
 
   const renderGraph = () => (
     <>
-      {visibleDistances.has(1) &&
-        CUBE_EDGES.map(([a, b], i) => {
+      {view.orderedEdges
+        .filter(({ distance }) => visibleDistances.has(distance))
+        .map(({ a, b, distance }) => {
           const compared = isComparedEdge(a, b);
           const preview = isPreviewEdge(a, b);
           const active =
             compared ||
             preview ||
             selectedMask === (a ^ b) ||
-            (!comparisonComplete && selectedMask === null && !hasEdgePreview && hlQ3.has(i));
+            (!comparisonComplete && selectedMask === null && !hasEdgePreview && (a === hl || b === hl));
           const dim = hasEmphasis && !active;
           return (
             <line
-              key={`q3-${i}`}
+              key={`k8-${a}-${b}`}
               data-k8-edge={`${a}-${b}`}
-              data-k8-distance="1"
+              data-k8-distance={distance}
               data-k8-mask={a ^ b}
+              data-k8-tetra={distance === 2 ? (hammingDist(0, a) % 2 === 0 ? "T0" : "T1") : undefined}
               data-k8-edge-active={active}
               data-k8-edge-preview={preview}
-              x1={K8_EXPLORER_POINTS[a].x}
-              y1={K8_EXPLORER_POINTS[a].y}
-              x2={K8_EXPLORER_POINTS[b].x}
-              y2={K8_EXPLORER_POINTS[b].y}
+              x1={view.points[a].x}
+              y1={view.points[a].y}
+              x2={view.points[b].x}
+              y2={view.points[b].y}
               stroke={edgeColor(a ^ b)}
               strokeWidth={compared ? 2.4 : active ? 1.8 : baseEdgeWidth}
               strokeLinecap="round"
-              opacity={dim ? 0.1 : active ? 1 : baseEdgeOpacity}
-            />
-          );
-        })}
-      {visibleDistances.has(2) &&
-        STELLA_EDGES.map(([a, b], i) => {
-          const compared = isComparedEdge(a, b);
-          const preview = isPreviewEdge(a, b);
-          const active =
-            compared ||
-            preview ||
-            selectedMask === (a ^ b) ||
-            (!comparisonComplete && selectedMask === null && !hasEdgePreview && hlStella.has(i));
-          const dim = hasEmphasis && !active;
-          return (
-            <line
-              key={`st-${i}`}
-              data-k8-edge={`${a}-${b}`}
-              data-k8-distance="2"
-              data-k8-mask={a ^ b}
-              data-k8-tetra={hammingDist(0, a) % 2 === 0 ? "T0" : "T1"}
-              data-k8-edge-active={active}
-              data-k8-edge-preview={preview}
-              x1={K8_EXPLORER_POINTS[a].x}
-              y1={K8_EXPLORER_POINTS[a].y}
-              x2={K8_EXPLORER_POINTS[b].x}
-              y2={K8_EXPLORER_POINTS[b].y}
-              stroke={edgeColor(a ^ b)}
-              strokeWidth={compared ? 2.4 : active ? 1.8 : baseEdgeWidth}
-              strokeDasharray={tetraDash(a, b)}
-              strokeLinecap="round"
-              opacity={dim ? 0.1 : active ? 1 : baseEdgeOpacity}
-            />
-          );
-        })}
-      {visibleDistances.has(3) &&
-        COMPLEMENT_EDGES.map(([a, b], i) => {
-          const compared = isComparedEdge(a, b);
-          const preview = isPreviewEdge(a, b);
-          const active =
-            compared ||
-            preview ||
-            selectedMask === (a ^ b) ||
-            (!comparisonComplete && selectedMask === null && !hasEdgePreview && hlM4.has(i));
-          const dim = hasEmphasis && !active;
-          return (
-            <line
-              key={`m4-${i}`}
-              data-k8-edge={`${a}-${b}`}
-              data-k8-distance="3"
-              data-k8-mask={a ^ b}
-              data-k8-edge-active={active}
-              data-k8-edge-preview={preview}
-              x1={K8_EXPLORER_POINTS[a].x}
-              y1={K8_EXPLORER_POINTS[a].y}
-              x2={K8_EXPLORER_POINTS[b].x}
-              y2={K8_EXPLORER_POINTS[b].y}
-              stroke={edgeColor(a ^ b)}
-              strokeWidth={compared ? 2.4 : active ? 1.8 : baseEdgeWidth}
-              strokeLinecap="round"
-              opacity={dim ? 0.1 : 1}
+              opacity={dim ? 0.1 : active || distance === 3 ? 1 : baseEdgeOpacity}
             />
           );
         })}
@@ -308,9 +238,12 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
           <svg
             id="theory-stella-view"
             data-stella-distances={distances.join(" ") || "none"}
-            viewBox="12 -12 156 148"
+            data-stella-view={camera.symmetric ? "symmetric" : "default"}
+            data-stella-turn={camera.progress}
+            viewBox="12 -15 156 156"
             role="group"
             aria-label={t("theory_stella_diagram")}
+            {...camera.handlers}
           >
             {renderGraph()}
           </svg>
@@ -358,10 +291,7 @@ export const StellaOctangula = React.memo(function StellaOctangula({ hlLevel, on
             >
               <span className="theory-k8-summary-label">{t("theory_stella_distance_short", 2)}</span>
               <span aria-hidden="true">
-                <i />T<sub>0</sub>
-              </span>
-              <span aria-hidden="true">
-                <i className="theory-k8-line-dashed" />T<sub>1</sub>
+                T<sub>0</sub> + T<sub>1</sub>
               </span>
             </div>
           </div>

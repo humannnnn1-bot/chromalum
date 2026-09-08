@@ -10,6 +10,11 @@ interface Props {
   onHover: (lv: number | null) => void;
 }
 
+interface SelectionProps extends Props {
+  pinnedLevel: number | null;
+  onSelect: (level: number | null) => void;
+}
+
 const PAIRS: [number, number][] = [
   [1, 6],
   [2, 5],
@@ -24,6 +29,40 @@ const NET_DIAMOND_HALF = NET_CELL / Math.SQRT2;
 const NET_W = NET_PAD * 2 + NET_DIAMOND_HALF * 7;
 const NET_H = NET_PAD * 2 + NET_DIAMOND_HALF * 3;
 const NET_Y_OFFSET = NET_PAD + NET_DIAMOND_HALF * 2;
+const PIP_SPACING = NET_CELL / 4;
+const PIP_LAYOUTS: Record<number, readonly (readonly [number, number])[]> = {
+  1: [[0, 0]],
+  2: [
+    [-1, -1],
+    [1, 1],
+  ],
+  3: [
+    [-1, -1],
+    [0, 0],
+    [1, 1],
+  ],
+  4: [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ],
+  5: [
+    [-1, -1],
+    [1, -1],
+    [0, 0],
+    [-1, 1],
+    [1, 1],
+  ],
+  6: [
+    [-1, -1],
+    [1, -1],
+    [-1, 0],
+    [1, 0],
+    [-1, 1],
+    [1, 1],
+  ],
+};
 
 function rotateNetPoint(x: number, y: number): { x: number; y: number } {
   return {
@@ -40,7 +79,10 @@ const NET_FACES = DICE_NET_FACES.map(({ lv, col, row }) => {
     `${center.x},${center.y + NET_DIAMOND_HALF}`,
     `${center.x - NET_DIAMOND_HALF},${center.y}`,
   ].join(" ");
-  return { lv, center, points };
+  const pips = PIP_LAYOUTS[lv].map(([x, y]) =>
+    rotateNetPoint((col + 0.5) * NET_CELL + x * PIP_SPACING, (row + 0.5) * NET_CELL + y * PIP_SPACING),
+  );
+  return { lv, points, pips };
 });
 
 // Color abbreviations
@@ -51,35 +93,25 @@ function bitsOf(lv: number): string {
   return lv.toString(2).padStart(3, "0");
 }
 
-function faceTextColor(lv: number): string {
-  return lv === 1 ? "#fff" : "#000";
-}
-
 function onFaceKeyDown(event: React.KeyboardEvent<SVGGElement>, lv: number, onTap: (level: number) => void) {
   if (event.key !== "Enter" && event.key !== " ") return;
   event.preventDefault();
   onTap(lv);
 }
 
-export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }: Props) {
+const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover, pinnedLevel, onSelect }: SelectionProps) {
   const { t } = useTranslation();
-  const [pinned, setPinned] = useState<number | null>(null);
-  usePinReset(setPinned);
 
   const enter = useCallback((lv: number) => onHover(lv), [onHover]);
   const leave = useCallback(() => onHover(null), [onHover]);
   const onTap = useCallback(
     (lv: number) => {
-      setPinned((previous) => {
-        const next = previous === lv ? null : lv;
-        queueMicrotask(() => onHover(next));
-        return next;
-      });
+      onSelect(pinnedLevel === lv ? null : lv);
     },
-    [onHover],
+    [pinnedLevel, onSelect],
   );
 
-  const hl = hlLevel !== null && hlLevel >= 1 && hlLevel <= 6 ? hlLevel : pinned;
+  const hl = hlLevel;
 
   return (
     <div data-testid="hue-order-net" className="theory-die-net">
@@ -95,13 +127,8 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
       >
         {t("theory_dice_net_cut")}
       </p>
-      <svg
-        viewBox={`0 0 ${NET_W} ${NET_H}`}
-        role="group"
-        aria-label={t("theory_dice_net_aria")}
-        style={{ display: "block", width: "min(100%, 360px)", overflow: "visible" }}
-      >
-        {NET_FACES.map(({ lv, center, points }, index) => {
+      <svg viewBox={`0 0 ${NET_W} ${NET_H}`} role="group" aria-label={t("theory_dice_net_aria")}>
+        {NET_FACES.map(({ lv, points, pips }, index) => {
           const info = THEORY_LEVELS[lv];
           const isComplement = hl !== null && (hl ^ 7) === lv;
           const active = hl === lv;
@@ -112,9 +139,10 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
               role="button"
               tabIndex={0}
               aria-label={`${ABBR[lv]} · ${lv} · ${bitsOf(lv)}`}
-              aria-pressed={pinned === lv}
+              aria-pressed={pinnedLevel === lv}
               data-hue-net-face={lv}
               data-hue-net-active={active}
+              data-hue-net-highlighted={active || isComplement}
               data-hue-order={index + 1}
               onMouseEnter={() => enter(lv)}
               onMouseLeave={leave}
@@ -127,44 +155,30 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
               <title>{`${ABBR[lv]} · L${lv} · ${bitsOf(lv)}`}</title>
               <polygon
                 points={points}
-                fill={info.color}
-                fillOpacity={dim ? 0.45 : active ? 1 : 0.9}
+                fill="#d8d8d8"
+                fillOpacity={dim ? 0.45 : 1}
                 stroke="#151522"
                 strokeWidth={1.2}
                 strokeLinejoin="round"
                 vectorEffect="non-scaling-stroke"
               />
-              <text
-                className="theory-die-net-name"
-                x={center.x}
-                y={center.y - 7}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontFamily="var(--font-mono)"
-                fontSize={16}
-                fontWeight={700}
-                fill={dim ? "#fff" : faceTextColor(lv)}
-                opacity={dim ? 0.9 : 1}
-                pointerEvents="none"
-              >
-                {RANKED_ABBR[lv]}
-              </text>
-              <text
-                className="theory-die-net-bits"
-                x={center.x}
-                y={center.y + 10}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontFamily="var(--font-mono)"
-                fontSize={11}
-                fontWeight={500}
-                letterSpacing={0.5}
-                fill={dim ? "#fff" : faceTextColor(lv)}
-                opacity={0.85}
-                pointerEvents="none"
-              >
-                {bitsOf(lv)}
-              </text>
+              <g aria-hidden="true" pointerEvents="none">
+                {pips.map(({ x, y }, pip) => (
+                  <circle
+                    key={pip}
+                    data-hue-net-pip={lv}
+                    cx={x}
+                    cy={y}
+                    r={4.5}
+                    fill={info.color}
+                    stroke="#000000"
+                    strokeOpacity={0.22}
+                    strokeWidth={0.6}
+                    vectorEffect="non-scaling-stroke"
+                    opacity={dim ? 0.45 : 1}
+                  />
+                ))}
+              </g>
             </g>
           );
         })}
@@ -174,7 +188,7 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
               key={`hue-net-outline-${lv}`}
               points={points}
               fill="none"
-              stroke={lv === hl ? "#fff" : C.accentBright}
+              stroke={lv === hl ? C.accent : C.accentBright}
               strokeWidth={2}
               strokeLinejoin="round"
               vectorEffect="non-scaling-stroke"
@@ -202,7 +216,7 @@ export const HueOrderNet = React.memo(function HueOrderNet({ hlLevel, onHover }:
   );
 });
 
-export const ColorDice = React.memo(function ColorDice() {
+const ColorDieRanks = React.memo(function ColorDieRanks({ hlLevel, onHover, pinnedLevel, onSelect }: SelectionProps) {
   const { t } = useTranslation();
 
   return (
@@ -211,7 +225,19 @@ export const ColorDice = React.memo(function ColorDice() {
       <div className="theory-die-numbering">L(c) = 1…6 ↔ ⚀⚁⚂⚃⚄⚅</div>
       <div className="theory-die-pairs">
         {PAIRS.map(([a, b]) => (
-          <div key={a} data-complement-pair={ABBR[a] + a + "-" + ABBR[b] + b} className="theory-die-pair">
+          <button
+            key={a}
+            type="button"
+            data-complement-pair={ABBR[a] + a + "-" + ABBR[b] + b}
+            data-highlighted={hlLevel === a || hlLevel === b}
+            aria-pressed={pinnedLevel === a || pinnedLevel === b}
+            className="theory-die-pair"
+            onMouseEnter={() => onHover(a)}
+            onMouseLeave={() => onHover(null)}
+            onFocus={() => onHover(a)}
+            onBlur={() => onHover(null)}
+            onClick={() => onSelect(pinnedLevel === a || pinnedLevel === b ? null : a)}
+          >
             <span className="theory-die-face-label">
               <span aria-hidden="true" className="theory-die-swatch" style={{ background: THEORY_LEVELS[a].color }} />
               {RANKED_ABBR[a]}
@@ -224,13 +250,34 @@ export const ColorDice = React.memo(function ColorDice() {
             <span className="theory-die-pair-sum">
               {a} + {b} = 7
             </span>
-          </div>
+          </button>
         ))}
       </div>
       <div className="theory-die-law">
         <span>L(c̄) = 7 − L(c)</span>
         <span>⇒ L(c) + L(c̄) = 7</span>
       </div>
+    </div>
+  );
+});
+
+export const ColorDice = React.memo(function ColorDice({ hlLevel, onHover }: Props) {
+  const [pinnedLevel, setPinnedLevel] = useState<number | null>(null);
+  usePinReset(setPinnedLevel);
+  const onSelect = useCallback(
+    (level: number | null) => {
+      setPinnedLevel(level);
+      onHover(level);
+    },
+    [onHover],
+  );
+  const highlighted = hlLevel !== null && hlLevel >= 1 && hlLevel <= 6 ? hlLevel : pinnedLevel;
+  const selection = { hlLevel: highlighted, onHover, pinnedLevel, onSelect };
+
+  return (
+    <div className="theory-die-figure">
+      <HueOrderNet {...selection} />
+      <ColorDieRanks {...selection} />
     </div>
   );
 });

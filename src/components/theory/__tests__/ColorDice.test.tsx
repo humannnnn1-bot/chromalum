@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { useState } from "react";
 import { LanguageProvider } from "../../../i18n";
-import { ColorDice, HueOrderNet } from "../ColorDice";
+import { ColorDice } from "../ColorDice";
 
 function renderWithLanguage() {
   localStorage.setItem("chromalum_lang", "en");
   return render(
     <LanguageProvider>
-      <ColorDice />
+      <ColorDice hlLevel={null} onHover={() => {}} />
     </LanguageProvider>,
   );
 }
@@ -16,9 +17,21 @@ function renderWithLanguage() {
 function renderNetWithLanguage() {
   localStorage.setItem("chromalum_lang", "en");
   const onHover = vi.fn();
+  function InteractiveDice() {
+    const [level, setLevel] = useState<number | null>(null);
+    return (
+      <ColorDice
+        hlLevel={level}
+        onHover={(next) => {
+          onHover(next);
+          setLevel(next);
+        }}
+      />
+    );
+  }
   const rendered = render(
     <LanguageProvider>
-      <HueOrderNet hlLevel={null} onHover={onHover} />
+      <InteractiveDice />
     </LanguageProvider>,
   );
   return { ...rendered, onHover };
@@ -67,6 +80,44 @@ describe("ColorDice", () => {
     expect(onHover).toHaveBeenLastCalledWith(null);
   });
 
+  it("shares the pinned selection between faces and complementary rows while hover and focus preview other pairs", () => {
+    const { container } = renderNetWithLanguage();
+    const row = (pair: string) => container.querySelector<HTMLButtonElement>(`[data-complement-pair="${pair}"]`)!;
+    const highlightedFaces = () =>
+      [...container.querySelectorAll('[data-hue-net-highlighted="true"]')]
+        .map((face) => Number(face.getAttribute("data-hue-net-face")))
+        .sort();
+    const blueYellow = row("B1-Y6");
+    const redCyan = row("R2-C5");
+    const greenMagenta = row("G4-M3");
+
+    fireEvent.mouseEnter(redCyan);
+    expect(highlightedFaces()).toEqual([2, 5]);
+    fireEvent.mouseLeave(redCyan);
+    expect(highlightedFaces()).toEqual([]);
+
+    fireEvent.click(blueYellow);
+    fireEvent.mouseEnter(redCyan);
+    expect(highlightedFaces()).toEqual([2, 5]);
+    expect(blueYellow.getAttribute("aria-pressed")).toBe("true");
+    fireEvent.mouseLeave(redCyan);
+    expect(highlightedFaces()).toEqual([1, 6]);
+
+    fireEvent.focus(greenMagenta);
+    expect(highlightedFaces()).toEqual([3, 4]);
+    fireEvent.blur(greenMagenta);
+    expect(highlightedFaces()).toEqual([1, 6]);
+
+    const cyan = container.querySelector('[data-hue-net-face="5"]')!;
+    fireEvent.click(cyan);
+    expect(highlightedFaces()).toEqual([2, 5]);
+    expect(redCyan.getAttribute("aria-pressed")).toBe("true");
+    expect(blueYellow.getAttribute("aria-pressed")).toBe("false");
+    fireEvent.click(redCyan);
+    expect(highlightedFaces()).toEqual([]);
+    expect(cyan.getAttribute("aria-pressed")).toBe("false");
+  });
+
   it("shows a connected hue-order net without arrows, delta badges, or a folding banner", () => {
     const { container } = renderNetWithLanguage();
     const net = screen.getByRole("group", { name: "A 2–2–2 net of the Color Die preserving the five hue-order connections" });
@@ -74,7 +125,17 @@ describe("ColorDice", () => {
 
     expect(faces.map((face) => Number(face.getAttribute("data-hue-net-face")))).toEqual([2, 6, 4, 5, 1, 3]);
     expect(faces.map((face) => Number(face.getAttribute("data-hue-order")))).toEqual([1, 2, 3, 4, 5, 6]);
-    expect(faces.map((face) => face.querySelector("text:last-of-type")?.textContent)).toEqual(["010", "110", "100", "101", "001", "011"]);
+    expect(net.querySelectorAll("text")).toHaveLength(0);
+    expect(faces.map((face) => face.querySelectorAll("[data-hue-net-pip]").length)).toEqual([2, 6, 4, 5, 1, 3]);
+    const pipColors = ["", "#0000ff", "#ff0000", "#ff00ff", "#00ff00", "#00ffff", "#ffff00"];
+    for (const face of faces) {
+      expect(face.querySelector("polygon")!.getAttribute("fill")).toBe("#d8d8d8");
+      const level = Number(face.getAttribute("data-hue-net-face"));
+      for (const pip of face.querySelectorAll("[data-hue-net-pip]")) {
+        expect(pip.getAttribute("fill")?.toLowerCase()).toBe(pipColors[level]);
+        expect(pip.closest('[aria-hidden="true"]')).not.toBeNull();
+      }
+    }
     const corners = faces.map((face) =>
       face
         .querySelector("polygon")!

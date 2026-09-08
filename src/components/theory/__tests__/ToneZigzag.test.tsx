@@ -45,7 +45,7 @@ describe("ToneZigzag", () => {
     expect(hits.filter(({ h }) => h < 0.5 || h > 359.5)).toHaveLength(1);
   });
 
-  it("renders the canonical fourteen intersections and six signed edges", () => {
+  it("renders the canonical fourteen intersections and six undirected edge differences", () => {
     const { container } = renderToneZigzag();
 
     expect(container.querySelectorAll("[data-tone-intersection]")).toHaveLength(CANONICAL_HUE_CYCLE.length);
@@ -77,7 +77,7 @@ describe("ToneZigzag", () => {
     });
   });
 
-  it("presents transition, toggle, delta, and inclusion in a fitted full-width table", () => {
+  it("presents color pairs, primaries, magnitudes, and inclusion before a traversal", () => {
     const { container } = renderToneZigzag();
 
     const table = screen.getByRole("table");
@@ -87,16 +87,17 @@ describe("ToneZigzag", () => {
     expect(table.style.minWidth).toBe("");
     expect(wrapper.style.overflowX).toBe("");
     expect([...table.querySelectorAll("col")].map((column) => column.getAttribute("style"))).toEqual([
-      "width: 25%;",
-      "width: 31%;",
-      "width: 14%;",
       "width: 30%;",
+      "width: 18%;",
+      "width: 18%;",
+      "width: 34%;",
     ]);
 
     const rows = table.querySelectorAll("tbody tr");
-    expect(rows[0].textContent).toContain("R₂→Y₆");
-    expect(rows[0].textContent).toContain("τG");
-    expect(rows[0].textContent).toContain("+4");
+    expect(rows[0].textContent).toContain("R₂↔Y₆");
+    expect(rows[0].querySelectorAll("td")[1].textContent).toBe("G");
+    expect(rows[0].querySelectorAll("td")[1].getAttribute("title")).toBe("wG=4");
+    expect(rows[0].textContent).toContain("Δ4");
     expect(rows[0].textContent).toContain("R₂⊂Y₆");
     expect(rows[1].textContent).toContain("Y₆⊃G₄");
   });

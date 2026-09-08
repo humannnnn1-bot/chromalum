@@ -186,14 +186,16 @@ export const CUBE_POINTS = buildCubePoints();
 
 // A single rigid rotation keeps the cube regular and its two inscribed
 // tetrahedra regular. This view also avoids edges passing through other nodes.
-const EXPLORER_YAW = (28 * Math.PI) / 180;
-const EXPLORER_PITCH = (12 * Math.PI) / 180;
+// The small asymmetric angle keeps unrelated edges clear of node labels and
+// the four body diagonals at distinct angles around their shared center.
+const EXPLORER_YAW = (27.8 * Math.PI) / 180;
+const EXPLORER_PITCH = (11.6 * Math.PI) / 180;
 const EXPLORER_COS_YAW = Math.cos(EXPLORER_YAW);
 const EXPLORER_SIN_YAW = Math.sin(EXPLORER_YAW);
 const EXPLORER_COS_PITCH = Math.cos(EXPLORER_PITCH);
 const EXPLORER_SIN_PITCH = Math.sin(EXPLORER_PITCH);
 
-/** Centered unit-cube vertices in GRB order, after the shared rigid rotation. */
+/** Centered unit-cube vertices after rotation: x right, y down, z away from the viewer. */
 export const K8_EXPLORER_VERTICES_3D: readonly (readonly [number, number, number])[] = THEORY_LEVELS.map(({ bits }) => {
   const [g, r, b] = bits.map((bit) => bit - 0.5);
   return [

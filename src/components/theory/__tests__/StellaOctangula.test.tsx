@@ -172,7 +172,7 @@ describe("StellaOctangula", () => {
     expect(container.querySelectorAll('[data-stella-vertex][aria-disabled="true"]')).toHaveLength(8);
   });
 
-  it("colors edges by their XOR masks and distinguishes the tetrahedra with line styles", () => {
+  it("colors edges by their XOR masks and uses solid lines for both tetrahedra", () => {
     const { container } = renderStella();
     const diagram = container.querySelector("#theory-stella-view")!;
     const controls = screen.getByRole("group", { name: "Select visible distances (multiple allowed)" });
@@ -192,7 +192,8 @@ describe("StellaOctangula", () => {
     for (const color of ["#ff00ff", "#00ffff", "#ffff00"])
       expect(diagram.querySelectorAll(`[data-k8-distance="2"][stroke="${color}"]`)).toHaveLength(4);
     expect(diagram.querySelectorAll('[data-k8-tetra="T0"]:not([stroke-dasharray])')).toHaveLength(6);
-    expect(diagram.querySelectorAll('[data-k8-tetra="T1"][stroke-dasharray="5,3"]')).toHaveLength(6);
+    expect(diagram.querySelectorAll('[data-k8-tetra="T1"]:not([stroke-dasharray])')).toHaveLength(6);
+    expect(diagram.querySelectorAll("[stroke-dasharray]")).toHaveLength(0);
     expect(diagram.querySelectorAll('[data-k8-distance="3"][stroke="#ffffff"][opacity="1"]')).toHaveLength(4);
   });
 

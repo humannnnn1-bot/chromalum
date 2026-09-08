@@ -14,6 +14,36 @@ function renderWithLanguage(hlLevel: number | null = null) {
 }
 
 describe("ColorCube", () => {
+  it("paints the correct crossings in reduced motion without promoting highlighted rear edges", () => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const matchMedia = vi.spyOn(window, "matchMedia").mockReturnValue({ ...media, matches: true });
+    try {
+      renderWithLanguage(2);
+    } finally {
+      matchMedia.mockRestore();
+    }
+    const cube = screen.getByRole("group", { name: "Color Cube" });
+    const crossingOrder = () => {
+      const edges = [...cube.querySelectorAll("[data-cube-edge]")].map((edge) => edge.getAttribute("data-cube-edge"));
+      expect(edges).toHaveLength(12);
+      expect(edges.indexOf("2-3")).toBeLessThan(edges.indexOf("1-5"));
+      expect(edges.indexOf("2-6")).toBeLessThan(edges.indexOf("4-5"));
+      expect([...cube.querySelectorAll('[data-cube-active="true"]')].map((edge) => edge.getAttribute("data-cube-edge")).sort()).toEqual([
+        "0-2",
+        "2-3",
+        "2-6",
+      ]);
+    };
+    crossingOrder();
+    const hasse = screen.getByRole("button", { name: "Hasse" });
+    fireEvent.click(hasse);
+    expect(cube.querySelector(".theory-cube-ranks")?.getAttribute("opacity")).toBe("1");
+    crossingOrder();
+    fireEvent.click(hasse);
+    expect(cube.querySelector(".theory-cube-ranks")).toBeNull();
+    crossingOrder();
+  });
+
   it("previews each complete face and retains a selected face across previews and projections", () => {
     const { container } = renderWithLanguage();
     const surface = container.querySelector(".theory-cube")!;

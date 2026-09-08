@@ -390,9 +390,22 @@ button.theory-diagram-button {
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-@container generation-layout (min-width: 800px) {
+/* Matches the three-column limit at roughly a 748px Theory viewport. */
+@container generation-layout (width < 601px) {
   .theory-generation-with-diagram {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 8px;
+    padding-block: 8px;
+  }
+  .theory-generation-diagram .theory-figure {
+    gap: 6px;
+  }
+  .theory-generation-diagram .theory-figure > div {
+    max-width: clamp(220px, 44cqw, 240px);
+  }
+}
+@container generation-layout (min-width: 601px) {
+  .theory-generation-with-diagram {
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 1.2fr) minmax(0, 1fr);
     align-items: start;
   }
   .theory-generation-diagram {
@@ -402,6 +415,11 @@ button.theory-diagram-button {
   .theory-generation-diagram .theory-figure > figcaption {
     align-self: stretch;
     text-align: left;
+  }
+}
+@container generation-layout (min-width: 800px) {
+  .theory-generation-with-diagram {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 .theory-generation-builder,
@@ -576,7 +594,7 @@ button.theory-diagram-button {
   gap: 6px;
   font-weight: 700;
 }
-@container primary-generation (max-width: 620px) {
+@container primary-generation (max-width: 800px) {
   .theory-generation-heading {
     margin-bottom: 8px;
     font-size: 11px;
@@ -671,7 +689,7 @@ button.theory-diagram-button {
 .theory-cube-svg {
   display: block;
   width: 100%;
-  max-width: 380px;
+  max-width: 320px;
   height: auto;
 }
 .theory-cube-focus-ring {
@@ -778,7 +796,7 @@ button.theory-diagram-button {
 .theory-cube-face svg {
   display: block;
   width: 100%;
-  max-width: clamp(38px, calc(19cqw - 22px), 120px);
+  max-width: clamp(38px, calc(19cqw - 22px), 100px);
   height: auto;
 }
 @container cube-layout (max-width: 540px) {
@@ -820,6 +838,32 @@ button.theory-diagram-button {
   .theory-cube-svg {
     aspect-ratio: 1;
   }
+  /* The square viewport keeps the normal cube's scale in both projections.
+     Move annotations into its narrower visible area instead of shrinking it. */
+  .theory-cube-rank-label {
+    transform: translateX(23px);
+  }
+  .theory-cube-pascal-label {
+    transform: translateX(-25px);
+  }
+  [data-cube-set-label="1"],
+  [data-cube-set-label="3"],
+  [data-cube-set-label="4"],
+  [data-cube-set-label="6"] {
+    text-anchor: middle;
+  }
+  [data-cube-set-label="1"] {
+    transform: translate(14px, -16px);
+  }
+  [data-cube-set-label="3"] {
+    transform: translate(13px, -16px);
+  }
+  [data-cube-set-label="4"] {
+    transform: translate(-14px, -16px);
+  }
+  [data-cube-set-label="6"] {
+    transform: translate(-13px, -16px);
+  }
   .theory-cube-controls {
     display: flex;
     flex-wrap: wrap;
@@ -859,6 +903,10 @@ button.theory-diagram-button {
 
 .theory-hue-controls button:active:not(:disabled) {
   background: #293859;
+}
+.theory-hue-controls button:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .theory-hue-controls button:focus-visible {
@@ -1188,7 +1236,10 @@ button.theory-diagram-button {
 .theory-k8-graph svg {
   display: block;
   width: 100%;
-  max-width: 320px;
+  max-width: clamp(280px, 42cqw, 320px);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .theory-k8-controls {
   display: flex;
@@ -1264,22 +1315,6 @@ button.theory-diagram-button {
   gap: 6px;
   margin: 0;
   white-space: nowrap;
-}
-.theory-k8-tetra-key > span:not(:first-child) {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 3px;
-}
-.theory-k8-tetra-key sub {
-  margin-left: -3px;
-}
-.theory-k8-tetra-key i {
-  align-self: center;
-  width: 13px;
-  border-top: 2px solid #b8b8d0;
-}
-.theory-k8-tetra-key .theory-k8-line-dashed {
-  border-top-style: dashed;
 }
 .theory-k8-display-modes {
   display: grid;
@@ -1665,8 +1700,8 @@ button.theory-diagram-button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
   align-items: start;
-  gap: 28px;
-  padding: 8px 4px;
+  gap: 16px 24px;
+  padding: 4px;
 }
 .theory-fano-geometry {
   container: fano-geometry / inline-size;
@@ -1674,13 +1709,12 @@ button.theory-diagram-button {
   flex-direction: column;
   align-items: center;
   min-width: 0;
-  gap: 8px;
+  gap: 4px;
 }
 .theory-fano-plot {
   display: block;
   width: 100%;
-  max-width: 300px;
-  margin-top: 4px;
+  max-width: 270px;
   overflow: visible;
 }
 .theory-fano-plot [data-fano-point] {
@@ -1942,7 +1976,7 @@ button.theory-diagram-button {
 .theory-fano-word-bit {
   display: grid;
   place-items: center;
-  min-height: 24px;
+  min-height: 22px;
   border-top: 1px solid #30364e;
   color: #a0abc6;
   font-size: 13px;
@@ -1978,7 +2012,7 @@ button.theory-diagram-button {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  margin: 6px 0;
+  margin: 4px 0;
 }
 .theory-fano-check {
   display: flex;
@@ -2012,8 +2046,8 @@ button.theory-diagram-button {
   grid-template-columns: minmax(130px, auto) minmax(0, 1fr);
   align-items: center;
   gap: 12px;
-  min-height: 36px;
-  padding: 4px 0;
+  min-height: 33px;
+  padding: 2px 0;
 }
 .theory-fano-syndrome code {
   font-size: 15px;
@@ -2042,7 +2076,7 @@ button.theory-diagram-button {
   flex-direction: column;
   align-items: center;
   gap: 5px;
-  padding-top: 8px;
+  padding-top: 6px;
   border-top: 1px solid #2b3046;
   color: #9fa9c4;
   font-size: 11px;
@@ -2067,22 +2101,13 @@ button.theory-diagram-button {
   .theory-fano-correspondence-layout {
     align-items: stretch;
   }
-  .theory-fano-completion-slot {
-    flex: 1;
+  .theory-fano-geometry {
+    justify-content: space-between;
   }
   .theory-fano-matrix {
-    --fano-matrix-label-height: 24px;
-    --fano-matrix-bit-height: 26px;
+    --fano-matrix-bit-height: 24px;
     align-self: stretch;
-  }
-  .theory-fano-checks {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-  }
-  .theory-fano-check-rows {
-    flex: 1;
-    align-items: center;
+    justify-content: space-between;
   }
 }
 @container fano-correspondence (540px <= width < 680px) {
@@ -2090,45 +2115,14 @@ button.theory-diagram-button {
     gap: 16px;
   }
 }
-@container fano-correspondence (min-width: 680px) {
-  .theory-fano-matrix {
-    --fano-matrix-label-height: 26px;
-    --fano-matrix-bit-height: 32px;
-    align-self: stretch;
-  }
-  .theory-fano-matrix-grid {
-    margin-top: 8px;
-  }
-  .theory-fano-checks {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    padding-top: 12px;
-  }
-  .theory-fano-check-rows {
-    flex: 1;
-    align-items: center;
-    margin: 8px 0;
-  }
-  .theory-fano-check {
-    gap: 4px;
-    padding: 6px 0;
-  }
-  .theory-fano-syndrome {
-    min-height: 44px;
-  }
-  .theory-fano-matrix-footer {
-    padding-top: 12px;
-  }
-}
 @container fano-correspondence (width < 540px) {
   .theory-fano-correspondence-layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
+    gap: 12px;
   }
   .theory-fano-matrix {
     border-top: 1px solid #26263a;
-    padding-top: 12px;
+    padding-top: 8px;
   }
 }
 @container fano-geometry (width < 280px) {
@@ -2361,6 +2355,7 @@ button.theory-diagram-button {
 }
 .theory-valuation {
   width: 100%;
+  container: valuation / inline-size;
   padding-top: 12px;
   border-top: 1px solid #2a2a40;
   color: #a8a8c8;
@@ -2393,11 +2388,11 @@ button.theory-diagram-button {
   gap: 6px;
 }
 .theory-valuation-pair {
-  padding: 4px 0;
+  padding: 2px 0;
   white-space: nowrap;
 }
 .theory-valuation-pair > code {
-  margin-left: auto;
+  margin-left: 4px;
   font-size: 10px;
   color: #9090b8;
 }
@@ -2441,6 +2436,12 @@ button.theory-diagram-button {
   font-size: 10px;
   text-align: center;
   overflow-wrap: anywhere;
+}
+@container valuation (min-width: 540px) {
+  .theory-valuation-pairs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 12px;
+  }
 }
 @media (max-width: 440px) {
   .theory-valuation-pairs {
@@ -2503,7 +2504,8 @@ button.theory-diagram-button {
 .theory-octahedron-figure svg {
   display: block;
   width: 100%;
-  max-width: 340px;
+  /* Keep the diagram scale continuous when its surrounding grid changes. */
+  max-width: clamp(260px, 45cqw, calc(340px - var(--theory-octahedron-reduction, 0px)));
   margin: 0 auto;
   overflow: visible;
 }
@@ -2620,7 +2622,7 @@ button.theory-diagram-button {
 @container octahedron (min-width: 600px) {
   .theory-octahedron-layout {
     grid-template-areas: "controls figure results" "controls figure results";
-    grid-template-columns: minmax(0, 1fr) clamp(270px, 45cqw, 340px) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) clamp(270px, 45cqw, calc(340px - var(--theory-octahedron-reduction, 0px))) minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
     column-gap: 16px;
   }
@@ -2644,14 +2646,36 @@ button.theory-diagram-button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@container octahedron (440px <= width < 600px) {
+@container octahedron (360px <= width < 600px) {
   .theory-octahedron-choices {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 @container octahedron (width < 600px) {
-  .theory-octahedron-choices button {
+  .theory-octahedron-layout {
+    gap: 8px 16px;
+  }
+  .theory-octahedron-inspector,
+  .theory-octahedron-status {
+    row-gap: 8px;
+  }
+  .theory-octahedron-choices {
     gap: 4px;
+  }
+  .theory-octahedron-choices button {
+    gap: 3px;
+    padding-inline: 2px;
+  }
+  .theory-octahedron-choices .theory-octahedron-swatch {
+    width: 8px;
+    height: 8px;
+  }
+  .theory-octahedron-edge-results {
+    gap: 8px;
+  }
+  .theory-octahedron-edge-result {
+    gap: 4px;
+    padding: 4px 0 4px 8px;
   }
 }
 @container octahedron (width < 360px) {
@@ -2670,32 +2694,45 @@ button.theory-diagram-button {
     height: 6px;
   }
 }
+@media (min-width: 1024px) {
+  .theory-octahedron {
+    --theory-octahedron-reduction: clamp(0px, calc((100vw - 1024px) * 0.375), 60px);
+  }
+  .theory-octahedron-inspector,
+  .theory-octahedron-status {
+    max-width: 240px;
+  }
+  .theory-octahedron-choices {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 .theory-die-figure {
+  container: color-die / inline-size;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 8px 32px;
+  gap: 8px clamp(8px, 2.5vw, 32px);
   width: 100%;
+  max-width: 640px;
   padding: 12px 0;
 }
 .theory-die-figure > * {
+  justify-self: center;
+  width: 100%;
   min-width: 0;
+  max-width: 280px;
 }
 .theory-die-net {
-  container: die-net / inline-size;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
   width: 100%;
 }
-@container die-net (max-width: 180px) {
-  .theory-die-net-name {
-    font-size: 20px;
-  }
-  .theory-die-net-bits {
-    font-size: 14px;
-  }
+.theory-die-net svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
 }
 .theory-die-net-sequence,
 .theory-die-net-cut {
@@ -2705,7 +2742,7 @@ button.theory-diagram-button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   font-family: var(--font-mono);
   color: #c8c8d8;
@@ -2722,7 +2759,7 @@ button.theory-diagram-button {
 }
 .theory-die-pairs {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   font-size: 14px;
 }
 .theory-die-pair {
@@ -2730,6 +2767,23 @@ button.theory-diagram-button {
   grid-template-columns: auto auto auto auto;
   align-items: center;
   gap: 10px;
+  min-height: 24px;
+  padding: 2px 3px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  text-align: center;
+  touch-action: manipulation;
+}
+.theory-die-pair[data-highlighted="true"],
+.theory-die-pair[aria-pressed="true"] {
+  border-color: #80a0ff;
+  background: #1a1a30;
+}
+.theory-die-pair:focus-visible {
+  outline-offset: 0;
 }
 .theory-die-face-label {
   display: inline-flex;
@@ -2760,6 +2814,38 @@ button.theory-diagram-button {
 }
 .theory-die-law span {
   white-space: nowrap;
+}
+@container color-die (max-width: 440px) {
+  .theory-die-net {
+    --theory-net-caption-size: 9px;
+  }
+  .theory-die-ranks {
+    gap: 8px;
+  }
+  .theory-die-ranks .theory-diagram-label {
+    font-size: 11px;
+  }
+  .theory-die-numbering,
+  .theory-die-law {
+    font-size: 10px;
+  }
+  .theory-die-pairs {
+    font-size: 11px;
+  }
+  .theory-die-pair {
+    gap: 4px;
+  }
+  .theory-die-face-label {
+    gap: 3px;
+  }
+  .theory-die-swatch {
+    width: 8px;
+    height: 8px;
+  }
+  .theory-die-pair-sum {
+    margin-left: 0;
+    font-size: 9px;
+  }
 }
 .theory-mixing-pair {
   display: grid;
@@ -3062,7 +3148,12 @@ button.theory-diagram-button {
 .theory-hamming-check-state[data-failed="true"] {
   color: var(--c-error, #ff4060);
 }
+.theory-hamming-set-detail-slot {
+  display: grid;
+  min-width: 0;
+}
 .theory-hamming-set-detail {
+  grid-area: 1 / 1;
   min-height: 0;
   margin-top: 6px;
   padding: 6px 0 0;
@@ -3074,6 +3165,17 @@ button.theory-diagram-button {
 .theory-hamming-set-detail p {
   margin: 4px 0 0;
   color: var(--c-text-muted, #9090b8);
+}
+.theory-hamming-set-detail-sizer {
+  visibility: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.theory-hamming-check-explanations {
+  display: grid;
+}
+.theory-hamming-check-explanations > p {
+  grid-area: 1 / 1;
 }
 .theory-hamming-check-formula {
   margin-top: 4px;
@@ -3129,8 +3231,10 @@ button.theory-diagram-button {
     white-space: nowrap;
     gap: 3px;
   }
-  .theory-hamming-set-detail {
+  .theory-hamming-set-detail-slot {
     grid-column: 1 / -1;
+  }
+  .theory-hamming-set-detail {
     min-height: 0;
     margin-top: 2px;
     padding-top: 6px;
@@ -3143,7 +3247,7 @@ button.theory-diagram-button {
 .theory-binary-svg {
   display: block;
   width: 100%;
-  height: clamp(168px, 60.87cqw, 310px);
+  height: clamp(168px, 60.87cqw, 260px);
   font: clamp(7px, 2.445cqw, 12.5px) var(--font-mono);
   fill: var(--c-text-dimmer, #8a8aaa);
   text-anchor: middle;
@@ -3215,6 +3319,12 @@ button.theory-diagram-button {
   color: var(--c-text-dimmer, #8a8aaa);
   font: clamp(9px, 2.3cqw, 11px)/1.6 var(--font-mono);
 }
+@container (min-width: 540px) {
+  .theory-binary-notes {
+    gap: 2px;
+    padding-top: 6px;
+  }
+}
 .theory-binary-key {
   font: inherit;
 }
@@ -3232,20 +3342,29 @@ button.theory-diagram-button {
   min-width: 0;
 }
 .theory-hue-overview {
+  container: hue-overview / inline-size;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 24px;
+  grid-template-rows: auto auto;
+  gap: 4px 24px;
   align-items: stretch;
   width: 100%;
   margin: 0 auto;
 }
 .theory-hue-cycle-panel {
-  container-type: inline-size;
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 280px;
+  max-width: clamp(180px, 30cqw, 240px);
   margin: 0 auto;
+}
+.theory-hue-caption {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #a6afc6;
+  font: 10px/1.4 var(--font-sans);
+  text-align: center;
+  white-space: nowrap;
 }
 .theory-hue-cycle {
   display: flex;
@@ -3257,7 +3376,23 @@ button.theory-diagram-button {
   display: block;
   width: 100%;
 }
+.theory-hue-start-focus {
+  opacity: 0;
+}
+.theory-hue-cycle-svg [data-cycle-node]:focus-visible {
+  outline: none;
+}
+.theory-hue-cycle-svg [data-cycle-node]:focus-visible .theory-hue-start-focus {
+  opacity: 1;
+}
+@media (min-width: 1024px) {
+  .theory-hue {
+    --theory-hue-gap: clamp(8px, calc(12px - (100vw - 1024px) * 0.025), 12px);
+    --theory-hue-plot-gap: clamp(10px, calc(16px - (100vw - 1024px) * 0.0375), 16px);
+  }
+}
 .theory-hue-cycle-plot {
+  container-type: inline-size;
   position: relative;
   width: 100%;
 }
@@ -3269,17 +3404,60 @@ button.theory-diagram-button {
 .theory-hue-zigzag {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--theory-hue-plot-gap, 16px);
   min-width: 0;
 }
-.theory-hue-controls {
+.theory-hue-center {
   position: absolute;
-  top: 45%;
+  top: 47%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 64%;
+  pointer-events: none;
+}
+.theory-hue-readout {
+  --theory-hue-title-size: clamp(11px, 5cqw, 13px);
+  --theory-hue-action-size: clamp(10px, 4.6cqw, 11px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc((var(--theory-hue-title-size) + var(--theory-hue-action-size)) * 1.25 + 2px);
+  gap: 2px;
+  color: #c8c8d8;
+  font-family: var(--font-mono);
+  line-height: 1.25;
+  white-space: nowrap;
+  pointer-events: auto;
+}
+.theory-hue-transition {
+  min-height: 1.25em;
+  font-size: var(--theory-hue-title-size);
+  font-weight: 700;
+}
+.theory-hue-action {
+  min-height: 1.25em;
+  font-size: var(--theory-hue-action-size);
+  color: #b3bedb;
+}
+.theory-hue-direction-hint {
+  margin-top: auto;
+  font-family: var(--font-sans);
+  font-size: var(--theory-hue-action-size);
+  color: #b3bedb;
+  text-align: center;
+  white-space: nowrap;
+  transform: translateY(clamp(0px, calc(34px - 20cqw), 4px));
+}
+.theory-hue-controls {
   display: flex;
   justify-content: center;
   gap: clamp(4px, 2cqw, 8px);
+  pointer-events: auto;
 }
 .theory-zigzag-level-controls {
   display: grid;
@@ -3327,8 +3505,10 @@ button.theory-diagram-button {
 }
 .theory-hue tr[data-hue-selected="true"] {
   background: #1b2038;
-  outline: 1px solid #6b85d4;
-  outline-offset: -1px;
+}
+.theory-hue tr[data-hue-selected="true"] td:first-child {
+  color: #eef3ff;
+  box-shadow: inset 2px 0 var(--theory-edge-color);
 }
 .theory-zigzag-table {
   font-size: 12px;
@@ -3337,19 +3517,19 @@ button.theory-diagram-button {
   display: none;
   white-space: nowrap;
 }
+@container hue-overview (max-width: 680px) {
+  .theory-zigzag-heading-full {
+    display: none;
+  }
+  .theory-zigzag-heading-short {
+    display: inline;
+  }
+}
 .theory-hue .theory-zigzag-table {
   height: 100%;
 }
-.theory-hue td button {
-  padding: 4px 0;
-  min-height: 24px;
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+.theory-hue .theory-zigzag-table tbody tr {
+  height: 25px;
 }
 .theory-hamming-generation {
   display: grid;
@@ -3366,12 +3546,19 @@ button.theory-diagram-button {
   border: 1px solid #2a2a44;
   border-radius: 4px;
 }
-.theory-hamming-flow [data-parity-member="true"] {
-  outline: 2px solid #8ba8ff;
-  outline-offset: 2px;
+.theory-hamming-flow [data-parity-member="true"] [data-bit-value] {
+  text-decoration: underline;
+  text-decoration-color: #8ba8ff;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
 }
 .theory-hamming-flow [data-parity-member="false"] {
-  opacity: 0.4;
+  opacity: 0.55;
+}
+.theory-hamming-flow [data-parity-member="false"][data-flow-emphasis="error"],
+.theory-hamming-flow [data-parity-member="false"][aria-pressed="true"],
+.theory-hamming-flow [data-parity-member="false"]:focus-visible {
+  opacity: 1;
 }
 .theory-hamming-flow .theory-hamming-sets {
   padding: 8px 12px;
@@ -3381,18 +3568,10 @@ button.theory-diagram-button {
   border-radius: 6px;
 }
 @media (max-width: 760px) {
-  .theory-die-figure {
-    gap: 8px 16px;
-  }
   .theory-hue-overview {
-    gap: 12px;
+    column-gap: 12px;
     --theory-edge-cell-padding: 2px;
     --theory-edge-row-padding: 0;
-  }
-  .theory-hue td button {
-    min-height: 24px;
-    padding: 2px 0;
-    white-space: nowrap;
   }
   .theory-hamming-generation {
     grid-template-columns: minmax(0, 1fr);
@@ -3421,49 +3600,12 @@ button.theory-diagram-button {
   .theory-octahedron-edge-result {
     padding-left: 8px;
   }
-  .theory-die-figure {
-    gap: 8px;
-    --theory-net-caption-size: 9px;
-  }
-  .theory-die-ranks {
-    gap: 8px;
-  }
-  .theory-die-ranks .theory-diagram-label {
-    font-size: 11px;
-  }
-  .theory-die-numbering,
-  .theory-die-law {
-    font-size: 10px;
-  }
-  .theory-die-pairs {
-    font-size: 11px;
-  }
-  .theory-die-pair {
-    gap: 4px;
-  }
-  .theory-die-face-label {
-    gap: 3px;
-  }
-  .theory-die-swatch {
-    width: 8px;
-    height: 8px;
-  }
-  .theory-die-pair-sum {
-    margin-left: 0;
-    font-size: 9px;
-  }
   .theory-hue-overview {
     --theory-edge-cell-padding: 1px;
-    gap: 8px;
+    column-gap: 8px;
   }
   .theory-hue-overview .theory-zigzag-table {
     font-size: 10px;
-  }
-  .theory-hue-overview .theory-zigzag-heading-full {
-    display: none;
-  }
-  .theory-hue-overview .theory-zigzag-heading-short {
-    display: inline;
   }
   .theory-hue-cycle .theory-diagram-label {
     font-size: 11px;

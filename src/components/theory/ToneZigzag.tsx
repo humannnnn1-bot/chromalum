@@ -11,7 +11,7 @@ import {
 } from "../../chromalum-color-model";
 import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
-import { S_THEORY_BTN, S_THEORY_BTN_ACTIVE, S_CURSOR_POINTER } from "../../styles/shared";
+import { S_THEORY_BTN, S_THEORY_BTN_ACTIVE } from "../../styles/shared";
 import { C, FONT, FS, FW, SP } from "../../styles/tokens";
 import { usePinReset } from "./pin-reset";
 
@@ -22,15 +22,10 @@ const PH = 200;
 const MR = 41;
 const MB = 44;
 const VB_W = ML + PW + MR;
-const VB_H = MT + PH + MB;
 const LEVEL_COUNT = CHROMALUM_TONE_DENOMINATOR + 1;
 const LEVELS = Array.from({ length: LEVEL_COUNT }, (_, level) => level);
 const CHANNEL_COLORS = { G: "#00d848", R: "#ff4050", B: "#5470ff" } as const;
 const SUBSCRIPT_DIGITS = "₀₁₂₃₄₅₆₇₈₉";
-
-function yLevel(level: number): number {
-  return MT + PH - (level / CHROMALUM_TONE_DENOMINATOR) * PH;
-}
 
 function levelLabel(level: number): string {
   return `${THEORY_LEVELS[level].short}${SUBSCRIPT_DIGITS[level]}`;
@@ -96,10 +91,11 @@ export function findToneIntersections(targetTone: number): { h: number; color: s
 interface Props {
   hlLevel: number | null;
   onHover: (level: number | null) => void;
-  selectedEdge?: number;
+  selectedEdge?: number | null;
+  currentLevel?: number | null;
   direction?: 1 | -1;
-  onSelectEdge?: (edge: number) => void;
   companion?: React.ReactNode;
+  overviewCaption?: React.ReactNode;
   status?: React.ReactNode;
 }
 
@@ -107,9 +103,10 @@ export const ToneZigzag = React.memo(function ToneZigzag({
   hlLevel,
   onHover,
   selectedEdge,
+  currentLevel = null,
   direction = 1,
-  onSelectEdge,
   companion,
+  overviewCaption,
   status,
 }: Props) {
   const { t } = useTranslation();
@@ -117,23 +114,34 @@ export const ToneZigzag = React.memo(function ToneZigzag({
   const descriptionId = useId();
   const plotContainerRef = useRef<HTMLDivElement>(null);
   const [viewBoxWidth, setViewBoxWidth] = useState(VB_W);
+  const [plotHeight, setPlotHeight] = useState(PH);
   const [pinned, setPinned] = useState<number | null>(null);
   usePinReset(setPinned);
+  const hasCompanion = Boolean(companion);
 
-  // Use extra horizontal room without enlarging the labels, points, or vertical scale.
+  // Spread the plot horizontally and compact its desktop scale without shrinking labels or points.
   useLayoutEffect(() => {
     const container = plotContainerRef.current;
     if (!container) return;
-    const measure = () => setViewBoxWidth(Math.max(VB_W, container.getBoundingClientRect().width));
+    const measure = () => {
+      setViewBoxWidth(Math.max(VB_W, container.getBoundingClientRect().width));
+      const desktopProgress = hasCompanion ? Math.max(0, Math.min(1, (window.innerWidth - 1024) / 160)) : 0;
+      setPlotHeight(PH - 60 * desktopProgress);
+    };
     measure();
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(measure);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, []);
+    window.addEventListener("resize", measure);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
+    observer?.observe(container);
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer?.disconnect();
+    };
+  }, [hasCompanion]);
 
   const plotWidth = viewBoxWidth - ML - MR;
+  const viewBoxHeight = MT + plotHeight + MB;
   const xHue = (hueAngleDeg: number) => ML + (hueAngleDeg / 360) * plotWidth;
+  const yLevel = (level: number) => MT + plotHeight - (level / CHROMALUM_TONE_DENOMINATOR) * plotHeight;
 
   const enterLevel = useCallback((level: number) => onHover(level), [onHover]);
   const leaveLevel = useCallback(() => onHover(null), [onHover]);
@@ -160,11 +168,23 @@ export const ToneZigzag = React.memo(function ToneZigzag({
   const activeLevel = externalLevel ?? pinned;
   const complementLevel = activeLevel === null ? null : CHROMALUM_TONE_DENOMINATOR - activeLevel;
   const intersectionSequence = CANONICAL_HUE_CYCLE.map(({ levelIndex }) => levelIndex).join(" ");
+  const edgeDeltaLabel = (index: number) =>
+    selectedEdge === index
+      ? signed(CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] * direction)
+      : `${currentLevel === null ? "Δ" : "±"}${Math.abs(CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index])}`;
+  const currentHueAngle =
+    currentLevel === null
+      ? null
+      : selectedEdge == null
+        ? CANONICAL_HUE_EDGES.find((edge) => edge.fromLevel === currentLevel)?.fromHueAngleDeg
+        : direction === 1
+          ? CANONICAL_HUE_EDGES[selectedEdge].toHueAngleDeg
+          : CANONICAL_HUE_EDGES[selectedEdge].fromHueAngleDeg;
 
   return (
     <div
       className={`theory-zigzag-block${companion ? " theory-hue" : ""}`}
-      style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: SP["2xl"] }}
+      style={{ display: "flex", flexDirection: "column", alignItems: "stretch", gap: `var(--theory-hue-gap, ${SP["2xl"]}px)` }}
     >
       <div className={companion ? "theory-hue-overview" : undefined}>
         {companion}
@@ -172,6 +192,8 @@ export const ToneZigzag = React.memo(function ToneZigzag({
           <table
             className="theory-zigzag-table"
             aria-label={t("theory_zigzag_table_aria")}
+            // Reading or copying the reference table must not trigger the page's background reset.
+            onClick={(event) => event.stopPropagation()}
             style={{
               width: "100%",
               tableLayout: "fixed",
@@ -181,10 +203,10 @@ export const ToneZigzag = React.memo(function ToneZigzag({
             }}
           >
             <colgroup>
-              <col style={{ width: "25%" }} />
-              <col style={{ width: "31%" }} />
-              <col style={{ width: "14%" }} />
               <col style={{ width: "30%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "18%" }} />
+              <col style={{ width: "34%" }} />
             </colgroup>
             <thead>
               <tr>
@@ -204,14 +226,14 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                       borderBottom: `1px solid ${C.borderAccent}`,
                       color: C.accentBright,
                       fontWeight: FW.bold,
-                      textAlign: "left",
+                      textAlign: index === 1 || index === 2 ? "center" : "left",
                       whiteSpace: "normal",
                       overflowWrap: "anywhere",
                     }}
                   >
                     <span className="theory-zigzag-heading-full">{heading}</span>
                     <span className="theory-zigzag-heading-short" aria-hidden="true">
-                      {[t("theory_zigzag_table_transition_short"), "τ · w", "ΔL", "⊂ / ⊃"][index]}
+                      {[t("theory_zigzag_table_transition_short"), t("theory_zigzag_table_toggle_short"), "ΔL", "⊂ / ⊃"][index]}
                     </span>
                   </th>
                 ))}
@@ -220,32 +242,41 @@ export const ToneZigzag = React.memo(function ToneZigzag({
             <tbody>
               {CANONICAL_HUE_EDGES.map((edge, index) => {
                 const channel = CHROMALUM_HUE_TOGGLE_CYCLE[index];
-                const delta = CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] * direction;
-                const fromLevel = direction === 1 ? edge.fromLevel : edge.toLevel;
-                const toLevel = direction === 1 ? edge.toLevel : edge.fromLevel;
+                const isCurrent = selectedEdge === index;
+                const edgeDirection = isCurrent ? direction : 1;
+                const delta = CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] * edgeDirection;
+                const fromLevel = edgeDirection === 1 ? edge.fromLevel : edge.toLevel;
+                const toLevel = edgeDirection === 1 ? edge.toLevel : edge.fromLevel;
                 const relation = delta > 0 ? "⊂" : "⊃";
                 return (
-                  <tr key={`row-${index}`} data-edge-row={index} data-hue-selected={selectedEdge === index}>
-                    <td style={TABLE_CELL_STYLE}>
-                      {onSelectEdge ? (
-                        <button
-                          type="button"
-                          aria-pressed={selectedEdge === index}
-                          onClick={() => onSelectEdge(index)}
-                          aria-label={t("theory_hue_select_edge", `${levelLabel(fromLevel)} → ${levelLabel(toLevel)}`)}
-                        >
-                          {levelLabel(fromLevel)}→{levelLabel(toLevel)}
-                        </button>
-                      ) : (
-                        <>
-                          {levelLabel(fromLevel)}→{levelLabel(toLevel)}
-                        </>
-                      )}
+                  <tr
+                    key={`row-${index}`}
+                    data-edge-row={index}
+                    data-hue-selected={isCurrent}
+                    aria-current={isCurrent ? "step" : undefined}
+                    style={{ "--theory-edge-color": CHANNEL_COLORS[channel] } as React.CSSProperties}
+                  >
+                    <td style={{ ...TABLE_CELL_STYLE, paddingLeft: `calc(var(--theory-edge-cell-padding, ${SP.lg}px) + 4px)` }}>
+                      {levelLabel(fromLevel)}
+                      {isCurrent ? "→" : "↔"}
+                      {levelLabel(toLevel)}
                     </td>
-                    <td style={{ ...TABLE_CELL_STYLE, color: CHANNEL_COLORS[channel] }}>
-                      τ<sub>{channel}</sub>·w<sub>{channel}</sub>={CHROMALUM_GRB_WEIGHTS[channel]}
+                    <td
+                      style={{ ...TABLE_CELL_STYLE, color: CHANNEL_COLORS[channel], textAlign: "center", fontWeight: FW.bold }}
+                      title={`w${channel}=${CHROMALUM_GRB_WEIGHTS[channel]}`}
+                    >
+                      {channel}
                     </td>
-                    <td style={{ ...TABLE_CELL_STYLE, color: CHANNEL_COLORS[channel], fontWeight: FW.bold }}>{signed(delta)}</td>
+                    <td
+                      style={{
+                        ...TABLE_CELL_STYLE,
+                        color: isCurrent ? CHANNEL_COLORS[channel] : C.textMuted,
+                        fontWeight: FW.bold,
+                        textAlign: "center",
+                      }}
+                    >
+                      {edgeDeltaLabel(index)}
+                    </td>
                     <td style={TABLE_CELL_STYLE}>
                       {levelLabel(fromLevel)}
                       {relation}
@@ -257,15 +288,17 @@ export const ToneZigzag = React.memo(function ToneZigzag({
             </tbody>
           </table>
         </div>
+        {overviewCaption}
       </div>
       {status}
       <div className="theory-hue-zigzag" ref={plotContainerRef}>
         <svg
-          viewBox={`0 0 ${viewBoxWidth} ${VB_H}`}
+          viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
           className="theory-zigzag-svg"
-          style={{ display: "block", width: "100%", maxWidth: "100%", alignSelf: "center" }}
+          style={{ display: "block", width: "100%", maxWidth: "100%", alignSelf: "center", cursor: "default" }}
           role="img"
           aria-labelledby={`${titleId} ${descriptionId}`}
+          onClick={(event) => event.stopPropagation()}
         >
           <title id={titleId}>{t("theory_zigzag_title")}</title>
           <desc id={descriptionId}>
@@ -366,10 +399,10 @@ export const ToneZigzag = React.memo(function ToneZigzag({
           {/* Six canonical affine hue edges. */}
           {CANONICAL_HUE_EDGES.map((edge, index) => {
             const channel = CHROMALUM_HUE_TOGGLE_CYCLE[index];
-            const delta = CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] * direction;
             const midX = (xHue(edge.fromHueAngleDeg) + xHue(edge.toHueAngleDeg)) / 2;
             const midY = (yLevel(edge.fromLevel) + yLevel(edge.toLevel)) / 2;
-            const labelOffset = delta > 0 ? -10 : 13;
+            // Keep each label in place even when traversal reverses its sign.
+            const labelOffset = CHROMALUM_HUE_EDGE_LEVEL_DELTAS[index] > 0 ? -10 : 13;
             const angle = Math.atan2(
               (yLevel(edge.toLevel) - yLevel(edge.fromLevel)) * direction,
               (xHue(edge.toHueAngleDeg) - xHue(edge.fromHueAngleDeg)) * direction,
@@ -404,6 +437,7 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   />
                 )}
                 <text
+                  data-zigzag-delta={index}
                   x={midX}
                   y={midY + labelOffset}
                   textAnchor="middle"
@@ -411,9 +445,9 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   fontFamily={FONT.mono}
                   fontSize={FS.sm}
                   fontWeight={FW.bold}
-                  fill={CHANNEL_COLORS[channel]}
+                  fill={selectedEdge === index ? CHANNEL_COLORS[channel] : C.textMuted}
                 >
-                  {signed(delta)}
+                  {edgeDeltaLabel(index)}
                 </text>
               </g>
             );
@@ -470,6 +504,18 @@ export const ToneZigzag = React.memo(function ToneZigzag({
             strokeWidth={1.2}
             data-seam-copy="true"
           />
+          {currentLevel !== null && currentHueAngle != null && (
+            <circle
+              data-hue-current-node={currentLevel}
+              cx={xHue(currentHueAngle)}
+              cy={yLevel(currentLevel)}
+              r={8.5}
+              fill="none"
+              stroke={C.textWhite}
+              strokeWidth={1.6}
+              pointerEvents="none"
+            />
+          )}
 
           {/* Named chromatic vertices and hue-angle ticks. */}
           {[...CANONICAL_CHROMATIC_LEVEL_CYCLE, CANONICAL_CHROMATIC_LEVEL_CYCLE[0]].map((level, index) => (
@@ -488,8 +534,22 @@ export const ToneZigzag = React.memo(function ToneZigzag({
           ))}
           {[0, 60, 120, 180, 240, 300, 360].map((hueAngleDeg) => (
             <g key={`hue-${hueAngleDeg}`}>
-              <line x1={xHue(hueAngleDeg)} y1={MT + PH} x2={xHue(hueAngleDeg)} y2={MT + PH + 4} stroke={C.textDimmer} strokeWidth={0.7} />
-              <text x={xHue(hueAngleDeg)} y={MT + PH + 15} textAnchor="middle" fontFamily={FONT.mono} fontSize={FS.xxs} fill={C.textDimmer}>
+              <line
+                x1={xHue(hueAngleDeg)}
+                y1={MT + plotHeight}
+                x2={xHue(hueAngleDeg)}
+                y2={MT + plotHeight + 4}
+                stroke={C.textDimmer}
+                strokeWidth={0.7}
+              />
+              <text
+                x={xHue(hueAngleDeg)}
+                y={MT + plotHeight + 15}
+                textAnchor="middle"
+                fontFamily={FONT.mono}
+                fontSize={FS.xxs}
+                fill={C.textDimmer}
+              >
                 {hueFractionLabel(hueAngleDeg)}
               </text>
             </g>
@@ -497,21 +557,21 @@ export const ToneZigzag = React.memo(function ToneZigzag({
 
           <text
             x={ML - 42}
-            y={MT + PH / 2}
+            y={MT + plotHeight / 2}
             textAnchor="middle"
             fontFamily={FONT.mono}
             fontSize={FS.sm}
             fill={C.textMuted}
-            transform={`rotate(-90 ${ML - 42} ${MT + PH / 2})`}
+            transform={`rotate(-90 ${ML - 42} ${MT + plotHeight / 2})`}
           >
             T=L/7
           </text>
-          <text x={ML + plotWidth / 2} y={VB_H - 4} textAnchor="middle" fontFamily={FONT.mono} fontSize={FS.sm} fill={C.textMuted}>
+          <text x={ML + plotWidth / 2} y={viewBoxHeight - 4} textAnchor="middle" fontFamily={FONT.mono} fontSize={FS.sm} fill={C.textMuted}>
             h ∈ ℝ/ℤ
           </text>
 
           {/* Keep hover targets above every plotted mark so interaction does not break at crossings. */}
-          <g aria-hidden="true" data-tone-hover-layer="true" onMouseLeave={leaveLevel} style={S_CURSOR_POINTER}>
+          <g aria-hidden="true" data-tone-hover-layer="true" onMouseLeave={leaveLevel}>
             {LEVELS.map((level) => {
               const upperLevel = Math.min(CHROMALUM_TONE_DENOMINATOR, level + 0.5);
               const lowerLevel = Math.max(0, level - 0.5);
@@ -526,17 +586,6 @@ export const ToneZigzag = React.memo(function ToneZigzag({
                   fill="transparent"
                   data-tone-level-hover={level}
                   onMouseEnter={() => enterLevel(level)}
-                  onClick={
-                    onSelectEdge
-                      ? (event) => {
-                          const svg = event.currentTarget.ownerSVGElement;
-                          if (!svg) return;
-                          const bounds = svg.getBoundingClientRect();
-                          const x = ((event.clientX - bounds.left) / bounds.width) * viewBoxWidth;
-                          onSelectEdge(Math.max(0, Math.min(5, Math.floor(((x - ML) / plotWidth) * 6))));
-                        }
-                      : undefined
-                  }
                 />
               );
             })}

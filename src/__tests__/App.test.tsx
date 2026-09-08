@@ -38,7 +38,7 @@ describe("App", () => {
     expect(screen.getByRole("heading", { name: "Color Order and Binary Rank" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Rank and Boolean Operations" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Geometry and Codes of Nonzero Vectors" })).toBeTruthy();
-    expect(screen.getByRole("group", { name: "Binary Levels" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Eight-State Correspondence Table" })).toBeTruthy();
     expect(window.location.hash).toBe("#theory");
 
     fireEvent.click(screen.getByRole("tab", { name: "Source" }));

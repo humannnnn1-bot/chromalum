@@ -24,20 +24,14 @@ function edgesOf(v: number): number[] {
 
 const CHANNEL_COLORS: Record<string, string> = { G: "#00ff00", R: "#ff0000", B: "#0000ff" };
 
-// Hasse diagram target positions = pure linear projection of the cube onto a
-// body-diagonal-vertical viewpoint. x-coordinates match the isometric cube exactly
-// (so the transform is "camera rotation", no vertex crosses horizontally).
-// y = 210 − 50·(g+r+b), putting rank-0 at y=210 and rank-3 at y=60.
-const HASSE_POINTS: Record<number, { x: number; y: number }> = {
-  0: { x: 150, y: 210 },
-  1: { x: 89.37822173508928, y: 160 },
-  2: { x: 150, y: 160 },
-  3: { x: 89.37822173508928, y: 110 },
-  4: { x: 210.62177826491072, y: 160 },
-  5: { x: 150, y: 110 },
-  6: { x: 210.62177826491072, y: 110 },
-  7: { x: 150, y: 60 },
-};
+// Keep the cube's horizontal positions and vertical extent in the Hasse layout.
+// Equal rank spacing changes the projection without rescaling the diagram.
+const CUBE_TOP = Math.min(...Object.values(CUBE_POINTS).map(({ y }) => y));
+const CUBE_BOTTOM = Math.max(...Object.values(CUBE_POINTS).map(({ y }) => y));
+const hasseY = (rank: number) => CUBE_BOTTOM - ((CUBE_BOTTOM - CUBE_TOP) * rank) / 3;
+const HASSE_POINTS: Record<number, { x: number; y: number }> = Object.fromEntries(
+  THEORY_LEVELS.map(({ lv, bits }) => [lv, { x: CUBE_POINTS[lv].x, y: hasseY(bits[0] + bits[1] + bits[2]) }]),
+);
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t;
@@ -62,7 +56,7 @@ const SET_LABELS: Record<number, string> = {
 
 // Placement relative to each vertex in Hasse layout.
 const SET_LABEL_OFFSETS: Record<number, { dx: number; dy: number; anchor: "start" | "middle" | "end" }> = {
-  0: { dx: 0, dy: 18, anchor: "middle" },
+  0: { dx: 0, dy: 16, anchor: "middle" },
   1: { dx: -14, dy: 0, anchor: "end" },
   2: { dx: 0, dy: -16, anchor: "middle" },
   3: { dx: -13, dy: 0, anchor: "end" },
@@ -179,6 +173,19 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
     return { x: lerp(cube.x, hasse.x, t), y: lerp(cube.y, hasse.y, t) };
   };
 
+  // The current projection has x ∝ g−b and y = p(g+b)+qr.
+  // Its perpendicular depth axis is (−q, 2p, −q), oriented so K starts
+  // behind W. Recompute it during the morph and paint farther edges first.
+  const originY = getPos(0).y;
+  const p = getPos(4).y - originY;
+  const q = getPos(2).y - originY;
+  const vertexDepths = THEORY_LEVELS.map(({ bits: [g, r, b] }) => -q * (g + b) + 2 * p * r);
+  const orderedEdges = CUBE_EDGES.map((edge, index) => ({
+    edge,
+    index,
+    depth: (vertexDepths[edge[0]] + vertexDepths[edge[1]]) / 2,
+  })).sort((a, b) => (Math.abs(a.depth - b.depth) < 1e-9 ? a.index - b.index : a.depth - b.depth));
+
   const isEquator = (lv: number) => lv !== 0 && lv !== 7;
   const centralHitBoundary = (getPos(0).y + getPos(7).y) / 2;
 
@@ -208,7 +215,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
           <svg
             className="theory-cube-svg"
             viewBox="30 35 240 195"
-            preserveAspectRatio={animT > 0 ? "xMidYMid meet" : "xMidYMid slice"}
+            preserveAspectRatio="xMidYMid slice"
             role="group"
             aria-label={t("theory_cube_title")}
             onClick={(event) => {
@@ -278,7 +285,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
             )}
 
             {/* Edges */}
-            {CUBE_EDGES.map((e, ei) => {
+            {orderedEdges.map(({ edge: e, index: ei }) => {
               const p0 = getPos(e[0]),
                 p1 = getPos(e[1]);
               const back = isBackEdge(e[0], e[1]);
@@ -308,9 +315,10 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
 
             {/* Rank labels + Pascal counts with column headers (Hasse mode) */}
             {animT > 0 && (
-              <g opacity={animT} pointerEvents="none">
+              <g className="theory-cube-ranks" opacity={animT} pointerEvents="none">
                 {/* Column headers */}
                 <text
+                  className="theory-cube-rank-label"
                   x={42}
                   y={40}
                   textAnchor="middle"
@@ -322,6 +330,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                   rank
                 </text>
                 <text
+                  className="theory-cube-pascal-label"
                   x={258}
                   y={40}
                   textAnchor="middle"
@@ -334,15 +343,16 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 </text>
                 {/* Rank + Pascal values per row */}
                 {[
-                  { rank: 0, y: 210, count: 1 },
-                  { rank: 1, y: 160, count: 3 },
-                  { rank: 2, y: 110, count: 3 },
-                  { rank: 3, y: 60, count: 1 },
-                ].map(({ rank, y, count }) => (
+                  { rank: 0, count: 1 },
+                  { rank: 1, count: 3 },
+                  { rank: 2, count: 3 },
+                  { rank: 3, count: 1 },
+                ].map(({ rank, count }) => (
                   <React.Fragment key={"rank" + rank}>
                     <text
+                      className="theory-cube-rank-label"
                       x={42}
-                      y={y}
+                      y={hasseY(rank)}
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={FS.xxs}
@@ -352,8 +362,9 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                       {rank}
                     </text>
                     <text
+                      className="theory-cube-pascal-label"
                       x={258}
-                      y={y}
+                      y={hasseY(rank)}
                       textAnchor="middle"
                       dominantBaseline="central"
                       fontSize={FS.xxs}
@@ -378,6 +389,7 @@ export const ColorCube = React.memo(function ColorCube({ hlLevel, onHover }: Pro
                 return (
                   <text
                     key={"setlabel" + lv}
+                    data-cube-set-label={lv}
                     x={p.x + dx}
                     y={p.y + dy}
                     textAnchor={anchor}

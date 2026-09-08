@@ -7,8 +7,8 @@ import { useTranslation } from "../../i18n";
 import { FanoHammingMatrix } from "./FanoHammingMatrix";
 
 const W = 300,
-  H = 245,
-  VB_Y = 10;
+  H = 232,
+  VB_Y = 14;
 const DOT_R = 12;
 
 const LINE_CATEGORIES = ["primary", "complement", "secondary"] as const;

@@ -8,7 +8,7 @@ import { useTranslation } from "../i18n";
 import { PinResetContext } from "./theory/pin-reset";
 import { VennDiagram } from "./theory/VennDiagram";
 import { BinaryTable } from "./theory/BinaryTable";
-import { ColorDice, HueOrderNet } from "./theory/ColorDice";
+import { ColorDice } from "./theory/ColorDice";
 import { FanoPlane } from "./theory/FanoPlane";
 import { ColorCube } from "./theory/ColorCube";
 import { ColorMixing } from "./theory/ColorMixing";
@@ -224,10 +224,7 @@ export const TheoryPanel = React.memo(function TheoryPanel() {
           <Section id="theory-polyhedra" title={t("theory_geometry_title")} desc={t("theory_geometry_desc")}>
             <Subsection id="theory-color-die" title={t("theory_dice_section_title")} desc={t("theory_dice_net_desc")}>
               <Figure title={t("theory_dice_title")}>
-                <div className="theory-die-figure">
-                  <HueOrderNet hlLevel={hlLevel} onHover={onHover} />
-                  <ColorDice />
-                </div>
+                <ColorDice hlLevel={hlLevel} onHover={onHover} />
               </Figure>
               <Paragraphs text={[t("theory_dice_desc"), t("theory_dice_desc2")]} />
             </Subsection>

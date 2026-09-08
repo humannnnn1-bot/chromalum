@@ -23,20 +23,63 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
     await expect(cube.locator('[data-cube-active="true"]')).toHaveCount(0);
 
     const hue = page.locator(".theory-hue");
-    await hue.locator('[data-edge-row="3"] button').click();
+    const clockwise = hue.getByRole("button", { name: language === "ja" ? "時計回り" : "Clockwise", exact: true });
+    const counterclockwise = hue.getByRole("button", { name: language === "ja" ? "反時計回り" : "Counter-clockwise", exact: true });
+    const caption = hue.locator(".theory-hue-caption");
+    const expectDifferences = async (labels: string[]) => {
+      for (const selector of ["[data-cycle-delta]", "[data-zigzag-delta]", "[data-edge-row] td:nth-child(3)"]) {
+        await expect(hue.locator(selector)).toHaveText(labels);
+      }
+    };
+    await expect(caption).toHaveText("Each node represents a color state.");
+    await expectDifferences(["Δ4", "Δ2", "Δ1", "Δ4", "Δ2", "Δ1"]);
+    await expect(hue.locator("[data-hue-current-node]")).toHaveCount(0);
+    await expect(hue.locator("[data-edge-row] td:first-child")).toHaveText(["R₂↔Y₆", "Y₆↔G₄", "G₄↔C₅", "C₅↔B₁", "B₁↔M₃", "M₃↔R₂"]);
+    await expect(clockwise).toBeDisabled();
+    await expect(counterclockwise).toBeDisabled();
+    await expect(hue.locator('[data-cycle-node][role="button"]')).toHaveCount(6);
+    await expect(hue.locator('[data-hue-selected="true"], [data-hue-action]')).toHaveCount(0);
+    const start = hue.locator('[data-cycle-node="2"]');
+    await start.focus();
+    await start.press("Enter");
+    await expect(start).toHaveAttribute("aria-current", "true");
+    await expect(caption).toHaveText("The selected state is red.");
+    await expectDifferences(["±4", "±2", "±1", "±4", "±2", "±1"]);
+    await expect(hue.locator("[data-hue-current-node]")).toHaveAttribute("data-hue-current-node", "2");
+    await expect(hue.locator('[data-hue-selected="true"], [data-hue-action]')).toHaveCount(0);
+    await expect(clockwise).toBeEnabled();
+    await expect(counterclockwise).toBeEnabled();
+    await clockwise.click();
+    await expect(hue.locator('[data-cycle-node="6"]')).toHaveAttribute("aria-current", "true");
+    await expect(caption).toHaveText("The transition from red to yellow means adding green.");
+    await expect(caption).toHaveAttribute("lang", "en");
+    await expectDifferences(["+4", "±2", "±1", "±4", "±2", "±1"]);
+    await expect(hue.locator("[data-hue-current-node]")).toHaveAttribute("data-hue-current-node", "6");
+    await expect(
+      hue.locator(".theory-hue-cycle-svg [role='button'], .theory-hue-cycle-svg [tabindex], .theory-zigzag-svg [tabindex]"),
+    ).toHaveCount(0);
+    for (let step = 0; step < 3; step++) await clockwise.click();
+    await expect(hue.locator('[data-cycle-delta="3"]')).toHaveText("−4");
+    await expect(caption).toHaveText("The transition from cyan to blue means removing green.");
+    await expect(hue.locator("table button, table [role='button'], table [tabindex]")).toHaveCount(0);
     for (const attribute of ["data-cycle-edge", "data-hue-edge", "data-edge-row"]) {
       await expect(hue.locator(`[${attribute}="3"]`)).toHaveAttribute("data-hue-selected", "true");
     }
     await expect(hue.locator(".theory-hue-controls button")).toHaveCount(2);
+    const idleRows = await hue.locator('[data-edge-row][data-hue-selected="false"]').allTextContents();
     await hue.getByRole("button", { name: language === "ja" ? "反時計回り" : "Counter-clockwise", exact: true }).click();
+    expect(await hue.locator('[data-edge-row][data-hue-selected="false"]').allTextContents()).toEqual(idleRows);
+    await expectDifferences(["±4", "±2", "±1", "+4", "±2", "±1"]);
     await expect(hue.getByRole("status")).toContainText("ΔL=+4");
+    await expect(hue.locator('[data-cycle-delta="3"]')).toHaveText("+4");
+    await expect(caption).toHaveText("The transition from blue to cyan means adding green.");
     await expect(hue.locator('[data-edge-row="3"]')).toContainText("B₁→C₅");
     await hue.getByRole("button", { name: language === "ja" ? "時計回り" : "Clockwise", exact: true }).focus();
     await page.keyboard.press("Enter");
     await expect(hue.getByRole("status")).toContainText("ΔL=−4");
     await expect(hue.locator('[data-edge-row="3"]')).toContainText("C₅→B₁");
-    await hue.locator('[data-cycle-edge="5"]').focus();
-    await hue.locator('[data-cycle-edge="5"]').press("Space");
+    await clockwise.click();
+    await clockwise.click();
     await expect(hue.locator('[data-hue-edge="5"]')).toHaveAttribute("data-hue-selected", "true");
     const plot = hue.locator(".theory-zigzag-svg");
     await plot.scrollIntoViewIfNeeded();
@@ -48,18 +91,33 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
         return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
       });
     await page.mouse.click(point.x, point.y);
+    await hue.locator('[data-cycle-node="1"]').click();
+    await hue.locator('[data-cycle-delta="3"]').click();
+    await expect(hue.locator('[data-cycle-edge="5"]')).toHaveAttribute("data-hue-selected", "true");
+    await expect(hue.locator('[data-cycle-node="1"]')).toHaveCSS("cursor", "default");
+    await expect(plot.locator("[data-tone-hover-layer]")).toHaveCSS("cursor", "default");
+    await counterclockwise.focus();
+    await page.keyboard.press("Tab");
+    await expect(clockwise).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(hue.locator('[data-tone-level-control="0"]')).toBeFocused();
+    for (let step = 0; step < 3; step++) await clockwise.click();
     await expect(hue.locator('[data-cycle-edge="2"]')).toHaveAttribute("data-hue-selected", "true");
 
     const checks = page.getByTestId("hamming-parity-sets");
     await expect(page.getByTestId("hamming-flow-operation-check").getByTestId("hamming-parity-sets")).toHaveCount(1);
     await checks.getByTestId("hamming-venn-check-4").click();
     await expect(page.getByTestId("hamming-stage-received").locator('[data-parity-member="true"]')).toHaveCount(4);
-    for (const width of [320, 362, 452, 534, 582, 600, 601, 870, 1039, 1186]) {
+    let previousCycleSize = 0;
+    for (const width of [
+      320, 362, 452, 458, 479, 480, 534, 582, 600, 601, 739, 760, 761, 768, 865, 866, 867, 960, 1023, 1024, 1030, 1039, 1186, 1440,
+    ]) {
       await page.setViewportSize({ width, height: 900 });
       await hue.scrollIntoViewIfNeeded();
+      await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
       const layout = await page.evaluate(() => {
         const selectors =
-          ".theory-derivation, .theory-derivation-order, .theory-derivation-conclusion, .theory-cube, .theory-hue, .theory-hue-overview, .theory-hue table, .theory-hue td, .theory-hue td button, .theory-hue-zigzag, .theory-hue-controls button, [data-tone-level-controls], [data-tone-level-control], .theory-hamming-flow, .theory-hamming-generation, .theory-hamming-stage, .theory-hamming-sets";
+          ".theory-derivation, .theory-derivation-order, .theory-derivation-conclusion, .theory-cube, .theory-hue, .theory-hue-overview, .theory-hue-caption, .theory-hue table, .theory-hue td, .theory-hue-zigzag, .theory-hue-controls button, [data-tone-level-controls], [data-tone-level-control], .theory-hamming-flow, .theory-hamming-generation, .theory-hamming-stage, .theory-hamming-sets";
         const overflow = [...document.querySelectorAll(selectors)]
           .filter((element) => {
             const box = element.getBoundingClientRect();
@@ -75,11 +133,16 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
           }));
         const paths = [...document.querySelectorAll(".theory-derivation-paths > figure")].map((element) => element.getBoundingClientRect());
         const cycle = document.querySelector(".theory-hue-cycle")!.getBoundingClientRect();
-        const cyclePanel = document.querySelector(".theory-hue-cycle-panel")!.getBoundingClientRect();
+        const captionElement = document.querySelector(".theory-hue-caption")!;
+        const caption = captionElement.getBoundingClientRect();
+        const captionText = document.createRange();
+        captionText.selectNodeContents(captionElement);
         const cycleSvg = document.querySelector<SVGSVGElement>(".theory-hue-cycle-svg")!;
         const cycleBox = cycleSvg.getBoundingClientRect();
+        const deltaLabels = [...cycleSvg.querySelectorAll("[data-cycle-delta]")];
+        const nodeBounds = [...cycleSvg.querySelectorAll("[data-cycle-node-dot]")].map((node) => node.getBoundingClientRect());
         const buttons = document.querySelector(".theory-hue-controls")!.getBoundingClientRect();
-        const bits = document.querySelector(".theory-hue-bits")!.getBoundingClientRect();
+        const readout = document.querySelector(".theory-hue-readout")!.getBoundingClientRect();
         const directionButtons = [...document.querySelectorAll(".theory-hue-controls button")];
         const polygon = [...cycleSvg.querySelectorAll("[data-cycle-edge] line:first-child")].map((element) => {
           const line = element as SVGLineElement;
@@ -99,11 +162,29 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
         };
         const table = document.querySelector(".theory-hue table")!.getBoundingClientRect();
         const overview = document.querySelector(".theory-hue-overview")!.getBoundingClientRect();
+        const captionArea = overview.bottom - Math.max(cycle.bottom, table.bottom);
+        const captionGap = parseFloat(getComputedStyle(document.querySelector(".theory-hue-overview")!).rowGap);
         const zigzag = document.querySelector(".theory-hue-zigzag")!.getBoundingClientRect();
+        const hue = document.querySelector(".theory-hue")!.getBoundingClientRect();
+        const plot = document.querySelector<SVGSVGElement>(".theory-hue .theory-zigzag-svg")!;
+        const levels = [...plot.querySelectorAll("[data-tone-level] > line")].map((line) => line.getBoundingClientRect().y);
         return {
           overflow,
           sideBySide: Math.abs(paths[0].top - paths[1].top) < 1,
           cycleLeftOfTable: cycle.right <= table.left && cycle.top < table.bottom && table.top < cycle.bottom,
+          desktopOverviewHeight: window.innerWidth < 1186 || overview.height - captionArea <= 270,
+          middleOverviewHeight: window.innerWidth < 480 || window.innerWidth > 867 || overview.height - captionArea <= 240,
+          cycleSize: cycleBox.width,
+          cycleUsesAvailableSpace:
+            Math.max(...nodeBounds.map((box) => box.bottom)) - Math.min(...nodeBounds.map((box) => box.top)) >= cycleBox.height * 0.9 - 1,
+          captionArea,
+          captionBelowCycle: caption.top >= cycle.bottom && caption.top >= table.bottom,
+          captionSpansOverview: Math.abs(caption.left - overview.left) < 1 && Math.abs(caption.right - overview.right) < 1,
+          captionFits: captionElement.scrollHeight <= captionElement.clientHeight && caption.height <= 15,
+          captionSingleLine: captionText.getClientRects().length === 1,
+          desktopTotalHeight: window.innerWidth < 1186 || hue.height - captionArea <= 568,
+          desktopPlotHeight: window.innerWidth < 1186 || plot.getBoundingClientRect().height <= 219,
+          desktopLevelSpacing: window.innerWidth < 1186 || levels.slice(1).every((y, i) => Math.abs(y - levels[i]) >= 19.5),
           tableBelowCycle: table.top >= cycle.bottom,
           buttonsInsideCycle: directionButtons.every((button) => {
             const box = button.getBoundingClientRect();
@@ -114,11 +195,50 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
               [box.left - 2, box.bottom + 2],
             ].every(([x, y]) => insideCycle(x, y));
           }),
-          buttonsClearOfBits: buttons.top > bits.bottom,
+          buttonsClearOfReadout: buttons.top > readout.bottom,
+          readoutInsideCycle: [...document.querySelectorAll(".theory-hue-readout > div")].every((line) => {
+            const box = line.getBoundingClientRect();
+            return [
+              [box.left, box.top],
+              [box.right, box.top],
+              [box.left, box.bottom],
+              [box.right, box.bottom],
+            ].every(([x, y]) => insideCycle(x, y));
+          }),
+          nodeLabelsFit: [...cycleSvg.querySelectorAll("[data-cycle-node] > text")].every((label) => {
+            const text = label.getBoundingClientRect();
+            const node = label.parentElement!.querySelector("[data-cycle-node-dot]")!.getBoundingClientRect();
+            return (
+              /^[01]{3}$/.test(label.textContent!) &&
+              text.height >= 7 &&
+              text.left >= node.left &&
+              text.right <= node.right &&
+              text.top >= node.top &&
+              text.bottom <= node.bottom
+            );
+          }),
+          edgeLabelsFit:
+            deltaLabels.length === 6 &&
+            deltaLabels.every((label) => {
+              const box = label.getBoundingClientRect();
+              return (
+                /^[±+−][124]$/.test(label.textContent!) &&
+                box.height >= 7 &&
+                box.left >= cycleBox.left &&
+                box.right <= cycleBox.right &&
+                box.top >= cycleBox.top &&
+                box.bottom <= cycleBox.bottom &&
+                !insideCycle(box.left + box.width / 2, box.top + box.height / 2) &&
+                nodeBounds.every((node) => box.right < node.left || box.left > node.right || box.bottom < node.top || box.top > node.bottom)
+              );
+            }),
+          deltaMatchesTable:
+            cycleSvg.querySelector('[data-hue-selected="true"] [data-cycle-delta]')!.textContent ===
+            document.querySelector('.theory-hue [data-edge-row][data-hue-selected="true"] td:nth-child(3)')!.textContent,
           buttonsCentered: Math.abs(buttons.left + buttons.width / 2 - (cycleBox.left + cycleBox.width / 2)) < 1,
           zigzagBelowOverview: zigzag.top >= overview.bottom,
           overviewGap: zigzag.top - overview.bottom,
-          tableBottomGap: Math.abs(cyclePanel.bottom - table.bottom),
+          tableBottomGap: Math.abs(caption.top - captionGap - table.bottom),
           directionButtonSizes: directionButtons.map((button) => {
             const box = button.getBoundingClientRect();
             return Math.min(box.width, box.height);
@@ -134,9 +254,27 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
       expect(layout.overflow, `${language}, ${width}px`).toEqual([]);
       expect(layout.sideBySide).toBe(true);
       expect(layout.cycleLeftOfTable).toBe(true);
+      expect(layout.desktopOverviewHeight).toBe(true);
+      expect(layout.middleOverviewHeight, `${language}, ${width}px`).toBe(true);
+      expect(layout.cycleSize, `cycle grows continuously at ${language}, ${width}px`).toBeGreaterThanOrEqual(previousCycleSize - 1);
+      expect(layout.cycleUsesAvailableSpace).toBe(true);
+      previousCycleSize = layout.cycleSize;
+      expect(layout.captionArea).toBeGreaterThan(0);
+      expect(layout.captionArea).toBeLessThanOrEqual(19);
+      expect(layout.captionBelowCycle).toBe(true);
+      expect(layout.captionSpansOverview).toBe(true);
+      expect(layout.captionFits).toBe(true);
+      expect(layout.captionSingleLine).toBe(true);
+      expect(layout.desktopTotalHeight).toBe(true);
+      expect(layout.desktopPlotHeight).toBe(true);
+      expect(layout.desktopLevelSpacing).toBe(true);
       expect(layout.tableBelowCycle).toBe(false);
       expect(layout.buttonsInsideCycle).toBe(true);
-      expect(layout.buttonsClearOfBits).toBe(true);
+      expect(layout.buttonsClearOfReadout).toBe(true);
+      expect(layout.readoutInsideCycle).toBe(true);
+      expect(layout.nodeLabelsFit).toBe(true);
+      expect(layout.edgeLabelsFit, `${language}, ${width}px`).toBe(true);
+      expect(layout.deltaMatchesTable).toBe(true);
       expect(layout.buttonsCentered).toBe(true);
       expect(layout.zigzagBelowOverview).toBe(true);
       expect(layout.overviewGap).toBeLessThanOrEqual(13);
@@ -144,6 +282,46 @@ test("links cube selection and hue-edge views while keeping the consolidated pan
       expect(layout.levelRows).toBe(1);
       expect(layout.directionButtonSizes.every((size) => size >= 28)).toBe(true);
       expect(layout.levelButtonHeights.every((height) => height >= 24 && height <= 32)).toBe(true);
+      if (width === 320 || width === 866 || width === 1186) {
+        const levelControl = hue.locator('[data-tone-level-control="2"]');
+        await levelControl.click();
+        const hoverRow = hue.locator('[data-edge-row="4"]');
+        await hoverRow.scrollIntoViewIfNeeded();
+        const hoverCell = await hoverRow.locator("td").last().boundingBox();
+        await page.mouse.move(hoverCell!.x + hoverCell!.width / 2, hoverCell!.y + hoverCell!.height / 2);
+        await expect(hoverRow).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+        await expect(hoverRow).not.toHaveCSS("cursor", "pointer");
+        await expect(hue.locator('[data-cycle-edge="2"]')).toHaveAttribute("data-hue-selected", "true");
+
+        // Reading any table column leaves both the selected edge and pinned tone unchanged.
+        for (let column = 0; column < 4; column++) {
+          const row = hue.locator(`[data-edge-row="${column}"]`);
+          await row.scrollIntoViewIfNeeded();
+          const cell = await row.locator("td").nth(column).boundingBox();
+          await page.mouse.click(cell!.x + cell!.width / 2, cell!.y + cell!.height / 2);
+          for (const attribute of ["data-cycle-edge", "data-hue-edge", "data-edge-row"]) {
+            await expect(hue.locator(`[${attribute}="2"]`)).toHaveAttribute("data-hue-selected", "true");
+          }
+          await expect(levelControl).toHaveAttribute("aria-pressed", "true");
+          await expect(hue.locator(".theory-hue-action")).toHaveText("Add blue");
+          await expect(hue.locator(".theory-hue-readout")).toHaveAttribute("lang", "en");
+        }
+        await levelControl.click();
+        await clockwise.focus();
+        await page.keyboard.press("Space");
+        await expect(hue.locator('[data-edge-row="3"]')).toHaveAttribute("data-hue-selected", "true");
+        await expect(hue.locator('[data-hue-edge="3"]')).toHaveAttribute("data-hue-selected", "true");
+        await counterclockwise.focus();
+        await page.keyboard.press("Space");
+        await expect(hue.locator('[data-cycle-delta="3"]')).toHaveText("+4");
+        await page.keyboard.press("Space");
+        await expect(hue.locator('[data-cycle-delta="2"]')).toHaveText("−1");
+        await clockwise.focus();
+        await page.keyboard.press("Enter");
+        await expect(hue.locator('[data-cycle-node="5"]')).toHaveAttribute("aria-current", "true");
+        await expect(hue.locator(".theory-hue-transition")).toHaveText("G → C");
+        await expect(hue.locator('[data-edge-row="2"]')).toHaveAttribute("data-hue-selected", "true");
+      }
       if (width === 320 || width === 582) {
         await hue.getByRole("button", { name: language === "ja" ? "反時計回り" : "Counter-clockwise", exact: true }).click();
         await expect(hue.locator('[data-edge-row="2"]')).toContainText("C₅→G₄");
@@ -213,7 +391,7 @@ test("links all six cube faces and vertex incidence without losing the selected 
     await expect(hasse).toHaveAttribute("aria-pressed", "true");
     await hasse.click();
 
-    for (const width of [320, 390, 580, 584, 585, 656, 942, 1186]) {
+    for (const width of [320, 390, 580, 584, 585, 656, 739, 814, 866, 942, 1023, 1024, 1186, 1440]) {
       await page.setViewportSize({ width, height: 698 });
       await cube.scrollIntoViewIfNeeded();
       const layout = await cube.evaluate((root) => {
@@ -225,6 +403,7 @@ test("links all six cube faces and vertex incidence without losing the selected 
         return {
           placement: geometry.right <= grid.left && geometry.top < grid.bottom && grid.top < geometry.bottom,
           secondary: grid.width < plot.width && grid.height <= geometry.height,
+          compactHeight: window.innerWidth < 640 || root.getBoundingClientRect().height <= 311,
           rows: new Set(cards.map((box) => box.top)).size === (compact ? 6 : 3),
           columns: new Set(cards.map((box) => box.left)).size === (compact ? 1 : 2),
           touchTargets: cards.every((box) => box.width >= 44 && box.height >= 24),
@@ -247,6 +426,7 @@ test("links all six cube faces and vertex incidence without losing the selected 
       expect(layout, `${language} ${width}px`).toEqual({
         placement: true,
         secondary: true,
+        compactHeight: true,
         rows: true,
         columns: true,
         touchTargets: true,
@@ -262,6 +442,82 @@ test("links all six cube faces and vertex incidence without losing the selected 
     await faces.last().click();
     await plot.click({ position: { x: 8, y: 8 } });
     await expect(cube).not.toHaveAttribute("data-selected-face");
+  }
+});
+
+test("keeps the cube scale and crossing depth continuous throughout both Hasse transitions", async ({ page }, testInfo) => {
+  await page.addInitScript(() => localStorage.setItem("chromalum_lang", "ja"));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("theory-dev.html");
+  const cube = page.locator(".theory-cube");
+  const plot = cube.locator(".theory-cube-svg");
+  const hasse = cube.getByRole("button", { name: "ハッセ図", exact: true });
+
+  for (const width of [320, 538, 1078, 1186]) {
+    await page.setViewportSize({ width, height: 698 });
+    await cube.scrollIntoViewIfNeeded();
+    const baseline = await plot.evaluate((svg) => {
+      const box = svg.getBoundingClientRect();
+      return [...svg.querySelectorAll('[data-level] > circle[r="9"]')].map((node) => {
+        const dot = node.getBoundingClientRect();
+        return { x: dot.x + dot.width / 2 - box.x, y: dot.y + dot.height / 2 - box.y, diameter: dot.width };
+      });
+    });
+    const height = (vertices: { y: number }[]) => Math.max(...vertices.map(({ y }) => y)) - Math.min(...vertices.map(({ y }) => y));
+
+    for (const direction of ["hasse", "cube"]) {
+      // Sample rendered frames with motion enabled, including the first and last
+      // frames where a switch between SVG meet/slice used to change the scale.
+      const recording = plot.evaluate(async (svg) => {
+        const frames = [];
+        for (let frame = 0; frame < 70; frame++) {
+          const box = svg.getBoundingClientRect();
+          frames.push({
+            width: box.width,
+            height: box.height,
+            edgeOrder: [...svg.querySelectorAll("[data-cube-edge]")].map((edge) => edge.getAttribute("data-cube-edge")),
+            vertices: [...svg.querySelectorAll('[data-level] > circle[r="9"]')].map((node) => {
+              const dot = node.getBoundingClientRect();
+              return { x: dot.x + dot.width / 2 - box.x, y: dot.y + dot.height / 2 - box.y, diameter: dot.width };
+            }),
+          });
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        }
+        return frames;
+      });
+      await hasse.click();
+      const frames = await recording;
+      await expect(hasse).toHaveAttribute("aria-pressed", String(direction === "hasse"));
+      if (direction === "hasse") await expect(plot.locator(".theory-cube-ranks")).toHaveAttribute("opacity", "1");
+      else await expect(plot.locator(".theory-cube-ranks")).toHaveCount(0);
+      for (const frame of frames) {
+        expect(frame.width, `${width}px ${direction}`).toBeCloseTo(frames[0].width, 3);
+        expect(frame.height, `${width}px ${direction}`).toBeCloseTo(frames[0].height, 3);
+        expect(frame.edgeOrder.indexOf("2-3"), `${width}px ${direction}: left green edge is in front`).toBeLessThan(
+          frame.edgeOrder.indexOf("1-5"),
+        );
+        expect(frame.edgeOrder.indexOf("2-6"), `${width}px ${direction}: right blue edge is in front`).toBeLessThan(
+          frame.edgeOrder.indexOf("4-5"),
+        );
+        frame.vertices.forEach((vertex, index) => {
+          expect(vertex.diameter, `${width}px ${direction}, vertex ${index}`).toBeCloseTo(baseline[index].diameter, 3);
+          expect(vertex.x, `${width}px ${direction}, vertex ${index}`).toBeCloseTo(baseline[index].x, 3);
+        });
+      }
+      expect(height(frames.at(-1)!.vertices)).toBeCloseTo(height(baseline), 3);
+      expect(frames.some((frame) => Math.abs(frame.vertices[0].y - frames[0].vertices[0].y) > 1)).toBe(true);
+      const labelsFit = await plot.evaluate((svg) => {
+        const box = svg.getBoundingClientRect();
+        return [...svg.querySelectorAll("text")].every((text) => {
+          const label = text.getBoundingClientRect();
+          return label.left >= box.left - 1 && label.right <= box.right + 1 && label.top >= box.top - 1 && label.bottom <= box.bottom + 1;
+        });
+      });
+      expect(labelsFit, `${width}px ${direction}: labels fit at the original cube scale`).toBe(true);
+      if (direction === "hasse" && width !== 538) {
+        await cube.screenshot({ path: testInfo.outputPath(`hasse-${width}.png`) });
+      }
+    }
   }
 });
 
@@ -448,7 +704,7 @@ for (const language of ["ja", "en"]) {
     await expect(explorer.locator("[data-fano-line-choice]")).toHaveCount(7);
     await expect(explorer.locator("[data-h-column]")).toHaveCount(7);
 
-    for (const width of [320, 390, 642, 673, 674, 702, 722, 768, 843, 844, 1043, 1280]) {
+    for (const width of [320, 390, 447, 564, 600, 642, 673, 674, 702, 722, 768, 843, 844, 1043, 1280]) {
       await page.setViewportSize({ width, height: 1000 });
       await clear();
       await expect(checks).toHaveAttribute("data-word", "");
@@ -456,26 +712,39 @@ for (const language of ["ja", "en"]) {
       const frame = await explorer.evaluate((root) => {
         const geometry = root.querySelector(".theory-fano-geometry")!.getBoundingClientRect();
         const matrix = root.querySelector(".theory-fano-matrix")!.getBoundingClientRect();
+        const footer = root.querySelector(".theory-fano-matrix-footer")!.getBoundingClientRect();
+        const choices = root.querySelector(".theory-fano-line-choices")!.getBoundingClientRect();
+        const matrixSections = [...root.querySelector(".theory-fano-matrix")!.children].map((section) => section.getBoundingClientRect());
         const bits = [...root.querySelectorAll('.theory-fano-matrix-column[data-h-column="1"] [data-bit]')];
         return {
           panelWidth: root.getBoundingClientRect().width,
+          panelHeight: root.getBoundingClientRect().height,
           sideBySide: matrix.left >= geometry.right,
           plotWidth: root.querySelector(".theory-fano-plot")!.getBoundingClientRect().width,
+          checkRowsHeight: root.querySelector(".theory-fano-check-rows")!.getBoundingClientRect().height,
+          footerBottomInset: root.getBoundingClientRect().bottom - footer.bottom,
+          footerControlsGap: Math.abs(footer.bottom - choices.bottom),
+          largestSectionGap: Math.max(...matrixSections.slice(1).map((section, index) => section.top - matrixSections[index].bottom)),
           lineChoiceRows: new Set([...root.querySelectorAll("[data-fano-line-choice]")].map((node) => node.getBoundingClientRect().top))
             .size,
           topGap: Math.abs(matrix.top - geometry.top),
-          bottomGap: Math.abs(matrix.bottom - geometry.bottom),
           stackedGap: matrix.top - geometry.bottom,
           rowGap: bits[1].getBoundingClientRect().top - bits[0].getBoundingClientRect().top,
         };
       });
       expect(frame.sideBySide, `${language}, ${width}px`).toBe(frame.panelWidth >= 540);
       expect(frame.lineChoiceRows).toBe(1);
+      expect(frame.plotWidth).toBeLessThanOrEqual(270);
+      expect(frame.checkRowsHeight).toBeLessThanOrEqual(42);
+      expect(frame.footerBottomInset).toBeLessThanOrEqual(5);
+      expect(frame.largestSectionGap).toBeLessThanOrEqual(18);
       if (frame.sideBySide) {
         expect(frame.topGap).toBeLessThanOrEqual(1);
-        expect(frame.bottomGap).toBeLessThanOrEqual(1);
+        expect(frame.footerControlsGap).toBeLessThanOrEqual(1);
         expect(frame.plotWidth).toBeGreaterThanOrEqual(240);
-        expect(frame.rowGap).toBeGreaterThanOrEqual(frame.panelWidth >= 680 ? 30 : 24);
+        expect(frame.rowGap).toBeGreaterThanOrEqual(22);
+        expect(frame.rowGap).toBeLessThanOrEqual(24);
+        expect(frame.panelHeight).toBeLessThanOrEqual(380);
       } else {
         expect(frame.stackedGap).toBeGreaterThanOrEqual(0);
         expect(frame.rowGap).toBeLessThanOrEqual(23);
@@ -805,16 +1074,49 @@ test("connects accessible parity-set controls to four positions, live equations,
     await expect(page.getByTestId("hamming-error-5")).toHaveAttribute("aria-pressed", "true");
     await expect(detail.locator("[data-check-value]")).toHaveAttribute("data-check-value", "1");
     await expect(detail).toContainText("0 ⊕ 1 ⊕ 1 ⊕ 1 = 1");
+    const receivedError = page.getByTestId("hamming-error-5");
+    await expect(receivedError).toHaveCSS("border-color", "rgb(255, 64, 96)");
+    await expect(receivedError.locator("[data-bit-value]")).toHaveCSS("text-decoration-line", "underline");
+    await page.getByTestId("hamming-venn-check-2").click();
+    await expect(receivedError).toHaveAttribute("data-parity-member", "false");
+    await expect(receivedError).toHaveCSS("opacity", "1");
+    await expect(receivedError).toHaveCSS("border-color", "rgb(255, 64, 96)");
+    await expect(receivedError.locator("[data-bit-value]")).toHaveCSS("text-decoration-line", "none");
+    await blueCheck.click();
     await node.press("Space");
     await expect(node).toHaveAttribute("aria-pressed", "false");
     await expect(detail.locator("[data-check-value]")).toHaveAttribute("data-check-value", "0");
     await expect(node).toBeFocused();
     await blueCheck.click();
     await expect(sets.locator('[data-check-member="true"]')).toHaveCount(7);
-    for (const width of [320, 362, 395, 547, 639, 640, 715, 1039]) {
+    for (const width of [320, 362, 395, 547, 639, 640, 715, 814, 866, 1039]) {
       await page.setViewportSize({ width, height: 900 });
       await sets.scrollIntoViewIfNeeded();
-      if ((await blueCheck.getAttribute("aria-pressed")) === "false") await blueCheck.click();
+      if ((await blueCheck.getAttribute("aria-pressed")) === "true") await blueCheck.click();
+      const readPositions = () =>
+        sets.evaluate((root) =>
+          [
+            root,
+            ...root.querySelectorAll(".theory-hamming-sets-figure, .theory-hamming-check-choice, .theory-hamming-set-detail-slot"),
+          ].map((element) => {
+            const box = element.getBoundingClientRect();
+            return { x: box.x + scrollX, y: box.y + scrollY, width: box.width, height: box.height };
+          }),
+        );
+      const initialPositions = await readPositions();
+      for (const parity of [4, 2, 1, 1]) {
+        await sets.getByTestId(`hamming-venn-check-${parity}`).click();
+        const positions = await readPositions();
+        positions.forEach((box, index) => {
+          for (const dimension of ["x", "y", "width", "height"] as const) {
+            expect(box[dimension], `${language} ${width}px P${parity}: fixed ${dimension}`).toBeCloseTo(
+              initialPositions[index][dimension],
+              1,
+            );
+          }
+        });
+      }
+      await blueCheck.click();
       const layout = await sets.evaluate((root) => {
         const figure = root.querySelector("figure")!.getBoundingClientRect();
         const inspector = root.querySelector(".theory-hamming-check-choices")!.getBoundingClientRect();
@@ -842,6 +1144,115 @@ test("connects accessible parity-set controls to four positions, live equations,
   }
 });
 
+test("previews parity checks on hover and keyboard focus without replacing the clicked selection", async ({ page }) => {
+  await page.setViewportSize({ width: 1030, height: 698 });
+  await page.goto("theory-dev.html");
+  const sets = page.getByTestId("hamming-parity-sets");
+  const green = sets.getByTestId("hamming-venn-check-4");
+  const red = sets.getByTestId("hamming-venn-check-2");
+  const blue = sets.getByTestId("hamming-venn-check-1");
+  const expectActive = async (parity: number) => {
+    await expect(sets.locator('[data-active="true"]')).toHaveCount(1);
+    await expect(sets.getByTestId(`hamming-parity-set-${parity}`)).toHaveAttribute("data-active", "true");
+    await expect(sets.locator('[data-check-member="true"]')).toHaveCount(4);
+    await expect(page.getByTestId("hamming-stage-received").locator('[data-parity-member="true"]')).toHaveCount(4);
+  };
+
+  await green.hover();
+  await expectActive(4);
+  await expect(green).toHaveAttribute("aria-pressed", "false");
+  await sets.locator("header").hover();
+  await expect(sets.locator('[data-active="true"]')).toHaveCount(0);
+  await expect(sets.locator('[data-check-member="true"]')).toHaveCount(7);
+
+  await green.click();
+  await red.hover();
+  await expectActive(2);
+  await expect(green).toHaveAttribute("aria-pressed", "true");
+  await expect(red).toHaveAttribute("aria-pressed", "false");
+  await expect(sets.getByTestId("hamming-venn-detail")).toContainText("r₂ ⊕ r₃ ⊕ r₆ ⊕ r₇");
+  await sets.locator("header").hover();
+  await expectActive(4);
+
+  await green.focus();
+  await page.keyboard.press("Tab");
+  await expect(red).toBeFocused();
+  await expectActive(2);
+  await page.keyboard.press("Tab");
+  await expect(blue).toBeFocused();
+  await expectActive(1);
+  await expect(green).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Tab");
+  await expectActive(4);
+});
+
+test.describe("parity inspection dismissal", () => {
+  test.use({ hasTouch: true });
+
+  test("clears inspection from empty space while keeping data, errors, results, and layout", async ({ page }) => {
+    for (const language of ["ja", "en"]) {
+      for (const width of [1030, 447]) {
+        await page.setViewportSize({ width, height: 698 });
+        await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
+        await page.goto("theory-dev.html");
+        const action = width === 447 ? "tap" : "click";
+        const sets = page.getByTestId("hamming-parity-sets");
+        const green = sets.getByTestId("hamming-venn-check-4");
+        const error = page.getByTestId("hamming-error-4");
+        await green[action]();
+        await page.getByTestId("hamming-data-1")[action]();
+        await error[action]();
+        await expect(green).toHaveAttribute("aria-pressed", "true");
+        await expect(page.getByTestId("hamming-stage-output").locator("[data-bit-string]")).toHaveAttribute("data-bit-string", "0011");
+        await expect(page.getByTestId("hamming-stage-syndrome").locator("[data-syndrome-bits]")).toHaveAttribute(
+          "data-syndrome-bits",
+          "100",
+        );
+        const stages = page.locator('[data-testid^="hamming-stage-"]');
+        const simulation = await stages.allTextContents();
+        const readLayout = () =>
+          sets.evaluate((root) =>
+            [root, ...root.querySelectorAll("figure, button, .theory-hamming-set-detail-slot")].map((element) => {
+              const rect = element.getBoundingClientRect();
+              return [rect.x + scrollX, rect.y + scrollY, rect.width, rect.height];
+            }),
+          );
+
+        for (const blank of ["panel", "diagram", "page"]) {
+          if ((await green.getAttribute("aria-pressed")) !== "true") await green[action]();
+          const layout = await readLayout();
+          if (blank === "page") {
+            await sets.scrollIntoViewIfNeeded();
+            const box = (await sets.boundingBox())!;
+            const surface = (await page.locator(".theory-reset-surface").boundingBox())!;
+            const y = Math.max(20, Math.min(678, box.y + box.height / 2));
+            if (action === "tap") await page.touchscreen.tap(surface.x + 2, y);
+            else await page.mouse.click(surface.x + 2, y);
+          } else {
+            const target = blank === "diagram" ? sets.locator("svg") : sets;
+            await target[action]({ position: { x: 2, y: 2 } });
+          }
+          await expect(sets.locator('button[aria-pressed="true"]'), `${language} ${width}px ${blank}`).toHaveCount(0);
+          await expect(sets.locator('[data-active="true"]')).toHaveCount(0);
+          await expect(sets.locator('[data-check-member="true"]')).toHaveCount(7);
+          await expect(page.getByTestId("hamming-stage-received").locator("[data-parity-member]")).toHaveCount(0);
+          await expect(error).toHaveAttribute("aria-pressed", "true");
+          await expect(error).toHaveCSS("border-color", "rgb(255, 64, 96)");
+          await expect(error.locator("[data-bit-value]")).toHaveCSS("text-decoration-line", "none");
+          expect(await stages.allTextContents()).toEqual(simulation);
+          const resetLayout = await readLayout();
+          resetLayout.forEach((rect, index) => {
+            rect.forEach((value, dimension) => expect(value, `${language} ${width}px ${blank}`).toBeCloseTo(layout[index][dimension], 1));
+          });
+        }
+        await green[action]();
+        await green[action]();
+        await expect(sets.locator('[data-active="true"]')).toHaveCount(0);
+      }
+    }
+  });
+});
+
 test("integrates compact rank relationships below the binary table without extra controls", async ({ page }) => {
   for (const language of ["ja", "en"]) {
     await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
@@ -853,7 +1264,7 @@ test("integrates compact rank relationships below the binary table without extra
     await expect(diagram.locator("table")).toHaveCount(0);
     await expect(diagram).toContainText("L(a∨b)+L(a∧b)=L(a)+L(b)");
     await expect(diagram).toContainText("L(a⊕b)=L(a)+L(b)−2L(a∧b)");
-    for (const width of [320, 534, 746, 747, 888, 1043, 1186]) {
+    for (const width of [320, 534, 583, 584, 585, 716, 728, 746, 747, 888, 1043, 1186]) {
       await page.setViewportSize({ width, height: 698 });
       await diagram.scrollIntoViewIfNeeded();
       const layout = await diagram.evaluate((root) => {
@@ -862,6 +1273,15 @@ test("integrates compact rank relationships below the binary table without extra
         return {
           belowTable: box.top >= table.bottom,
           height: box.height,
+          compactPairs: root.clientWidth < 540 || root.querySelector(".theory-valuation-pairs")!.getBoundingClientRect().height <= 24,
+          pairContentFits: [...root.querySelectorAll(".theory-valuation-pair")].every((pair) => {
+            const bounds = pair.getBoundingClientRect();
+            const children = [...pair.children].map((child) => child.getBoundingClientRect());
+            return children.every(
+              (child, index) =>
+                child.left >= bounds.left && child.right <= bounds.right && (index === 0 || child.left >= children[index - 1].right),
+            );
+          }),
           overflow: [...root.querySelectorAll("*")]
             .filter((el) => {
               const child = el.getBoundingClientRect();
@@ -871,6 +1291,8 @@ test("integrates compact rank relationships below the binary table without extra
         };
       });
       expect(layout.belowTable).toBe(true);
+      expect(layout.compactPairs).toBe(true);
+      expect(layout.pairContentFits).toBe(true);
       expect(layout.overflow, language + ", " + width + "px").toEqual([]);
       expect(layout.height).toBeLessThan(500);
     }
@@ -909,8 +1331,14 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
     await expect(octahedron.locator('[data-edge-result="xor"]')).toContainText("010 ⊕ 100 = 110");
     await expect(fanoNote).toContainText("000");
     await expect(fanoNote).toContainText("111");
-    for (const width of [320, 464, 487, 488, 499, 500, 501, 534, 608, 746, 747, 788, 798, 888, 922, 1043, 1186]) {
+    let stackedDiagramWidth = 0;
+    for (const width of [
+      320, 390, 403, 404, 447, 464, 487, 488, 499, 500, 501, 534, 608, 746, 747, 788, 798, 888, 922, 1023, 1024, 1043, 1186, 1440,
+    ]) {
       await page.setViewportSize({ width, height: 900 });
+      const diagramWidth = await octahedron.locator("svg").evaluate((svg) => svg.getBoundingClientRect().width);
+      if (width === 746) stackedDiagramWidth = diagramWidth;
+      if (width === 747) expect(Math.abs(diagramWidth - stackedDiagramWidth), "Diagram size at the stacking breakpoint").toBeLessThan(2);
       const layout = await octahedron.evaluate((el) => {
         const points = [...el.querySelectorAll("[data-octa-vertex] text")].map((node) => ({
           label: node.textContent,
@@ -938,7 +1366,7 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
         const panel = el.getBoundingClientRect();
         const panelWidth = panel.width;
         const panelCenter = (panel.left + panel.right) / 2;
-        const choiceColumns = panelWidth >= 440 && panelWidth < 600 ? 3 : 2;
+        const choiceColumns = window.innerWidth >= 1024 || (panelWidth >= 360 && panelWidth < 600) ? 3 : 2;
         return {
           oriented: points.every(({ box }) => box.top >= red.top && box.top <= cyan.top),
           symmetric:
@@ -960,6 +1388,10 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
             Math.max(...vertexBounds.map((box) => box.bottom)) <= svg.bottom &&
             Math.min(...vertexBounds.map((box) => box.top)) - svg.top <= 18 &&
             svg.bottom - Math.max(...vertexBounds.map((box) => box.bottom)) <= 18,
+          diagramSize:
+            svg.width >= Math.min(panelWidth, 260) - 1 && svg.width <= (panelWidth < 600 || window.innerWidth >= 1186 ? 280 : 340) + 1,
+          desktopHeight: window.innerWidth < 1186 || panel.height <= 302,
+          stackedControlsHeight: panelWidth >= 600 || controls.height <= (panelWidth >= 360 ? 285 : 400),
           centered:
             Math.abs((figure.left + figure.right) / 2 - panelCenter) < 1 &&
             Math.abs((controls.left + status.right) / 2 - panelCenter) < 1 &&
@@ -979,8 +1411,7 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
             new Set([...el.querySelectorAll(".theory-octahedron-choices button")].map((node) => node.getBoundingClientRect().left)).size ===
               choiceColumns &&
             new Set([...el.querySelectorAll(".theory-octahedron-choices button")].map((node) => node.getBoundingClientRect().top)).size ===
-              12 / choiceColumns &&
-            (panelWidth < 440 || el.querySelector(".theory-octahedron-figure svg")!.getBoundingClientRect().width >= 270),
+              12 / choiceColumns,
           formulasReadable: [...el.querySelectorAll(".theory-octahedron-equation")].every((node) => {
             const [operation, result] = [...node.children];
             const left = operation.getBoundingClientRect();
@@ -1004,6 +1435,9 @@ test("shows a symmetric six-pointed octahedron with red above cyan and accessibl
         resultsStacked: true,
         columnsAligned: true,
         diagramPadding: true,
+        diagramSize: true,
+        desktopHeight: true,
+        stackedControlsHeight: true,
         centered: true,
         responsivePlacement: true,
         controlsFit: true,
@@ -1067,7 +1501,9 @@ test("connects primary selection and the eight-state list with readable responsi
         .locator('[data-venn-primary][data-active="true"]')
         .evaluateAll((circles) => circles.map((circle) => circle.getAttribute("data-venn-primary")));
     await expect(venn).toHaveAttribute("data-selected-level", "7");
-    for (const width of [320, 362, 395, 538, 760, 971, 990, 991, 1158, 1186]) {
+    for (const width of [
+      320, 362, 395, 480, 538, 564, 583, 584, 585, 640, 716, 728, 747, 748, 749, 760, 770, 771, 814, 822, 866, 971, 990, 991, 1158, 1186,
+    ]) {
       await page.setViewportSize({ width, height: 698 });
       await generation.scrollIntoViewIfNeeded();
       const layout = await generation.evaluate((root) => {
@@ -1077,11 +1513,13 @@ test("connects primary selection and the eight-state list with readable responsi
         const buttons = [...root.querySelectorAll("button")];
         return {
           diagramPlacement:
-            root.getBoundingClientRect().width >= 800
+            window.innerWidth >= 748
               ? builder.right <= diagram.left && diagram.right <= states.left && Math.abs(diagram.top - builder.top) < 1
               : diagram.bottom <= builder.top,
           statePlacement: builder.right <= states.left,
           sameRow: Math.abs(builder.top - states.top) < 1,
+          compactHeight: root.getBoundingClientRect().height <= (window.innerWidth < 748 ? 510 : 330),
+          compactDiagram: window.innerWidth >= 748 || root.querySelector(".theory-venn-svg")!.getBoundingClientRect().width <= 240,
           fits: [...root.querySelectorAll("button, .theory-generation-heading, p, [role='status']")].every((el) => {
             const box = el.getBoundingClientRect();
             return box.left >= 0 && box.right <= window.innerWidth && el.scrollWidth <= el.clientWidth + 1;
@@ -1102,6 +1540,8 @@ test("connects primary selection and the eight-state list with readable responsi
         diagramPlacement: true,
         statePlacement: true,
         sameRow: true,
+        compactHeight: true,
+        compactDiagram: true,
         fits: true,
         touchTargets: true,
         readable: true,
@@ -1109,7 +1549,7 @@ test("connects primary selection and the eight-state list with readable responsi
       });
     }
 
-    for (const width of [1186, 320]) {
+    for (const width of [1186, 728, 564, 320]) {
       await page.setViewportSize({ width, height: 698 });
       for (let level = 0; level < 8; level++) {
         await venn.scrollIntoViewIfNeeded();
@@ -1177,17 +1617,48 @@ test("keeps mixing in its dedicated diagrams and groups the hue net with complem
     await expect(cube.getByRole("group", { name: language === "ja" ? "カラーキューブ" : "Color Cube", exact: true })).toContainText(
       "Pascal",
     );
-    for (const width of [320, 362, 452, 534, 1280]) {
+    await expect(net.locator("svg text")).toHaveCount(0);
+    await expect(net.locator("[data-hue-net-pip]")).toHaveCount(21);
+    for (const width of [319, 320, 362, 390, 427, 452, 479, 480, 488, 489, 534, 608, 736, 737, 746, 760, 761, 888, 1186, 1280, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await ranks.scrollIntoViewIfNeeded();
       const layout = await die.evaluate((section) => {
+        const figure = section.querySelector(".theory-die-figure")!;
+        const figureBox = figure.getBoundingClientRect();
+        const netFrame = section.querySelector('[data-testid="hue-order-net"]')!.getBoundingClientRect();
         const netBox = section.querySelector('[data-testid="hue-order-net"] svg')!.getBoundingClientRect();
         const ranksBox = section.querySelector('[data-testid="color-die-rank-structure"]')!.getBoundingClientRect();
         const sequenceBox = section.querySelector(".theory-die-net-sequence")!.getBoundingClientRect();
         const cutBox = section.querySelector(".theory-die-net-cut")!.getBoundingClientRect();
         const netCenter = netBox.x + netBox.width / 2;
         return {
-          ordered: netBox.right <= ranksBox.left && netBox.top < ranksBox.bottom && ranksBox.top < netBox.bottom,
+          ordered: netBox.right <= ranksBox.left && Math.abs(netFrame.y + netFrame.height / 2 - ranksBox.y - ranksBox.height / 2) < 1,
+          balanced:
+            (figureBox.width < 592 || Math.abs(netFrame.height - ranksBox.height) < 12) && Math.abs(netBox.width - ranksBox.width) < 1,
+          stableScale: Math.abs(netBox.width - Math.min(280, (figureBox.width - parseFloat(getComputedStyle(figure).columnGap)) / 2)) < 1,
+          readable: [...section.querySelectorAll<SVGCircleElement>("[data-hue-net-pip]")].every((pip) => {
+            const box = pip.getBoundingClientRect();
+            const face = pip.closest("[data-hue-net-face]")!;
+            const faceBox = face.getBoundingClientRect();
+            const centerX = box.x + box.width / 2;
+            const centerY = box.y + box.height / 2;
+            const faceX = faceBox.x + faceBox.width / 2;
+            const faceY = faceBox.y + faceBox.height / 2;
+            const radius = box.width / 2;
+            return (
+              box.width >= 4 &&
+              Math.abs(centerX - faceX) + Math.abs(centerY - faceY) + radius * Math.SQRT2 < faceBox.width / 2 &&
+              [...face.querySelectorAll("[data-hue-net-pip]")].every((other) => {
+                if (other === pip) return true;
+                const otherBox = other.getBoundingClientRect();
+                return Math.hypot(centerX - otherBox.x - otherBox.width / 2, centerY - otherBox.y - otherBox.height / 2) > box.width + 1;
+              })
+            );
+          }),
+          touchTargets: [...section.querySelectorAll("[data-hue-net-face]")].every((el) => {
+            const box = el.getBoundingClientRect();
+            return box.width >= 32 && box.height >= 32;
+          }),
           captionsAroundNet:
             sequenceBox.bottom <= netBox.top &&
             cutBox.top >= netBox.bottom &&
@@ -1199,7 +1670,80 @@ test("keeps mixing in its dedicated diagrams and groups the hue net with complem
           }),
         };
       });
-      expect(layout).toEqual({ ordered: true, captionsAroundNet: true, fits: true });
+      expect(layout, `${language}, ${width}px`).toEqual({
+        ordered: true,
+        balanced: true,
+        stableScale: true,
+        readable: true,
+        touchTargets: true,
+        captionsAroundNet: true,
+        fits: true,
+      });
+    }
+  }
+});
+
+test("links complementary die rows and faces through hover, keyboard selection, and pin restoration", async ({ page }) => {
+  test.setTimeout(60_000);
+  for (const language of ["ja", "en"]) {
+    await page.addInitScript((lang) => localStorage.setItem("chromalum_lang", lang), language);
+    await page.goto("theory-dev.html");
+    const figure = page.locator(".theory-die-figure");
+    const blueYellow = figure.locator('[data-complement-pair="B1-Y6"]');
+    const redCyan = figure.locator('[data-complement-pair="R2-C5"]');
+    const greenMagenta = figure.locator('[data-complement-pair="G4-M3"]');
+    const highlighted = () =>
+      figure
+        .locator('[data-hue-net-highlighted="true"]')
+        .evaluateAll((faces) => faces.map((face) => Number(face.getAttribute("data-hue-net-face"))).sort());
+    for (const width of [319, 410, 1186]) {
+      await page.setViewportSize({ width, height: 698 });
+      await figure.scrollIntoViewIfNeeded();
+      await page.mouse.move(0, 0);
+      const frame = await figure.boundingBox();
+      for (const [row, levels] of [
+        [blueYellow, [1, 6]],
+        [redCyan, [2, 5]],
+        [greenMagenta, [3, 4]],
+      ] as const) {
+        const box = (await row.boundingBox())!;
+        expect(box.height).toBeGreaterThanOrEqual(24);
+        await row.hover();
+        await expect(row).toHaveAttribute("data-highlighted", "true");
+        await expect.poll(highlighted).toEqual(levels);
+        expect(await figure.boundingBox()).toEqual(frame);
+        await page.mouse.move(0, 0);
+        await expect.poll(highlighted).toEqual([]);
+      }
+
+      await blueYellow.click();
+      await page.mouse.move(0, 0);
+      await redCyan.hover();
+      await expect.poll(highlighted).toEqual([2, 5]);
+      await expect(blueYellow).toHaveAttribute("aria-pressed", "true");
+      await page.mouse.move(0, 0);
+      await expect.poll(highlighted).toEqual([1, 6]);
+
+      await redCyan.focus();
+      await redCyan.press("Enter");
+      await expect(redCyan).toHaveAttribute("aria-pressed", "true");
+      await expect(blueYellow).toHaveAttribute("aria-pressed", "false");
+      await redCyan.press("Space");
+      await expect.poll(highlighted).toEqual([]);
+
+      await figure.locator('[data-hue-net-face="5"]').click();
+      await page.mouse.move(0, 0);
+      await expect(redCyan).toHaveAttribute("data-highlighted", "true");
+      await expect(redCyan).toHaveAttribute("aria-pressed", "true");
+      await redCyan.click();
+      await expect.poll(highlighted).toEqual([]);
+      await expect(figure.locator('[data-hue-net-face="5"]')).toHaveAttribute("aria-pressed", "false");
+      expect(await figure.boundingBox()).toEqual(frame);
+
+      await greenMagenta.click();
+      await page.locator("#theory-color-die-heading").click();
+      await expect(greenMagenta).toHaveAttribute("aria-pressed", "false");
+      await expect.poll(highlighted).toEqual([]);
     }
   }
 });
@@ -1400,7 +1944,7 @@ test("keeps the three-bit labels inside compact nodes in every Stella mode", asy
       });
     });
   await expect(page.locator(".theory-k8-color-key > span")).toHaveText(["G", "R", "B", "Y", "C", "M", "W"]);
-  for (const width of [534, 320, 722, 1134]) {
+  for (const width of [534, 320, 722, 822, 1134]) {
     await page.setViewportSize({ width, height: 698 });
     await page.getByRole("button", { name: "Nodes only", exact: true }).click();
     const initialLayout = await layout();
@@ -1571,7 +2115,6 @@ test("shares a fluid reading measure across Theory prose and major figures witho
             ".theory-toggle-figure",
             ".theory-fano-correspondence",
             ".theory-hamming-flow",
-            ".theory-die-figure",
             ".theory-octahedron",
             ".theory-octahedron-layout",
             ".theory-mixing-pair",
@@ -1593,10 +2136,13 @@ test("shares a fluid reading measure across Theory prose and major figures witho
             // Exclude clipped 1 px live regions used only by screen readers.
             .filter((item) => item.clientWidth > 1 && item.scrollWidth > item.clientWidth + 1)
             .map((item) => `${item.tagName}.${item.className}`);
+          const dieFigure = element.querySelector(".theory-die-figure")!.getBoundingClientRect();
           return {
             width: right - left,
             misaligned,
             overflow,
+            dieCentered:
+              dieFigure.left >= left - 1 && dieFigure.right <= right + 1 && Math.abs(dieFigure.left + dieFigure.right - left - right) < 1,
             toneWidth: element.querySelector(".theory-zigzag-svg")!.getBoundingClientRect().width,
             documentWidth: document.documentElement.scrollWidth,
           };
@@ -1604,6 +2150,7 @@ test("shares a fluid reading measure across Theory prose and major figures witho
         const context = `${language}, ${entry}, ${width}px`;
         expect(metrics.misaligned, context).toEqual([]);
         expect(metrics.overflow, context).toEqual([]);
+        expect(metrics.dieCentered, context).toBe(true);
         expect(metrics.documentWidth, context).toBeLessThanOrEqual(width);
         expect(Math.abs(metrics.toneWidth - metrics.width)).toBeLessThan(1);
         if (width === 1023) {
@@ -1674,7 +2221,7 @@ test("spreads binary columns on desktop and preserves selection during linked ho
     const plot = table.locator("svg");
     const rows = plot.getByRole("button");
     await expect(rows).toHaveCount(8);
-    for (const width of [320, 390, 779, 1024, 1186, 1440]) {
+    for (const width of [320, 390, 716, 779, 822, 1024, 1186, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await table.scrollIntoViewIfNeeded();
       const metrics = await plot.evaluate((svg) => {
@@ -1708,9 +2255,9 @@ test("spreads binary columns on desktop and preserves selection during linked ho
       expect(metrics.collisions, `${language} ${width}px`).toEqual([]);
       expect(metrics.width).toBeLessThan(width);
       expect(Math.abs(metrics.width - metrics.proseWidth)).toBeLessThan(1);
+      expect(metrics.height).toBeLessThanOrEqual(260);
       if (width >= 1024) {
         expect(metrics.width).toBeGreaterThan(820);
-        expect(metrics.height).toBeLessThanOrEqual(311);
         expect(metrics.font).toBeLessThanOrEqual(12.5);
         expect(metrics.circle).toBeLessThanOrEqual(20);
       }

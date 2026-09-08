@@ -92,6 +92,10 @@ export function useK8Selection(onHover: (level: number | null) => void) {
     preview: preview?.target ?? null,
     readout,
     clear,
+    restoreSelection(target: K8Target | null) {
+      setSelection(target);
+      clearPreview();
+    },
     select,
     selectVertex,
     selectDistances,

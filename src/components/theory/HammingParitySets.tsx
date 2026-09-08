@@ -36,7 +36,9 @@ interface Props {
   onHover: (level: number | null) => void;
   onToggleError: (index: number) => void;
   selectedParity: number | null;
+  previewParity: number | null;
   onSelectParity: (parity: number | null) => void;
+  onPreviewParity: (parity: number | null) => void;
 }
 
 export const HammingParitySets = React.memo(function HammingParitySets({
@@ -47,15 +49,43 @@ export const HammingParitySets = React.memo(function HammingParitySets({
   onHover,
   onToggleError,
   selectedParity,
+  previewParity,
   onSelectParity,
+  onPreviewParity,
 }: Props) {
   const { t } = useTranslation();
   const titleId = useId();
   const helpId = useId();
-  const selected = checks.find((check) => check.parity === selectedParity);
+  const activeParity = previewParity ?? selectedParity;
+  const activeCheck = checks.find((check) => check.parity === activeParity);
   const orderedChecks = [...checks].sort((a, b) => b.parity - a.parity);
   const checkState = (failed: Bit | null) =>
     t(failed === null ? "theory_hamming_pending" : failed ? "theory_hamming_check_fail" : "theory_hamming_check_pass");
+  const renderCheckDetails = (check: Check, reserveSpace = false) => (
+    <>
+      <strong style={{ color: check.color }}>
+        {t("theory_hamming_venn_check_label", check.channel)} · P{check.parity}
+      </strong>
+      <div className="theory-hamming-check-formula">{check.checks.map((position) => `r${SUBSCRIPTS[position]}`).join(" ⊕ ")}</div>
+      <div className="theory-hamming-check-values" data-check-value={reserveSpace ? undefined : (check.failed ?? undefined)}>
+        {check.checks.map((position) => received?.[position - 1] ?? "–").join(" ⊕ ")} = <b>{check.failed ?? "–"}</b>
+      </div>
+      <div className="theory-hamming-check-explanations">
+        {(reserveSpace
+          ? (["theory_hamming_venn_check_pending", "theory_hamming_venn_odd", "theory_hamming_venn_even"] as const)
+          : [
+              check.failed === null
+                ? ("theory_hamming_venn_check_pending" as const)
+                : check.failed
+                  ? ("theory_hamming_venn_odd" as const)
+                  : ("theory_hamming_venn_even" as const),
+            ]
+        ).map((key) => (
+          <p key={key}>{t(key)}</p>
+        ))}
+      </div>
+    </>
+  );
 
   return (
     <section className="theory-hamming-sets" data-testid="hamming-parity-sets" aria-labelledby={titleId}>
@@ -67,16 +97,25 @@ export const HammingParitySets = React.memo(function HammingParitySets({
       </header>
       <div className="theory-hamming-sets-layout">
         <figure className="theory-hamming-sets-figure">
-          <svg viewBox="22 -20 296 296" role="group" aria-label={t("theory_hamming_venn_aria")} aria-describedby={helpId}>
+          <svg
+            viewBox="22 -20 296 296"
+            role="group"
+            aria-label={t("theory_hamming_venn_aria")}
+            aria-describedby={helpId}
+            onClick={(event) => {
+              if (!(event.target as Element).closest('[role="button"]')) onSelectParity(null);
+            }}
+          >
             {CIRCLES.map(({ parity, cx, cy, labelX, labelY }) => {
               const check = checks.find((entry) => entry.parity === parity)!;
-              const active = selectedParity === parity;
-              const muted = selectedParity !== null && !active;
+              const active = activeParity === parity;
+              const muted = activeParity !== null && !active;
               return (
                 <g
                   key={parity}
                   data-testid={`hamming-parity-set-${parity}`}
-                  data-selected={active}
+                  data-selected={selectedParity === parity}
+                  data-active={active}
                   data-check-result={check.failed ?? undefined}
                 >
                   <circle
@@ -108,7 +147,7 @@ export const HammingParitySets = React.memo(function HammingParitySets({
               const info = THEORY_LEVELS[position];
               const bit = received?.[position - 1] ?? null;
               const injected = errors[position - 1] === 1;
-              const member = selected?.checks.includes(position) ?? true;
+              const member = activeCheck?.checks.includes(position) ?? true;
               const highlighted = hlLevel === position;
               const nodeLabel = t(
                 "theory_hamming_venn_node_aria",
@@ -226,6 +265,14 @@ export const HammingParitySets = React.memo(function HammingParitySets({
                 aria-pressed={selectedParity === check.parity}
                 aria-label={`${t("theory_hamming_venn_check_label", check.channel)} P${check.parity}, ${checkState(check.failed)}, ${t("theory_hamming_venn_positions")} ${check.checks.join(" · ")}, s${check.channel} = ${check.failed ?? "–"}`}
                 onClick={() => onSelectParity(selectedParity === check.parity ? null : check.parity)}
+                onPointerEnter={(event) => {
+                  if (event.pointerType !== "touch") onPreviewParity(check.parity);
+                }}
+                onPointerLeave={() => onPreviewParity(null)}
+                onFocus={(event) => {
+                  if (event.currentTarget.matches(":focus-visible")) onPreviewParity(check.parity);
+                }}
+                onBlur={() => onPreviewParity(null)}
               >
                 <span className="theory-hamming-check-heading">
                   <strong style={{ color: check.color }}>
@@ -249,31 +296,17 @@ export const HammingParitySets = React.memo(function HammingParitySets({
               </button>
             ))}
           </div>
-          <div className="theory-hamming-set-detail" data-testid="hamming-venn-detail" aria-live="polite">
-            {selected ? (
-              <>
-                <strong style={{ color: selected.color }}>
-                  {t("theory_hamming_venn_check_label", selected.channel)} · P{selected.parity}
-                </strong>
-                <div className="theory-hamming-check-formula">
-                  {selected.checks.map((position) => `r${SUBSCRIPTS[position]}`).join(" ⊕ ")}
-                </div>
-                <div className="theory-hamming-check-values" data-check-value={selected.failed ?? undefined}>
-                  {selected.checks.map((position) => received?.[position - 1] ?? "–").join(" ⊕ ")} = <b>{selected.failed ?? "–"}</b>
-                </div>
-                <p>
-                  {t(
-                    selected.failed === null
-                      ? "theory_hamming_venn_check_pending"
-                      : selected.failed
-                        ? "theory_hamming_venn_odd"
-                        : "theory_hamming_venn_even",
-                  )}
-                </p>
-              </>
-            ) : (
+          <div className="theory-hamming-set-detail-slot">
+            <div className="theory-hamming-set-detail" data-testid="hamming-venn-detail" aria-live="polite">
+              {activeCheck ? renderCheckDetails(activeCheck) : <p>{t("theory_hamming_venn_inspect_hint")}</p>}
+            </div>
+            {/* Reserve the largest localized state without exposing inactive results. */}
+            <div className="theory-hamming-set-detail theory-hamming-set-detail-sizer" aria-hidden="true">
+              {renderCheckDetails(orderedChecks[0], true)}
+            </div>
+            <div className="theory-hamming-set-detail theory-hamming-set-detail-sizer" aria-hidden="true">
               <p>{t("theory_hamming_venn_inspect_hint")}</p>
-            )}
+            </div>
           </div>
         </div>
       </div>

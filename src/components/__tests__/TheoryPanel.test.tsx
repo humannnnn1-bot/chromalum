@@ -118,7 +118,7 @@ describe("TheoryPanel", () => {
       "Venn Diagram",
       "GRB and YCM Mixing",
       "Color Cube",
-      "Chromatic One-Bit Six-Cycle",
+      "C-cycle",
       "Fano Plane",
       "Hamming [7,4,3] Code",
       "Tone Zigzag and Hue-Edge Differences",
@@ -127,7 +127,7 @@ describe("TheoryPanel", () => {
     ]) {
       expect(screen.getAllByText(retained).length).toBeGreaterThan(0);
     }
-    expect(screen.getByRole("group", { name: "Binary Levels" })).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Eight-State Correspondence Table" })).toBeTruthy();
     expect(screen.getByRole("figure", { name: "GRB · join ∨" }).closest(".theory-chapter")?.id).toBe("theory-algebra");
     expect(screen.getByRole("figure", { name: "YCM · meet ∧" }).closest("details")).toBeNull();
 
@@ -152,7 +152,7 @@ describe("TheoryPanel", () => {
     expect(geometrySection).not.toBeNull();
 
     const binaryHeading = within(rankSection!).getByRole("heading", { level: 4, name: "Rank and Boolean Operations" });
-    expect(within(rankSection!).queryByRole("heading", { name: "Binary Levels" })).toBeNull();
+    expect(within(rankSection!).queryByRole("heading", { name: "Eight-State Correspondence Table" })).toBeNull();
     expect(within(structuresSection!).queryByRole("heading", { name: "Seven Nonzero Toggle Patterns" })).toBeNull();
     expect(container.querySelector("#theory-geometry")?.querySelectorAll("h4")).toHaveLength(0);
     const dieSection = within(geometrySection!).getByRole("region", { name: "Face Arrangement of the Color Die" });
@@ -220,7 +220,7 @@ describe("TheoryPanel", () => {
   it("keeps color names and bit parity in the responsive binary table", () => {
     renderWithLanguage();
 
-    const binaryTable = screen.getByRole("group", { name: "Binary Levels" });
+    const binaryTable = screen.getByRole("group", { name: "Eight-State Correspondence Table" });
 
     const textNodes = Array.from(binaryTable.querySelectorAll("text"));
     const headers = Array.from(binaryTable.children)

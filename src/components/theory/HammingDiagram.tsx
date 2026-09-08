@@ -3,6 +3,7 @@ import { THEORY_LEVELS } from "../../data/theory-data";
 import { useTranslation } from "../../i18n";
 import { C, FONT, FS, FW, R, SP } from "../../styles/tokens";
 import { HammingParitySets } from "./HammingParitySets";
+import { usePinReset } from "./pin-reset";
 
 export type Bit = 0 | 1;
 export type DataWord = readonly [Bit, Bit, Bit, Bit];
@@ -600,6 +601,13 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
   const { t } = useTranslation();
   const { data, errors, result, toggleData, toggleError } = useHammingSimulation();
   const [selectedParity, setSelectedParity] = useState<number | null>(null);
+  const [previewParity, setPreviewParity] = useState<number | null>(null);
+  const selectParity = useCallback((parity: number | null) => {
+    setSelectedParity(parity);
+    setPreviewParity(null);
+  }, []);
+  usePinReset(selectParity);
+  const activeParity = previewParity ?? selectedParity;
   const errorCount = errors.reduce<number>((sum, bit) => sum + bit, 0);
   const outputMatches = result.output?.every((bit, index) => bit === data[index]) ?? false;
   const pending = result.output === null;
@@ -708,7 +716,7 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
               errors={errors}
               onToggle={toggleError}
               onHover={onHover}
-              checkPositions={parityResults.find((check) => check.parity === selectedParity)?.checks}
+              checkPositions={parityResults.find((check) => check.parity === activeParity)?.checks}
             />
           }
           testId="hamming-stage-received"
@@ -721,7 +729,9 @@ export const HammingDiagram = React.memo(function HammingDiagram({ hlLevel, onHo
             errors={errors}
             checks={parityResults.map((check) => ({ ...check, color: readableLevelColor(check.parity) }))}
             selectedParity={selectedParity}
-            onSelectParity={setSelectedParity}
+            previewParity={previewParity}
+            onSelectParity={selectParity}
+            onPreviewParity={setPreviewParity}
             hlLevel={hlLevel}
             onHover={onHover}
             onToggleError={toggleError}
